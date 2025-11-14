@@ -1,42 +1,221 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* app root */
+#app-root {
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* main layout */
+main {
+	flex: 1;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* signup page */
+	.auth-page {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		min-height: 100vh;
+		padding: 48px 24px;
+		background: linear-gradient(180deg, var(--signup-bg-start) 0%, var(--signup-bg-end) 100%);
+	}
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
+	/* card */
+	.auth-card {
+		width: min(930px, 94%);
+		max-width: 1160px;
+		background: var(--signup-card-bg);
+		padding: var(--signup-card-padding-desktop);
+		border-radius: var(--signup-card-radius);
+		box-shadow: var(--signup-card-shadow);
+		text-align: center;
+		color: #0f2a2c;
+	}
 
-.card {
-  padding: 2em;
-}
+	/* title */
+	.auth-title {
+		font-size: var(--signup-title-size);
+		margin: 0 0 6px 0;
+		font-weight: 800;
+		letter-spacing: 1px;
+	}
 
-.read-the-docs {
-  color: #888;
+	/* subtitle */
+	.auth-sub {
+		margin-top: 6px;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 1.2px;
+		color: var(--signup-sub-color);
+	}
+
+	/* form wrapper */
+	.form-inner {
+		max-width: 520px;
+		margin: 28px auto 0;
+		text-align: left;
+	}
+
+	/* form layout helpers */
+	.form-inner .form {
+		margin-top: 18px;
+	}
+
+	.field-label {
+		display: block;
+		margin-bottom: 8px;
+	}
+
+	.field-label.mt {
+		margin-top: 14px;
+	}
+
+	.row-between {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-top: 14px;
+	}
+
+	.forgot-link {
+		font-size: 13px;
+		color: var(--signup-sub-color);
+	}
+
+	.input-wrap {
+		position: relative;
+	}
+
+	.password-toggle {
+		position: absolute;
+		right: 8px;
+		top: 8px;
+		background: transparent;
+		border: none;
+		color: var(--muted);
+		padding: 6px;
+	}
+
+	.label-gap { margin-bottom: 6px; }
+
+	.error-text {
+		color: crimson;
+		margin-top: 10px;
+	}
+
+	.cta-row {
+		margin-top: 18px;
+	}
+
+	.card-footer {
+		margin-top: 16px;
+		text-align: center;
+	}
+
+	/* placeholder input */
+	.auth-card label {
+		font-size: 14px;
+		color: #556;
+	}
+
+	/* inputs */
+	.auth-card input {
+		width: 100%;
+		padding: 12px 14px;
+		border-radius: 8px;
+		border: 1px solid var(--signup-input-border);
+		background: var(--signup-input-bg);
+		box-sizing: border-box;
+		color: #0f2a2c;
+		caret-color: #0f2a2c;
+		font-size: 16px;
+		font-weight: 400;
+	}
+
+	.auth-card input::placeholder {
+		color: #9aa6b2;
+		font-weight: 300;
+	}
+
+	.auth-card input:focus {
+		outline: 3px solid rgba(11,111,176,0.08);
+		outline-offset: 2px;
+	}
+
+	.auth-card input::-webkit-text-fill-color {
+		color: #0f2a2c;
+	}
+
+	.auth-card a {
+		color: #0b6fb0;
+		text-decoration: none;
+	}
+
+	/* primary CTA */
+	.auth-card .primary {
+		width: 100%;
+		background: var(--signup-primary-bg);
+		color: #0f2a2c;
+		border: none;
+		padding: 12px 16px;
+		border-radius: 8px;
+		font-weight: 600;
+		cursor: pointer;
+		box-shadow: 0 2px 0 rgba(11,111,176,0.04) inset, 0 6px 18px rgba(11,111,176,0.06);
+		transition: transform 0.08s ease, box-shadow 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+	}
+
+	.auth-card .primary:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+		transform: none;
+		box-shadow: none;
+	}
+
+	.auth-card .primary:hover:not(:disabled) {
+		transform: translateY(-1px);
+		box-shadow: 0 8px 24px rgba(11,111,176,0.08);
+	}
+
+	.auth-card .muted {
+		color: #7b8b8c;
+	}
+
+	@media (max-width: 480px) {
+		.auth-page {
+			padding: 12px;
+		}
+
+		.auth-card {
+			width: calc(100% - 24px);
+			padding: var(--signup-card-padding-mobile);
+			border-radius: 12px;
+		}
+
+		.auth-title {
+			font-size: 28px;
+		}
+
+		.auth-sub {
+			font-size: 12px;
+		}
+
+		.auth-card input {
+			padding: 10px 12px;
+		}
+
+		.auth-card label {
+			font-size: 13px;
+		}
+
+		.auth-card .primary {
+			padding: 10px 12px;
+			font-size: 14px;
+		}
+
+		form {
+			margin-top: 12px;
+		}
+
 }
