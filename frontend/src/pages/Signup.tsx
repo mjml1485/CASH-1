@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
+import { Link } from 'react-router-dom'
 
 export default function Signup() {
   const [name, setName] = useState('')
@@ -82,7 +83,7 @@ export default function Signup() {
             </div>
 
             <div className="card-footer muted">
-              Already Have An Account ? <a href="#">Log In</a>
+              Already Have An Account ? <Link to="/signin">Sign In</Link>
             </div>
           </div>
         </form>
