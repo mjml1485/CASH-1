@@ -440,7 +440,7 @@
 .sign-in-title {
   font-size: 52px;
   margin: 0 0 12px 0;
-  font-weight: 800;
+	font-weight: 800;
   color: #1a1a1a;
   letter-spacing: 5px;
   line-height: 1.1;
@@ -454,9 +454,9 @@
 
 .sign-in-subtitle {
   margin: 0;
-  font-weight: 500;
+	font-weight: 500;
   color: #4a5568;
-  font-size: 13px;
+	font-size: 13px;
   line-height: 1.6;
   letter-spacing: 0.8px;
   text-transform: uppercase;
@@ -1008,6 +1008,135 @@
   box-shadow: none;
 }
 
+.onboarding-navigation-wrapper {
+  margin-top: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.onboarding-button-back {
+  background: linear-gradient(135deg, #87ceeb 0%, #6bb6d6 100%);
+  color: #1a1a1a;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  box-shadow: 
+    0 4px 6px rgba(135, 206, 235, 0.3),
+    0 2px 4px rgba(135, 206, 235, 0.2);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
+}
+
+.onboarding-button-back::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.onboarding-button-back:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.onboarding-button-back:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6bb6d6 0%, #5ba3d0 100%);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 12px rgba(135, 206, 235, 0.4),
+    0 4px 6px rgba(135, 206, 235, 0.3);
+}
+
+.onboarding-button-back:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 4px rgba(135, 206, 235, 0.3),
+    0 1px 2px rgba(135, 206, 235, 0.2);
+}
+
+.onboarding-button-back:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.onboarding-title-wallet {
+  font-size: 32px;
+  margin: 0 0 12px 0;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: 3px;
+  line-height: 1.2;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  white-space: normal;
+}
+
+.onboarding-wallet-card-wrapper {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.onboarding-wallet-card {
+  width: 200px;
+  height: 200px;
+  background: #f1f5f9;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.03);
+  padding: 0;
+  margin: 0;
+}
+
+.onboarding-wallet-card:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e0;
+  transform: translateY(-2px);
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.onboarding-wallet-card:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.onboarding-wallet-plus {
+  font-size: 64px;
+  font-weight: 300;
+  color: #4a5568;
+  line-height: 1;
+  display: block;
+}
+
+.onboarding-wallet-card:hover .onboarding-wallet-plus {
+  color: #2d3748;
+}
+
 /* MEDIA QUERIES */
 @media (max-width: 768px) {
   .sign-up-page,
@@ -1060,8 +1189,22 @@
     font-size: 28px;
   }
 
+  .onboarding-title-wallet {
+    font-size: 28px;
+    letter-spacing: 2px;
+  }
+
   .onboarding-subtitle-normal {
     font-size: 13px;
+  }
+
+  .onboarding-wallet-card {
+    width: 180px;
+    height: 180px;
+  }
+
+  .onboarding-wallet-plus {
+    font-size: 56px;
   }
 
   .onboarding-currency-select {
@@ -1126,8 +1269,22 @@
     font-size: 24px;
   }
 
+  .onboarding-title-wallet {
+    font-size: 24px;
+    letter-spacing: 1.5px;
+  }
+
   .onboarding-subtitle-normal {
     font-size: 12px;
+  }
+
+  .onboarding-wallet-card {
+    width: 160px;
+    height: 160px;
+  }
+
+  .onboarding-wallet-plus {
+    font-size: 48px;
   }
 
   .onboarding-currency-select {

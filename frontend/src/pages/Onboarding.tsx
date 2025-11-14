@@ -2,15 +2,27 @@ import { useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 
 export default function Onboarding() {
-  const [step, setStep] = useState<'welcome' | 'currency'>('welcome');
+  const [step, setStep] = useState<'welcome' | 'currency' | 'wallet'>('welcome');
   const [currency, setCurrency] = useState('PHP');
 
   const handleGetStarted = () => {
     setStep('currency');
   };
 
-  const handleNext = () => {
-    console.log('Selected currency:', currency);
+  const handleCurrencyNext = () => {
+    setStep('wallet');
+  };
+
+  const handleBack = () => {
+    if (step === 'wallet') {
+      setStep('currency');
+    } else if (step === 'currency') {
+      setStep('welcome');
+    }
+  };
+
+  const handleWalletNext = () => {
+    console.log('Wallet step completed');
   };
 
   if (step === 'welcome') {
@@ -33,42 +45,77 @@ export default function Onboarding() {
     );
   }
 
-  return (
-    <div className="onboarding-page">
-      <div className="onboarding-card">
-        <div className="onboarding-form-inner">
-          <div className="onboarding-header">
-            <h1 className="onboarding-title-normal">Choose Currency</h1>
-            <p className="onboarding-subtitle-normal">Let's begin by selecting your preferred currency.</p>
-          </div>
-          <div className="onboarding-currency-wrapper">
-            <div className="onboarding-currency-select">
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className="onboarding-currency-dropdown"
-              >
-                <option value="PHP">PHP</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-                <option value="JPY">JPY</option>
-                <option value="AUD">AUD</option>
-                <option value="CAD">CAD</option>
-                <option value="CHF">CHF</option>
-                <option value="CNY">CNY</option>
-                <option value="INR">INR</option>
-              </select>
-              <FaChevronDown className="onboarding-currency-arrow" />
+  if (step === 'currency') {
+    return (
+      <div className="onboarding-page">
+        <div className="onboarding-card">
+          <div className="onboarding-form-inner">
+            <div className="onboarding-header">
+              <h1 className="onboarding-title-normal">Choose Currency</h1>
+              <p className="onboarding-subtitle-normal">Let's begin by selecting your preferred currency.</p>
             </div>
-          </div>
-          <div className="onboarding-next-wrapper">
-            <button className="onboarding-button-next" type="button" onClick={handleNext}>
-              Next
-            </button>
+            <div className="onboarding-currency-wrapper">
+              <div className="onboarding-currency-select">
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="onboarding-currency-dropdown"
+                >
+                  <option value="PHP">PHP</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                  <option value="JPY">JPY</option>
+                  <option value="AUD">AUD</option>
+                  <option value="CAD">CAD</option>
+                  <option value="CHF">CHF</option>
+                  <option value="CNY">CNY</option>
+                  <option value="INR">INR</option>
+                </select>
+                <FaChevronDown className="onboarding-currency-arrow" />
+              </div>
+            </div>
+            <div className="onboarding-navigation-wrapper">
+              <button className="onboarding-button-back" type="button" onClick={handleBack}>
+                Back
+              </button>
+              <button className="onboarding-button-next" type="button" onClick={handleCurrencyNext}>
+                Next
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (step === 'wallet') {
+    return (
+      <div className="onboarding-page">
+        <div className="onboarding-card">
+          <div className="onboarding-form-inner">
+            <div className="onboarding-header">
+              <h1 className="onboarding-title-wallet">Add Wallet</h1>
+              <p className="onboarding-subtitle-normal">Just add your wallets, and we'll help you keep a clear view of your balances. It's easy as that!</p>
+            </div>
+            <div className="onboarding-wallet-card-wrapper">
+              <button className="onboarding-wallet-card" type="button">
+                <span className="onboarding-wallet-plus">+</span>
+              </button>
+            </div>
+            <div className="onboarding-navigation-wrapper">
+              <button className="onboarding-button-back" type="button" onClick={handleBack}>
+                Back
+              </button>
+              <button className="onboarding-button-next" type="button" onClick={handleWalletNext}>
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
