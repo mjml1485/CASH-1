@@ -1,93 +1,129 @@
-import type { FormEvent } from 'react'
-import { useState } from 'react'
-import { FaEye, FaEyeSlash } from 'react-icons/fa'
-import { Link } from 'react-router-dom'
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import type { FormEvent } from 'react';
 
 export default function Signup() {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function validate() {
-    if (!name.trim()) return 'Name is required'
-    if (!email.includes('@')) return 'Valid email required'
-    if (password.length < 6) return 'Password must be at least 6 characters'
-    return null
-  }
+  const validate = (): string | null => {
+    if (!name.trim()) return 'Name is required';
+    if (!email.includes('@') || !email.includes('.')) return 'Please enter a valid email';
+    if (password.length < 6) return 'Password must be at least 6 characters';
+    return null;
+  };
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    setError(null)
-    const v = validate()
-    if (v) return setError(v)
-    setSubmitting(true)
-    try {
-      await new Promise((r) => setTimeout(r, 700))
-      console.log('signup', { name, email })
-      setName('')
-      setEmail('')
-      setPassword('')
-    } catch (err) {
-      setError('Signup failed')
-    } finally {
-      setSubmitting(false)
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+    
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
+      return;
     }
-  }
+
+    setSubmitting(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      navigate('/onboarding');
+    } catch (err) {
+      setError('Signup failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <h1 className="auth-title">CASH</h1>
-        <div className="muted auth-sub">CLOUD ACCESS SYNCHRONIZED HUB EXPENSE TRACKER</div>
-        <form onSubmit={handleSubmit} className="form">
-          <div className="form-inner">
-            <label className="field-label">Name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter name" />
-
-            <label className="field-label mt">Email</label>
-            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter email" />
-
-            <div className="row-between">
-              <label className="field-label label-gap">Password</label>
-              <a className="forgot-link" href="#">Forgot ?</a>
+    <div className="sign-up-page">
+      <div className="sign-up-card">
+        <form className="sign-up-form" onSubmit={handleSubmit}>
+          <div className="sign-up-form-inner">
+            <div className="sign-up-header">
+              <h1 className="sign-up-title">CASH</h1>
+              <p className="sign-up-subtitle">CLOUD ACCESS SYNCHRONIZED HUB</p>
             </div>
 
-            <div className="input-wrap">
+            <label className="sign-up-label" htmlFor="name">
+              Name
+            </label>
+            <input
+              id="name"
+              type="text"
+              placeholder="Enter name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={submitting}
+              autoComplete="name"
+              className="sign-up-input"
+            />
+
+            <label className="sign-up-label" htmlFor="email">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              placeholder="Enter email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={submitting}
+              autoComplete="email"
+              className="sign-up-input"
+            />
+
+            <div className="sign-up-row-between">
+              <label className="sign-up-label" htmlFor="password">
+                Password
+              </label>
+              <a className="sign-up-link-forgot" href="#" onClick={(e) => e.preventDefault()}>
+                Forgot ?
+              </a>
+            </div>
+
+            <div className="sign-up-wrapper-password">
               <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                type={showPassword ? 'text' : 'password'}
-                aria-label="Password"
+                disabled={submitting}
+                autoComplete="new-password"
+                className="sign-up-input"
               />
               <button
                 type="button"
-                onClick={() => setShowPassword((s) => !s)}
+                onClick={() => setShowPassword((prev) => !prev)}
                 aria-pressed={showPassword}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="password-toggle"
+                className="sign-up-toggle-password"
+                disabled={submitting}
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
 
-            {error && <div className="error-text">{error}</div>}
+            {error && <div className="sign-up-error">{error}</div>}
 
-            <div className="cta-row">
-              <button className="primary" disabled={submitting}>
-                {submitting ? 'Creating...' : 'Create account'}
+            <div className="sign-up-button-row">
+              <button className="sign-up-button-primary" disabled={submitting} type="submit">
+                {submitting ? 'Creating account...' : 'Create account'}
               </button>
             </div>
 
-            <div className="card-footer muted">
-              Already Have An Account ? <Link to="/signin">Sign In</Link>
+            <div className="sign-up-footer">
+              Already Have An Account ? <Link to="/signin">Sign in</Link>
             </div>
           </div>
         </form>
       </div>
     </div>
-  )
+  );
 }
