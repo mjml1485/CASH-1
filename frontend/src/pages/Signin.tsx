@@ -10,6 +10,7 @@ export default function Signin() {
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasInteracted, setHasInteracted] = useState({ email: false, password: false });
 
   const validate = (): string | null => {
     if (!email.trim()) return 'Please enter an email';
@@ -54,9 +55,13 @@ export default function Signin() {
             <input
               id="email"
               type="email"
-              placeholder="Enter email"
+              placeholder={hasInteracted.email ? '' : 'Enter email'}
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setHasInteracted(prev => ({ ...prev, email: true }));
+              }}
+              onFocus={() => setHasInteracted(prev => ({ ...prev, email: true }))}
               disabled={submitting}
               autoComplete="email"
               className="sign-in-input"
@@ -75,9 +80,13 @@ export default function Signin() {
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
+                placeholder={hasInteracted.password ? '' : 'Enter your password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setHasInteracted(prev => ({ ...prev, password: true }));
+                }}
+                onFocus={() => setHasInteracted(prev => ({ ...prev, password: true }))}
                 disabled={submitting}
                 autoComplete="current-password"
                 className="sign-in-input"

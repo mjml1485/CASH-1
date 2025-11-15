@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaChevronDown } from 'react-icons/fa';
 
 export default function Onboarding() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<'welcome' | 'currency' | 'wallet'>('welcome');
-  const [currency, setCurrency] = useState('PHP');
+  const [currency, setCurrency] = useState(() => localStorage.getItem('selectedCurrency') || 'PHP');
 
   const handleGetStarted = () => {
     setStep('currency');
@@ -22,7 +24,6 @@ export default function Onboarding() {
   };
 
   const handleWalletNext = () => {
-    console.log('Wallet step completed');
   };
 
   if (step === 'welcome') {
@@ -58,7 +59,11 @@ export default function Onboarding() {
               <div className="onboarding-currency-select">
                 <select
                   value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
+                  onChange={(e) => {
+                    const newCurrency = e.target.value;
+                    setCurrency(newCurrency);
+                    localStorage.setItem('selectedCurrency', newCurrency);
+                  }}
                   className="onboarding-currency-dropdown"
                 >
                   <option value="PHP">PHP</option>
@@ -99,7 +104,11 @@ export default function Onboarding() {
               <p className="onboarding-subtitle-normal">Just add your wallets, and we'll help you keep a clear view of your balances. It's easy as that!</p>
             </div>
             <div className="onboarding-wallet-card-wrapper">
-              <button className="onboarding-wallet-card" type="button">
+              <button
+                className="onboarding-wallet-card"
+                type="button"
+                onClick={() => navigate('/add-wallet')}
+              >
                 <span className="onboarding-wallet-plus">+</span>
               </button>
             </div>

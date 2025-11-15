@@ -11,6 +11,7 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasInteracted, setHasInteracted] = useState({ name: false, email: false, password: false });
 
   const validate = (): string | null => {
     if (!name.trim()) return 'Name is required';
@@ -56,9 +57,13 @@ export default function Signup() {
             <input
               id="name"
               type="text"
-              placeholder="Enter name"
+              placeholder={hasInteracted.name ? '' : 'Enter name'}
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                setHasInteracted(prev => ({ ...prev, name: true }));
+              }}
+              onFocus={() => setHasInteracted(prev => ({ ...prev, name: true }))}
               disabled={submitting}
               autoComplete="name"
               className="sign-up-input"
@@ -70,9 +75,13 @@ export default function Signup() {
             <input
               id="email"
               type="email"
-              placeholder="Enter email"
+              placeholder={hasInteracted.email ? '' : 'Enter email'}
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setHasInteracted(prev => ({ ...prev, email: true }));
+              }}
+              onFocus={() => setHasInteracted(prev => ({ ...prev, email: true }))}
               disabled={submitting}
               autoComplete="email"
               className="sign-up-input"
@@ -91,9 +100,13 @@ export default function Signup() {
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
+                placeholder={hasInteracted.password ? '' : 'Enter your password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setHasInteracted(prev => ({ ...prev, password: true }));
+                }}
+                onFocus={() => setHasInteracted(prev => ({ ...prev, password: true }))}
                 disabled={submitting}
                 autoComplete="new-password"
                 className="sign-up-input"
