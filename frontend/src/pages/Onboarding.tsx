@@ -1,10 +1,17 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaChevronDown } from 'react-icons/fa';
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState<'welcome' | 'currency' | 'wallet'>('welcome');
+  
+  useEffect(() => {
+    if (location.state?.step === 'wallet') {
+      setStep('wallet');
+    }
+  }, [location.state]);
   const [currency, setCurrency] = useState(() => localStorage.getItem('selectedCurrency') || 'PHP');
 
   const handleGetStarted = () => {

@@ -55,13 +55,18 @@ export default function Signin() {
             <input
               id="email"
               type="email"
-              placeholder={hasInteracted.email ? '' : 'Enter email'}
+              placeholder={email || !hasInteracted.email ? 'Enter email' : ''}
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
                 setHasInteracted(prev => ({ ...prev, email: true }));
               }}
               onFocus={() => setHasInteracted(prev => ({ ...prev, email: true }))}
+              onBlur={() => {
+                if (!email.trim()) {
+                  setHasInteracted(prev => ({ ...prev, email: false }));
+                }
+              }}
               disabled={submitting}
               autoComplete="email"
               className="sign-in-input"
@@ -80,13 +85,18 @@ export default function Signin() {
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder={hasInteracted.password ? '' : 'Enter your password'}
+                placeholder={password || !hasInteracted.password ? 'Enter your password' : ''}
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
                   setHasInteracted(prev => ({ ...prev, password: true }));
                 }}
                 onFocus={() => setHasInteracted(prev => ({ ...prev, password: true }))}
+                onBlur={() => {
+                  if (!password.trim()) {
+                    setHasInteracted(prev => ({ ...prev, password: false }));
+                  }
+                }}
                 disabled={submitting}
                 autoComplete="current-password"
                 className="sign-in-input"
