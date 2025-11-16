@@ -5,11 +5,13 @@ import { FaChevronDown } from 'react-icons/fa';
 export default function Onboarding() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [step, setStep] = useState<'welcome' | 'currency' | 'wallet'>('welcome');
+  const [step, setStep] = useState<'welcome' | 'currency' | 'wallet' | 'budget'>('welcome');
   
   useEffect(() => {
     if (location.state?.step === 'wallet') {
       setStep('wallet');
+    } else if (location.state?.step === 'budget') {
+      setStep('budget');
     }
   }, [location.state]);
   const [currency, setCurrency] = useState(() => localStorage.getItem('selectedCurrency') || 'PHP');
@@ -23,7 +25,9 @@ export default function Onboarding() {
   };
 
   const handleBack = () => {
-    if (step === 'wallet') {
+    if (step === 'budget') {
+      setStep('wallet');
+    } else if (step === 'wallet') {
       setStep('currency');
     } else if (step === 'currency') {
       setStep('welcome');
@@ -31,6 +35,11 @@ export default function Onboarding() {
   };
 
   const handleWalletNext = () => {
+    setStep('budget');
+  };
+
+  const handleBudgetNext = () => {
+    // Navigate to main app or dashboard
   };
 
   if (step === 'welcome') {
@@ -124,6 +133,38 @@ export default function Onboarding() {
                 Back
               </button>
               <button className="onboarding-button-next" type="button" onClick={handleWalletNext}>
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'budget') {
+    return (
+      <div className="onboarding-page">
+        <div className="onboarding-card">
+          <div className="onboarding-form-inner">
+            <div className="onboarding-header">
+              <h1 className="onboarding-title-budget">Add Budget</h1>
+              <p className="onboarding-subtitle-normal">Budgeting doesn't have to be a headache. I've got your back! Just tell me your budget, and I'll do the monitoring.</p>
+            </div>
+            <div className="onboarding-budget-card-wrapper">
+              <button
+                className="onboarding-budget-card"
+                type="button"
+                onClick={() => {/* TODO: Add budget functionality */}}
+              >
+                <span className="onboarding-budget-plus">+</span>
+              </button>
+            </div>
+            <div className="onboarding-navigation-wrapper">
+              <button className="onboarding-button-back" type="button" onClick={handleBack}>
+                Back
+              </button>
+              <button className="onboarding-button-next" type="button" onClick={handleBudgetNext}>
                 Next
               </button>
             </div>

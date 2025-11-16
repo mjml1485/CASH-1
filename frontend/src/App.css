@@ -1081,6 +1081,71 @@
   color: #2d3748;
 }
 
+.onboarding-title-budget {
+  font-size: 32px;
+  margin: 0 0 12px 0;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: 3px;
+  line-height: 1.2;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  white-space: normal;
+}
+
+.onboarding-budget-card-wrapper {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.onboarding-budget-card {
+  width: 200px;
+  height: 200px;
+  background: #f1f5f9;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.03);
+  padding: 0;
+  margin: 0;
+}
+
+.onboarding-budget-card:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e0;
+  transform: translateY(-2px);
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.onboarding-budget-card:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.onboarding-budget-plus {
+  font-size: 64px;
+  font-weight: 300;
+  color: #4a5568;
+  line-height: 1;
+  display: block;
+}
+
+.onboarding-budget-card:hover .onboarding-budget-plus {
+  color: #2d3748;
+}
+
 /* ADD WALLET PAGE */
 .wallet-page {
   display: flex;
@@ -2107,6 +2172,11 @@
     letter-spacing: 2px;
   }
 
+  .onboarding-title-budget {
+    font-size: 28px;
+    letter-spacing: 2px;
+  }
+
   .onboarding-subtitle-normal {
     font-size: 13px;
   }
@@ -2117,6 +2187,15 @@
   }
 
   .onboarding-wallet-plus {
+    font-size: 56px;
+  }
+
+  .onboarding-budget-card {
+    width: 180px;
+    height: 180px;
+  }
+
+  .onboarding-budget-plus {
     font-size: 56px;
   }
 
@@ -2227,6 +2306,11 @@
     letter-spacing: 1.5px;
   }
 
+  .onboarding-title-budget {
+    font-size: 24px;
+    letter-spacing: 1.5px;
+  }
+
   .onboarding-subtitle-normal {
     font-size: 12px;
   }
@@ -2237,6 +2321,15 @@
   }
 
   .onboarding-wallet-plus {
+    font-size: 48px;
+  }
+
+  .onboarding-budget-card {
+    width: 160px;
+    height: 160px;
+  }
+
+  .onboarding-budget-plus {
     font-size: 48px;
   }
 

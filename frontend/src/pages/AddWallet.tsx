@@ -138,6 +138,7 @@ export default function AddWallet() {
   };
 
   const handleSave = () => {
+    navigate('/onboarding', { state: { step: 'budget' } });
   };
 
   const handleAddCollaborator = () => {
