@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaChevronLeft, FaChevronDown, FaUsers, FaInfoCircle, FaCalendarAlt, FaTimes } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronDown, FaUsers, FaInfoCircle, FaCalendarAlt } from 'react-icons/fa';
 import type { Collaborator, Wallet } from '../utils/shared';
 import { 
   getDaysInMonth, 
@@ -8,6 +8,7 @@ import {
   formatDate, 
   triggerSelectDropdown 
 } from '../utils/shared';
+import CollaboratorModal from './CollaboratorModal';
 
 // CONSTANTS
 
@@ -59,7 +60,6 @@ export default function AddBudget() {
     description: false 
   });
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
-  const [collaboratorInput, setCollaboratorInput] = useState<string>('');
   const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
   const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
@@ -226,6 +226,8 @@ export default function AddBudget() {
     select.addEventListener('change', hideSelect, { once: true });
   };
 
+  const returnTo = location.state?.returnTo || '/onboarding/budget';
+
   const handleSave = () => {
     const budgetDataToPass = {
       walletName: selectedWallet,
@@ -241,27 +243,22 @@ export default function AddBudget() {
       isShared: isSharedBudget
     };
     
-    navigate('/onboarding', { 
+    navigate(returnTo, { 
       state: { 
-        step: 'budget',
         budgetData: budgetDataToPass,
         budgetIndex: editMode ? budgetIndex : undefined
       } 
     });
   };
 
-  const handleAddCollaborator = () => {
-    if (collaboratorInput.trim()) {
-      const input = collaboratorInput.trim();
-      const newCollaborator = {
-        id: Date.now().toString(),
-        name: input.includes('@') ? input.split('@')[0] : input,
-        email: input.includes('@') ? input : `${input}@example.com`,
-        role: 'Editor'
-      };
-      setCollaborators([...collaborators, newCollaborator]);
-      setCollaboratorInput('');
-    }
+  const handleAddCollaborator = (input: string) => {
+    const newCollaborator = {
+      id: Date.now().toString(),
+      name: input.includes('@') ? input.split('@')[0] : input,
+      email: input.includes('@') ? input : `${input}@example.com`,
+      role: 'Editor'
+    };
+    setCollaborators([...collaborators, newCollaborator]);
   };
 
   const handleRemoveCollaborator = (id: string) => {
@@ -272,12 +269,6 @@ export default function AddBudget() {
     setCollaborators(collaborators.map(c => 
       c.id === id ? { ...c, role: newRole } : c
     ));
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleAddCollaborator();
-    }
   };
 
   const handleDateSelect = (date: Date) => {
@@ -347,7 +338,7 @@ export default function AddBudget() {
           <button 
             className="budget-back" 
             type="button" 
-            onClick={() => navigate('/onboarding', { state: { step: 'budget' } })}
+            onClick={() => navigate(returnTo)}
           >
             <FaChevronLeft />
           </button>
@@ -642,92 +633,16 @@ export default function AddBudget() {
         </div>
       </div>
 
-      {/* Collaborator Modal */}
-      {showShareModal && isSharedBudget && (
-        <div className="budget-modal-overlay">
-          <div className="budget-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="budget-modal-header">
-              <h2>Manage Collaborators</h2>
-              <button 
-                type="button" 
-                className="budget-modal-close"
-                onClick={() => setShowShareModal(false)}
-              >
-                <FaTimes />
-              </button>
-            </div>
-            <div className="budget-modal-content">
-              <p className="budget-modal-subtitle">
-                Add people to share this budget with. Changes will reflect in both wallet and budget.
-              </p>
-              
-              <div className="budget-collaborator-input-wrapper">
-                <input
-                  type="text"
-                  placeholder="Enter name or email"
-                  value={collaboratorInput}
-                  onChange={(e) => setCollaboratorInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="budget-collaborator-input"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddCollaborator}
-                  className="budget-add-collaborator-btn"
-                  disabled={!collaboratorInput.trim()}
-                >
-                  Add
-                </button>
-              </div>
-
-              <div className="budget-collaborators-list-modal">
-                <div className="budget-collaborator-item-modal owner">
-                  <div className="budget-collaborator-info-modal">
-                    <span className="budget-collaborator-name-modal">You (Owner)</span>
-                    <span className="budget-collaborator-email-modal">Current User</span>
-                  </div>
-                  <span className="budget-collaborator-role-modal">Owner</span>
-                </div>
-
-                {collaborators.map((collaborator: Collaborator) => (
-                  <div key={collaborator.id} className="budget-collaborator-item-modal">
-                    <div className="budget-collaborator-info-modal">
-                      <span className="budget-collaborator-name-modal">{collaborator.name}</span>
-                      <span className="budget-collaborator-email-modal">{collaborator.email}</span>
-                    </div>
-                    <div className="budget-collaborator-actions">
-                      <select
-                        value={collaborator.role}
-                        onChange={(e) => handleRoleChange(collaborator.id, e.target.value)}
-                        className="budget-role-select"
-                      >
-                        <option value="Editor">Editor</option>
-                        <option value="Viewer">Viewer</option>
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCollaborator(collaborator.id)}
-                        className="budget-remove-btn"
-                        title="Remove collaborator"
-                      >
-                        <FaTimes />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowShareModal(false)}
-                className="budget-modal-done-btn"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CollaboratorModal
+        isOpen={showShareModal && isSharedBudget}
+        onClose={() => setShowShareModal(false)}
+        title="Budget Collaborators"
+        collaborators={collaborators}
+        onAddCollaborator={handleAddCollaborator}
+        onRemoveCollaborator={handleRemoveCollaborator}
+        onRoleChange={handleRoleChange}
+        variant="budget"
+      />
     </div>
   );
 }

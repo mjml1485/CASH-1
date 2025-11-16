@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FaChevronLeft, FaChevronDown, FaEye, FaEyeSlash, FaUsers } from 'react-icons/fa';
 import type { Collaborator } from '../utils/shared';
 import { CURRENCY_SYMBOLS, formatAmount, triggerSelectDropdown } from '../utils/shared';
+import CollaboratorModal from './CollaboratorModal';
 
 // CONSTANTS
 
@@ -34,6 +35,7 @@ export default function AddWallet() {
   const editMode = location.state?.editMode || false;
   const walletIndex = location.state?.walletIndex;
   const existingWallet = location.state?.walletData;
+  const returnTo = location.state?.returnTo || '/onboarding/wallet';
   
   const [walletName, setWalletName] = useState<string>('');
   const [walletBalance, setWalletBalance] = useState<string>('');
@@ -46,19 +48,10 @@ export default function AddWallet() {
   const [showBalance, setShowBalance] = useState<boolean>(true);
   const [hasInteracted, setHasInteracted] = useState<HasInteracted>({ name: false, balance: false, walletType: false });
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
-  const [collaboratorInput, setCollaboratorInput] = useState<string>('');
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   
   const selectedCurrency = localStorage.getItem('selectedCurrency') || 'PHP';
   const currencySymbol = CURRENCY_SYMBOLS[selectedCurrency] || '₱';
-
-  // Placeholder owner data
-  const owner = {
-    id: '1',
-    name: 'FirstName LastName',
-    email: 'useroneeeeeeeee@gmail.com',
-    role: 'Owner'
-  };
 
   useEffect(() => {
     if (editMode && existingWallet) {
@@ -143,27 +136,22 @@ export default function AddWallet() {
       template: selectedTemplate
     };
     
-    navigate('/onboarding', { 
+    navigate(returnTo, { 
       state: { 
-        step: 'wallet',
         walletData: walletDataToPass,
         walletIndex: editMode ? walletIndex : undefined
       } 
     });
   };
 
-  const handleAddCollaborator = () => {
-    if (collaboratorInput.trim()) {
-      const input = collaboratorInput.trim();
-      const newCollaborator = {
-        id: Date.now().toString(),
-        name: input.includes('@') ? input.split('@')[0] : input,
-        email: input.includes('@') ? input : `${input}@example.com`,
-        role: 'Editor'
-      };
-      setCollaborators([...collaborators, newCollaborator]);
-      setCollaboratorInput('');
-    }
+  const handleAddCollaborator = (input: string) => {
+    const newCollaborator = {
+      id: Date.now().toString(),
+      name: input.includes('@') ? input.split('@')[0] : input,
+      email: input.includes('@') ? input : `${input}@example.com`,
+      role: 'Editor'
+    };
+    setCollaborators([...collaborators, newCollaborator]);
   };
 
   const handleRemoveCollaborator = (id: string) => {
@@ -222,17 +210,11 @@ export default function AddWallet() {
     if (select) triggerSelectDropdown(select);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleAddCollaborator();
-    }
-  };
-
   return (
     <div className="wallet-page">
       <div className="wallet-container">
         <div className="wallet-header">
-          <button className="wallet-back" type="button" onClick={() => navigate('/onboarding', { state: { step: 'wallet' } })}>
+          <button className="wallet-back" type="button" onClick={() => navigate(returnTo)}>
             <FaChevronLeft />
           </button>
           <h1 className="wallet-title">Add Wallet</h1>
@@ -442,95 +424,16 @@ export default function AddWallet() {
         </div>
       </div>
 
-      {showShareModal && (
-        <div className="wallet-modal-overlay">
-          <div className="wallet-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="wallet-modal-title">Share '{walletName || 'Wallet Name'}'</h2>
-            
-            <div className="wallet-modal-input-wrapper">
-              <input
-                type="text"
-                className="wallet-modal-input"
-                placeholder="Add collaborators (email or username)"
-                value={collaboratorInput}
-                onChange={(e) => setCollaboratorInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-              />
-              {collaboratorInput.trim() && (
-                <button
-                  type="button"
-                  className="wallet-modal-add-btn"
-                  onClick={handleAddCollaborator}
-                >
-                  Add
-                </button>
-              )}
-            </div>
-
-            <div className="wallet-modal-section">
-              <h3 className="wallet-modal-section-title">People with access</h3>
-              
-              <div className="wallet-modal-person">
-                <div className="wallet-modal-person-avatar">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="16" cy="16" r="16" fill="#e2e8f0"/>
-                    <path d="M16 10C17.1046 10 18 10.8954 18 12C18 13.1046 17.1046 14 16 14C14.8954 14 14 13.1046 14 12C14 10.8954 14.8954 10 16 10Z" fill="#4a5568"/>
-                    <path d="M16 16C18.2091 16 20 14.2091 20 12C20 9.79086 18.2091 8 16 8C13.7909 8 12 9.79086 12 12C12 14.2091 13.7909 16 16 16Z" fill="#4a5568"/>
-                    <path d="M22 22C22 19.7909 20.2091 18 18 18H14C11.7909 18 10 19.7909 10 22V24H22V22Z" fill="#4a5568"/>
-                  </svg>
-                </div>
-                <div className="wallet-modal-person-info">
-                  <div className="wallet-modal-person-name">{owner.name}</div>
-                  <div className="wallet-modal-person-email">{owner.email}</div>
-                </div>
-                <div className="wallet-modal-person-role">{owner.role}</div>
-              </div>
-
-              {collaborators.map((collaborator) => (
-                <div key={collaborator.id} className="wallet-modal-person">
-                  <div className="wallet-modal-person-avatar">
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="16" cy="16" r="16" fill="#e2e8f0"/>
-                      <path d="M16 10C17.1046 10 18 10.8954 18 12C18 13.1046 17.1046 14 16 14C14.8954 14 14 13.1046 14 12C14 10.8954 14.8954 10 16 10Z" fill="#4a5568"/>
-                      <path d="M16 16C18.2091 16 20 14.2091 20 12C20 9.79086 18.2091 8 16 8C13.7909 8 12 9.79086 12 12C12 14.2091 13.7909 16 16 16Z" fill="#4a5568"/>
-                      <path d="M22 22C22 19.7909 20.2091 18 18 18H14C11.7909 18 10 19.7909 10 22V24H22V22Z" fill="#4a5568"/>
-                    </svg>
-                  </div>
-                  <div className="wallet-modal-person-info">
-                    <div className="wallet-modal-person-name">{collaborator.name}</div>
-                    <div className="wallet-modal-person-email">{collaborator.email}</div>
-                  </div>
-                  <div className="wallet-modal-person-role-select">
-                    <select
-                      value={collaborator.role}
-                      onChange={(e) => handleRoleChange(collaborator.id, e.target.value)}
-                      className="wallet-modal-role-dropdown"
-                    >
-                      <option value="Viewer">Viewer</option>
-                      <option value="Editor">Editor</option>
-                    </select>
-                    <FaChevronDown className="wallet-modal-role-arrow" />
-                  </div>
-                  <button
-                    className="wallet-modal-remove"
-                    type="button"
-                    onClick={() => handleRemoveCollaborator(collaborator.id)}
-                    title="Remove"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="wallet-modal-footer">
-              <button className="wallet-modal-done" type="button" onClick={() => setShowShareModal(false)}>
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CollaboratorModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        title={walletName || 'Wallet Name'}
+        collaborators={collaborators}
+        onAddCollaborator={handleAddCollaborator}
+        onRemoveCollaborator={handleRemoveCollaborator}
+        onRoleChange={handleRoleChange}
+        variant="wallet"
+      />
     </div>
   );
 }

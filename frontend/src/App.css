@@ -23,7 +23,9 @@
   75% { transform: translateX(4px); }
 }
 
-/* SIGN UP PAGE */
+/* ========================================
+   AUTH PAGES - SIGN UP
+   ======================================== */
 .sign-up-page {
 	display: flex;
 	align-items: center;
@@ -368,7 +370,9 @@
   width: 100%;
 }
 
-/* SIGN IN PAGE */
+/* ========================================
+   AUTH PAGES - SIGN IN
+   ======================================== */
 .sign-in-page {
   display: flex;
   align-items: center;
@@ -713,7 +717,9 @@
   width: 100%;
 }
 
-/* ONBOARDING PAGE */
+/* ========================================
+   ONBOARDING PAGES - WELCOME, CURRENCY, WALLET, BUDGET
+   ======================================== */
 .onboarding-page {
   display: flex;
   align-items: center;
@@ -1429,7 +1435,9 @@
   color: #2d3748;
 }
 
-/* ADD WALLET PAGE */
+/* ========================================
+   COMPONENTS - ADD WALLET
+   ======================================== */
 
 /* Page Container & Layout */
 .wallet-page {
@@ -2381,7 +2389,9 @@
   background: #a0aec0;
 }
 
-/* ADD BUDGET PAGE */
+/* ========================================
+   COMPONENTS - ADD BUDGET
+   ======================================== */
 
 /* Page Container & Layout */
 .budget-page {
@@ -3349,7 +3359,65 @@
   box-shadow: 0 6px 8px rgba(135, 206, 235, 0.4);
 }
 
-/* MEDIA QUERIES */
+/* ========================================
+   DASHBOARD PAGE
+   ======================================== */
+
+.dashboard-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(135, 206, 235, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(135, 206, 235, 0.06) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.dashboard-title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1a1a1a;
+  margin: 0;
+  letter-spacing: 1px;
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-welcome {
+  color: #666;
+  font-size: 1rem;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-coming-soon {
+  color: #999;
+  font-size: 0.9rem;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* ========================================
+   RESPONSIVE MEDIA QUERIES
+   ======================================== */
 @media (max-width: 1024px) {
   .wallet-content {
     grid-template-columns: 1fr;

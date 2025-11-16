@@ -3,20 +3,18 @@ import { useNavigate, Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import type { FormEvent } from 'react';
 
-export default function Signup() {
+export default function Signin() {
   const navigate = useNavigate();
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasInteracted, setHasInteracted] = useState({ name: false, email: false, password: false });
+  const [hasInteracted, setHasInteracted] = useState({ email: false, password: false });
 
   const validate = (): string | null => {
-    if (!name.trim()) return 'Name is required';
-    if (!email.includes('@') || !email.includes('.')) return 'Please enter a valid email';
-    if (password.length < 6) return 'Password must be at least 6 characters';
+    if (!email.trim()) return 'Please enter an email';
+    if (!password) return 'Please enter your password';
     return null;
   };
 
@@ -32,49 +30,26 @@ export default function Signup() {
 
     setSubmitting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      navigate('/onboarding');
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      navigate('/onboarding/welcome');
     } catch (err) {
-      setError('Signup failed. Please try again.');
+      setError('Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="sign-up-page">
-      <div className="sign-up-card">
-        <form className="sign-up-form" onSubmit={handleSubmit}>
-          <div className="sign-up-form-inner">
-            <div className="sign-up-header">
-              <h1 className="sign-up-title">CASH</h1>
-              <p className="sign-up-subtitle">CLOUD ACCESS SYNCHRONIZED HUB</p>
+    <div className="sign-in-page">
+      <div className="sign-in-card">
+        <form className="sign-in-form" onSubmit={handleSubmit}>
+          <div className="sign-in-form-inner">
+            <div className="sign-in-header">
+              <h1 className="sign-in-title">CASH</h1>
+              <p className="sign-in-subtitle">CLOUD ACCESS SYNCHRONIZED HUB</p>
             </div>
 
-            <label className="sign-up-label" htmlFor="name">
-              Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              placeholder={name || !hasInteracted.name ? 'Enter name' : ''}
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setHasInteracted(prev => ({ ...prev, name: true }));
-              }}
-              onFocus={() => setHasInteracted(prev => ({ ...prev, name: true }))}
-              onBlur={() => {
-                if (!name.trim()) {
-                  setHasInteracted(prev => ({ ...prev, name: false }));
-                }
-              }}
-              disabled={submitting}
-              autoComplete="name"
-              className="sign-up-input"
-            />
-
-            <label className="sign-up-label" htmlFor="email">
+            <label className="sign-in-label" htmlFor="email">
               Email
             </label>
             <input
@@ -94,19 +69,19 @@ export default function Signup() {
               }}
               disabled={submitting}
               autoComplete="email"
-              className="sign-up-input"
+              className="sign-in-input"
             />
 
-            <div className="sign-up-row-between">
-              <label className="sign-up-label" htmlFor="password">
+            <div className="sign-in-row-between">
+              <label className="sign-in-label" htmlFor="password">
                 Password
               </label>
-              <a className="sign-up-link-forgot" href="#" onClick={(e) => e.preventDefault()}>
-                Forgot ?
+              <a className="sign-in-link-forgot" href="#" onClick={(e) => e.preventDefault()}>
+                Forgot?
               </a>
             </div>
 
-            <div className="sign-up-wrapper-password">
+            <div className="sign-in-wrapper-password">
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
@@ -123,31 +98,31 @@ export default function Signup() {
                   }
                 }}
                 disabled={submitting}
-                autoComplete="new-password"
-                className="sign-up-input"
+                autoComplete="current-password"
+                className="sign-in-input"
               />
               <button
                 type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
                 aria-pressed={showPassword}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="sign-up-toggle-password"
+                className="sign-in-toggle-password"
+                onClick={() => setShowPassword((prev) => !prev)}
                 disabled={submitting}
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
 
-            {error && <div className="sign-up-error">{error}</div>}
+            {error && <div className="sign-in-error">{error}</div>}
 
-            <div className="sign-up-button-row">
-              <button className="sign-up-button-primary" disabled={submitting} type="submit">
-                {submitting ? 'Creating account...' : 'Create account'}
+            <div className="sign-in-button-row">
+              <button className="sign-in-button-primary" disabled={submitting} type="submit">
+                {submitting ? 'Signing in...' : 'Sign In'}
               </button>
             </div>
 
-            <div className="sign-up-footer">
-              Already Have An Account ? <Link to="/signin">Sign in</Link>
+            <div className="sign-in-footer">
+              Don't have an account yet? <Link to="/signup">Sign up</Link>
             </div>
           </div>
         </form>
