@@ -410,7 +410,6 @@ export default function AddBudget() {
                       value={category}
                       onChange={handleCategorySelect}
                       className="budget-select-hidden"
-                      style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
                     >
                       {BUDGET_CATEGORIES.map((cat) => (
                         <option key={cat} value={cat}>
@@ -433,7 +432,6 @@ export default function AddBudget() {
                       value={category}
                       onChange={handleCategorySelect}
                       className="budget-select-hidden"
-                      style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '100%', height: '100%' }}
                     >
                       {BUDGET_CATEGORIES.map((cat) => (
                         <option key={cat} value={cat}>
@@ -468,7 +466,6 @@ export default function AddBudget() {
                   value={period}
                   onChange={(e) => setPeriod(e.target.value)}
                   className="budget-select-hidden"
-                  style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '100%', height: '100%' }}
                 >
                   {BUDGET_PERIODS.map((p) => (
                     <option key={p} value={p}>
@@ -542,7 +539,7 @@ export default function AddBudget() {
                         }
                       }}
                     >
-                      <FaChevronDown style={{ transform: 'rotate(-90deg)' }} />
+                      <FaChevronDown className="calendar-nav-icon-right" />
                     </button>
                   </div>
                   <div className="calendar-weekdays">

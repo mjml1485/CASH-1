@@ -1,21 +1,53 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaChevronDown } from 'react-icons/fa';
+import { FaChevronDown, FaTimes } from 'react-icons/fa';
+import { formatAmount, CURRENCY_SYMBOLS } from '../utils/shared';
 
 export default function Onboarding() {
   const navigate = useNavigate();
   const location = useLocation();
   const [step, setStep] = useState<'welcome' | 'currency' | 'wallet' | 'budget'>('welcome');
-  const [walletData, setWalletData] = useState<any>(null);
+  const [wallets, setWallets] = useState<any[]>(() => {
+    const saved = sessionStorage.getItem('onboardingWallets');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [walletToDelete, setWalletToDelete] = useState<number | null>(null);
+  
+  useEffect(() => {
+    sessionStorage.setItem('onboardingWallets', JSON.stringify(wallets));
+  }, [wallets]);
   
   useEffect(() => {
     if (location.state?.step === 'wallet') {
       setStep('wallet');
+      if (location.state?.walletData) {
+        const newWallet = location.state.walletData;
+        
+        const currentSaved = sessionStorage.getItem('onboardingWallets');
+        const currentWallets = currentSaved ? JSON.parse(currentSaved) : [];
+        
+        const isDuplicate = currentWallets.some((w: any) => 
+          w.name === newWallet.name && 
+          w.balance === newWallet.balance && 
+          w.plan === newWallet.plan &&
+          w.walletType === newWallet.walletType
+        );
+        
+        if (!isDuplicate) {
+          setWallets(prev => {
+            const stateHasDuplicate = prev.some(w => 
+              w.name === newWallet.name && 
+              w.balance === newWallet.balance && 
+              w.plan === newWallet.plan &&
+              w.walletType === newWallet.walletType
+            );
+            return stateHasDuplicate ? prev : [...prev, newWallet];
+          });
+        }
+      }
     } else if (location.state?.step === 'budget') {
       setStep('budget');
-      if (location.state?.walletData) {
-        setWalletData(location.state.walletData);
-      }
     }
   }, [location.state]);
   const [currency, setCurrency] = useState(() => localStorage.getItem('selectedCurrency') || 'PHP');
@@ -40,9 +72,30 @@ export default function Onboarding() {
 
   const handleWalletNext = () => {
     setStep('budget');
+    sessionStorage.removeItem('onboardingWallets');
   };
 
   const handleBudgetNext = () => {
+  };
+
+  const handleDeleteWallet = (index: number) => {
+    setWalletToDelete(index);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteWallet = () => {
+    if (walletToDelete !== null) {
+      const updatedWallets = wallets.filter((_, i) => i !== walletToDelete);
+      setWallets(updatedWallets);
+      sessionStorage.setItem('onboardingWallets', JSON.stringify(updatedWallets));
+      setWalletToDelete(null);
+    }
+    setShowDeleteModal(false);
+  };
+
+  const cancelDeleteWallet = () => {
+    setWalletToDelete(null);
+    setShowDeleteModal(false);
   };
 
   if (step === 'welcome') {
@@ -114,6 +167,8 @@ export default function Onboarding() {
   }
 
   if (step === 'wallet') {
+    const currencySymbol = CURRENCY_SYMBOLS[currency] || '₱';
+    
     return (
       <div className="onboarding-page">
         <div className="onboarding-card">
@@ -123,6 +178,23 @@ export default function Onboarding() {
               <p className="onboarding-subtitle-normal">Just add your wallets, and we'll help you keep a clear view of your balances. It's easy as that!</p>
             </div>
             <div className="onboarding-wallet-card-wrapper">
+              {wallets.map((wallet, index) => (
+                <div key={index} className="onboarding-wallet-created-card">
+                  <button
+                    type="button"
+                    className="onboarding-wallet-delete-btn"
+                    onClick={() => handleDeleteWallet(index)}
+                  >
+                    <FaTimes />
+                  </button>
+                  <div className="onboarding-wallet-created-name">{wallet.name}</div>
+                  <div className="onboarding-wallet-created-balance">
+                    {currencySymbol}{formatAmount(wallet.balance)}
+                  </div>
+                  <div className="onboarding-wallet-created-type">{wallet.walletType || 'Wallet'}</div>
+                  <div className="onboarding-wallet-created-plan">{wallet.plan || 'Personal'}</div>
+                </div>
+              ))}
               <button
                 className="onboarding-wallet-card"
                 type="button"
@@ -141,6 +213,24 @@ export default function Onboarding() {
             </div>
           </div>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && (
+          <div className="onboarding-delete-modal-overlay" onClick={cancelDeleteWallet}>
+            <div className="onboarding-delete-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>Delete Wallet?</h3>
+              <p>Are you sure you want to delete this wallet? This action cannot be undone.</p>
+              <div className="onboarding-delete-modal-buttons">
+                <button className="onboarding-delete-cancel" onClick={cancelDeleteWallet}>
+                  Cancel
+                </button>
+                <button className="onboarding-delete-confirm" onClick={confirmDeleteWallet}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -159,7 +249,7 @@ export default function Onboarding() {
                 className="onboarding-budget-card"
                 type="button"
                 onClick={() => {
-                  navigate('/add-budget', { state: { walletData: walletData } });
+                  navigate('/add-budget', { state: { walletData: wallets[wallets.length - 1] } });
                 }}
               >
                 <span className="onboarding-budget-plus">+</span>

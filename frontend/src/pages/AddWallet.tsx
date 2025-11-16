@@ -35,7 +35,7 @@ export default function AddWallet() {
   const [walletType, setWalletType] = useState<string>('');
   const [customWalletType, setCustomWalletType] = useState<string>('');
   const [walletPlan, setWalletPlan] = useState<string>('');
-  const [backgroundColor, setBackgroundColor] = useState<string>('#87ceeb');
+  const [backgroundColor, setBackgroundColor] = useState<string>('#e2e8f0');
   const [textColor, setTextColor] = useState<string>('#1a1a1a');
   const [selectedTemplate, setSelectedTemplate] = useState<string>('Default');
   const [showBalance, setShowBalance] = useState<boolean>(true);
@@ -96,12 +96,13 @@ export default function AddWallet() {
       name: walletName,
       balance: walletBalance,
       plan: walletPlan,
+      walletType: customWalletType || walletType,
       collaborators: walletPlan === 'Shared' ? collaborators : []
     };
     
     navigate('/onboarding', { 
       state: { 
-        step: 'budget',
+        step: 'wallet',
         walletData: walletDataToPass
       } 
     });
