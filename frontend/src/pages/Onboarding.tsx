@@ -6,12 +6,16 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const location = useLocation();
   const [step, setStep] = useState<'welcome' | 'currency' | 'wallet' | 'budget'>('welcome');
+  const [walletData, setWalletData] = useState<any>(null);
   
   useEffect(() => {
     if (location.state?.step === 'wallet') {
       setStep('wallet');
     } else if (location.state?.step === 'budget') {
       setStep('budget');
+      if (location.state?.walletData) {
+        setWalletData(location.state.walletData);
+      }
     }
   }, [location.state]);
   const [currency, setCurrency] = useState(() => localStorage.getItem('selectedCurrency') || 'PHP');
@@ -39,7 +43,6 @@ export default function Onboarding() {
   };
 
   const handleBudgetNext = () => {
-    // Navigate to main app or dashboard
   };
 
   if (step === 'welcome') {
@@ -155,7 +158,9 @@ export default function Onboarding() {
               <button
                 className="onboarding-budget-card"
                 type="button"
-                onClick={() => {/* TODO: Add budget functionality */}}
+                onClick={() => {
+                  navigate('/add-budget', { state: { walletData: walletData } });
+                }}
               >
                 <span className="onboarding-budget-plus">+</span>
               </button>

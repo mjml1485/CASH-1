@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaChevronLeft, FaChevronDown, FaEye, FaEyeSlash, FaUsers } from 'react-icons/fa';
+import type { Collaborator } from '../utils/shared';
+import { CURRENCY_SYMBOLS, formatAmount, triggerSelectDropdown } from '../utils/shared';
 
-// Constants
+// CONSTANTS
+
 const WALLET_TEMPLATES = [
   { name: 'Default', bgColor: '#e2e8f0', textColor: '#1a1a1a' },
   { name: 'GCash', bgColor: '#0070f3', textColor: '#ffffff' },
@@ -15,26 +18,7 @@ const WALLET_TEMPLATES = [
 const WALLET_TYPES = ['Cash', 'E-Wallet', 'Bank', 'Savings Account', 'Insurance', 'Investment', 'Custom'] as const;
 const WALLET_PLANS = ['Personal', 'Shared'] as const;
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  PHP: '₱',
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  JPY: '¥',
-  AUD: 'A$',
-  CAD: 'C$',
-  CHF: 'CHF',
-  CNY: '¥',
-  INR: '₹',
-};
-
-// Types
-interface Collaborator {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+// TYPES
 
 interface HasInteracted {
   name: boolean;
@@ -42,37 +26,7 @@ interface HasInteracted {
   walletType: boolean;
 }
 
-// Utility Functions
-const formatAmount = (value: string): string => {
-  if (!value) return '0.00';
-  const parts = value.split('.');
-  const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  const decimalPart = parts[1] ? `.${parts[1]}` : '';
-  return integerPart + decimalPart;
-};
-
-const triggerSelectDropdown = (selectElement: HTMLSelectElement) => {
-  selectElement.style.pointerEvents = 'auto';
-  selectElement.style.opacity = '1';
-  selectElement.style.zIndex = '1000';
-  
-  if ('showPicker' in selectElement) {
-    (selectElement as any).showPicker();
-  } else {
-    (selectElement as HTMLSelectElement).focus();
-    const clickEvent = new MouseEvent('mousedown', { bubbles: true });
-    (selectElement as HTMLSelectElement).dispatchEvent(clickEvent);
-  }
-  
-  const hideSelect = () => {
-    selectElement.style.pointerEvents = 'none';
-    selectElement.style.opacity = '0';
-    selectElement.style.zIndex = '10';
-  };
-  
-  selectElement.addEventListener('blur', hideSelect, { once: true });
-  selectElement.addEventListener('change', hideSelect, { once: true });
-};
+// COMPONENT
 
 export default function AddWallet() {
   const navigate = useNavigate();
@@ -138,7 +92,19 @@ export default function AddWallet() {
   };
 
   const handleSave = () => {
-    navigate('/onboarding', { state: { step: 'budget' } });
+    const walletDataToPass = {
+      name: walletName,
+      balance: walletBalance,
+      plan: walletPlan,
+      collaborators: walletPlan === 'Shared' ? collaborators : []
+    };
+    
+    navigate('/onboarding', { 
+      state: { 
+        step: 'budget',
+        walletData: walletDataToPass
+      } 
+    });
   };
 
   const handleAddCollaborator = () => {
