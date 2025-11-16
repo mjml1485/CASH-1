@@ -1054,6 +1054,20 @@
     0 2px 4px rgba(0, 0, 0, 0.06);
   gap: 8px;
   position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.onboarding-wallet-created-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 8px 12px rgba(0, 0, 0, 0.15),
+    0 4px 6px rgba(0, 0, 0, 0.1);
+  border-color: #87ceeb;
+}
+
+.onboarding-wallet-created-card:active {
+  transform: translateY(-2px);
 }
 
 .onboarding-wallet-delete-btn {

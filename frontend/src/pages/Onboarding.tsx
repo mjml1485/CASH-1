@@ -23,27 +23,36 @@ export default function Onboarding() {
       setStep('wallet');
       if (location.state?.walletData) {
         const newWallet = location.state.walletData;
+        const editIndex = location.state.walletIndex;
         
-        const currentSaved = sessionStorage.getItem('onboardingWallets');
-        const currentWallets = currentSaved ? JSON.parse(currentSaved) : [];
-        
-        const isDuplicate = currentWallets.some((w: any) => 
-          w.name === newWallet.name && 
-          w.balance === newWallet.balance && 
-          w.plan === newWallet.plan &&
-          w.walletType === newWallet.walletType
-        );
-        
-        if (!isDuplicate) {
+        if (editIndex !== undefined && editIndex !== null) {
           setWallets(prev => {
-            const stateHasDuplicate = prev.some(w => 
-              w.name === newWallet.name && 
-              w.balance === newWallet.balance && 
-              w.plan === newWallet.plan &&
-              w.walletType === newWallet.walletType
-            );
-            return stateHasDuplicate ? prev : [...prev, newWallet];
+            const updated = [...prev];
+            updated[editIndex] = newWallet;
+            return updated;
           });
+        } else {
+          const currentSaved = sessionStorage.getItem('onboardingWallets');
+          const currentWallets = currentSaved ? JSON.parse(currentSaved) : [];
+          
+          const isDuplicate = currentWallets.some((w: any) => 
+            w.name === newWallet.name && 
+            w.balance === newWallet.balance && 
+            w.plan === newWallet.plan &&
+            w.walletType === newWallet.walletType
+          );
+          
+          if (!isDuplicate) {
+            setWallets(prev => {
+              const stateHasDuplicate = prev.some(w => 
+                w.name === newWallet.name && 
+                w.balance === newWallet.balance && 
+                w.plan === newWallet.plan &&
+                w.walletType === newWallet.walletType
+              );
+              return stateHasDuplicate ? prev : [...prev, newWallet];
+            });
+          }
         }
       }
     } else if (location.state?.step === 'budget') {
@@ -179,11 +188,18 @@ export default function Onboarding() {
             </div>
             <div className="onboarding-wallet-card-wrapper">
               {wallets.map((wallet, index) => (
-                <div key={index} className="onboarding-wallet-created-card">
+                <div 
+                  key={index} 
+                  className="onboarding-wallet-created-card"
+                  onClick={() => navigate('/add-wallet', { state: { editMode: true, walletIndex: index, walletData: wallet } })}
+                >
                   <button
                     type="button"
                     className="onboarding-wallet-delete-btn"
-                    onClick={() => handleDeleteWallet(index)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteWallet(index);
+                    }}
                   >
                     <FaTimes />
                   </button>

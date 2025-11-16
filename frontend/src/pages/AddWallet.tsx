@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaChevronLeft, FaChevronDown, FaEye, FaEyeSlash, FaUsers } from 'react-icons/fa';
 import type { Collaborator } from '../utils/shared';
 import { CURRENCY_SYMBOLS, formatAmount, triggerSelectDropdown } from '../utils/shared';
@@ -30,6 +30,11 @@ interface HasInteracted {
 
 export default function AddWallet() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const editMode = location.state?.editMode || false;
+  const walletIndex = location.state?.walletIndex;
+  const existingWallet = location.state?.walletData;
+  
   const [walletName, setWalletName] = useState<string>('');
   const [walletBalance, setWalletBalance] = useState<string>('');
   const [walletType, setWalletType] = useState<string>('');
@@ -56,13 +61,49 @@ export default function AddWallet() {
   };
 
   useEffect(() => {
-    if (walletPlan === 'Shared') {
-      setShowShareModal(true);
-    } else {
-      setShowShareModal(false);
-      setCollaborators([]);
+    if (editMode && existingWallet) {
+      setWalletName(existingWallet.name || '');
+      setWalletBalance(existingWallet.balance || '');
+      setWalletPlan(existingWallet.plan || '');
+      
+      const predefinedTypes = ['Cash', 'E-Wallet', 'Bank', 'Savings Account', 'Insurance', 'Investment'];
+      if (predefinedTypes.includes(existingWallet.walletType)) {
+        setWalletType(existingWallet.walletType);
+        setCustomWalletType('');
+      } else {
+        setWalletType('Custom');
+        setCustomWalletType(existingWallet.walletType || '');
+      }
+      
+      if (existingWallet.backgroundColor) {
+        setBackgroundColor(existingWallet.backgroundColor);
+      }
+      if (existingWallet.textColor) {
+        setTextColor(existingWallet.textColor);
+      }
+      if (existingWallet.template) {
+        setSelectedTemplate(existingWallet.template);
+      }
+      
+      if (existingWallet.collaborators && existingWallet.collaborators.length > 0) {
+        setCollaborators(existingWallet.collaborators);
+      }
+      
+      setHasInteracted({ name: true, balance: true, walletType: true });
     }
-  }, [walletPlan]);
+  }, [editMode, existingWallet]);
+
+  useEffect(() => {
+    if (walletPlan === 'Shared' && !editMode) {
+      setShowShareModal(true);
+    } else if (walletPlan === 'Personal') {
+      setShowShareModal(false);
+      // Only clear collaborators if not in edit mode
+      if (!editMode) {
+        setCollaborators([]);
+      }
+    }
+  }, [walletPlan, editMode]);
 
   const handleBalanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/[^0-9.]/g, '');
@@ -97,13 +138,17 @@ export default function AddWallet() {
       balance: walletBalance,
       plan: walletPlan,
       walletType: customWalletType || walletType,
-      collaborators: walletPlan === 'Shared' ? collaborators : []
+      collaborators: walletPlan === 'Shared' ? collaborators : [],
+      backgroundColor: backgroundColor,
+      textColor: textColor,
+      template: selectedTemplate
     };
     
     navigate('/onboarding', { 
       state: { 
         step: 'wallet',
-        walletData: walletDataToPass
+        walletData: walletDataToPass,
+        walletIndex: editMode ? walletIndex : undefined
       } 
     });
   };
@@ -342,6 +387,7 @@ export default function AddWallet() {
                     className="wallet-select-hidden"
                     style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '100%', height: '100%' }}
                   >
+                    <option value="">Select plan</option>
                     {WALLET_PLANS.map((plan) => (
                       <option key={plan} value={plan}>
                         {plan}
@@ -401,7 +447,7 @@ export default function AddWallet() {
       </div>
 
       {showShareModal && (
-        <div className="wallet-modal-overlay" onClick={() => setShowShareModal(false)}>
+        <div className="wallet-modal-overlay">
           <div className="wallet-modal" onClick={(e) => e.stopPropagation()}>
             <h2 className="wallet-modal-title">Share '{walletName || 'Wallet Name'}'</h2>
             

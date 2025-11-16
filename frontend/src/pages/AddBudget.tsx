@@ -594,7 +594,7 @@ export default function AddBudget() {
 
       {/* Collaborator Modal */}
       {showShareModal && isSharedBudget && (
-        <div className="budget-modal-overlay" onClick={() => setShowShareModal(false)}>
+        <div className="budget-modal-overlay">
           <div className="budget-modal" onClick={(e) => e.stopPropagation()}>
             <div className="budget-modal-header">
               <h2>Manage Collaborators</h2>
