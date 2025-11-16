@@ -98,7 +98,6 @@ export default function AddWallet() {
       setShowShareModal(true);
     } else if (walletPlan === 'Personal') {
       setShowShareModal(false);
-      // Only clear collaborators if not in edit mode
       if (!editMode) {
         setCollaborators([]);
       }
@@ -304,7 +303,6 @@ export default function AddWallet() {
                         value={walletType}
                         onChange={handleWalletTypeSelect}
                         className="wallet-select-hidden"
-                        style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
                       >
                         {WALLET_TYPES.map((type) => (
                           <option key={type} value={type}>
@@ -322,7 +320,6 @@ export default function AddWallet() {
                         value={walletType} 
                         onChange={handleWalletTypeSelect}
                         className="wallet-select-hidden"
-                        style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '100%', height: '100%' }}
                       >
                         {WALLET_TYPES.map((type) => (
                           <option key={type} value={type}>
@@ -385,9 +382,8 @@ export default function AddWallet() {
                     value={walletPlan} 
                     onChange={(e) => setWalletPlan(e.target.value)}
                     className="wallet-select-hidden"
-                    style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '100%', height: '100%' }}
                   >
-                    <option value="">Select plan</option>
+                    <option value="" disabled hidden>Select plan</option>
                     {WALLET_PLANS.map((plan) => (
                       <option key={plan} value={plan}>
                         {plan}

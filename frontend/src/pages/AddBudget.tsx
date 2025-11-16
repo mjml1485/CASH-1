@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaChevronLeft, FaChevronDown, FaUsers, FaInfoCircle, FaCalendarAlt, FaTimes } from 'react-icons/fa';
 import type { Collaborator, Wallet } from '../utils/shared';
@@ -36,14 +36,19 @@ export default function AddBudget() {
   const navigate = useNavigate();
   const location = useLocation();
   
-  const walletData = location.state?.walletData;
-  const hasWalletData = !!walletData;
+  const editMode = location.state?.editMode || false;
+  const budgetIndex = location.state?.budgetIndex;
+  const existingBudget = location.state?.budgetData;
   
-  const isSharedBudget = walletData ? walletData.plan === 'Shared' : false;
+  const savedWallets = sessionStorage.getItem('onboardingWallets');
+  const availableWallets: Wallet[] = savedWallets ? JSON.parse(savedWallets) : [];
+  
+  const hasSharedWallet = availableWallets.some(w => w.plan === 'Shared');
   
   // State
-  const [selectedWallet, setSelectedWallet] = useState<string>(hasWalletData && walletData.name ? walletData.name : '');
-  const [budgetAmount, setBudgetAmount] = useState<string>(hasWalletData && walletData.balance ? walletData.balance : '');
+  const [selectedWallet, setSelectedWallet] = useState<string>('');
+  const [selectedWalletData, setSelectedWalletData] = useState<Wallet | null>(null);
+  const [budgetAmount, setBudgetAmount] = useState<string>('');
   const [category, setCategory] = useState<string>('');
   const [customCategory, setCustomCategory] = useState<string>('');
   const [period, setPeriod] = useState<string>('Monthly');
@@ -58,16 +63,52 @@ export default function AddBudget() {
   const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
   const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
-  const [collaborators, setCollaborators] = useState<Collaborator[]>(hasWalletData && walletData.collaborators ? walletData.collaborators : []);
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [calendarMonth, setCalendarMonth] = useState<number>(new Date().getMonth());
   const [calendarYear, setCalendarYear] = useState<number>(new Date().getFullYear());
 
-  const availableWallets: Wallet[] = [];
+  const isSharedBudget = selectedWalletData?.plan === 'Shared';
 
   const dateRange = customStartDate && customEndDate 
     ? { startDate: customStartDate, endDate: customEndDate }
     : calculateDateRange(period);
   const { startDate, endDate } = dateRange;
+
+  useEffect(() => {
+    if (!editMode && !hasSharedWallet && availableWallets.length > 0) {
+      setSelectedWalletData({ plan: 'Personal' } as Wallet);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (editMode && existingBudget) {
+      setSelectedWallet(existingBudget.walletName || '');
+      
+      const wallet = availableWallets.find(w => w.name === existingBudget.walletName);
+      if (wallet) {
+        setSelectedWalletData(wallet);
+      }
+      
+      setBudgetAmount(existingBudget.amount || '');
+      setCategory(existingBudget.category || '');
+      setCustomCategory(existingBudget.customCategory || '');
+      setPeriod(existingBudget.period || 'Monthly');
+      setDescription(existingBudget.description || '');
+      
+      if (existingBudget.startDate) {
+        setCustomStartDate(new Date(existingBudget.startDate));
+      }
+      if (existingBudget.endDate) {
+        setCustomEndDate(new Date(existingBudget.endDate));
+      }
+      
+      if (existingBudget.collaborators && existingBudget.collaborators.length > 0) {
+        setCollaborators(existingBudget.collaborators);
+      }
+      
+      setHasInteracted({ amount: true, category: true, description: true });
+    }
+  }, [editMode, existingBudget]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/[^0-9.]/g, '');
@@ -186,11 +227,27 @@ export default function AddBudget() {
   };
 
   const handleSave = () => {
-    navigate('/onboarding', { state: { step: 'budget' } });
-  };
-
-  const handleCreateNewSharedWallet = () => {
-    navigate('/add-wallet', { state: { forceShared: true } });
+    const budgetDataToPass = {
+      walletName: selectedWallet,
+      walletPlan: selectedWalletData?.plan || 'Personal',
+      amount: budgetAmount,
+      category: customCategory || category,
+      customCategory: customCategory,
+      period: period,
+      description: description,
+      startDate: customStartDate,
+      endDate: customEndDate,
+      collaborators: isSharedBudget ? collaborators : [],
+      isShared: isSharedBudget
+    };
+    
+    navigate('/onboarding', { 
+      state: { 
+        step: 'budget',
+        budgetData: budgetDataToPass,
+        budgetIndex: editMode ? budgetIndex : undefined
+      } 
+    });
   };
 
   const handleAddCollaborator = () => {
@@ -299,12 +356,12 @@ export default function AddBudget() {
 
         <div className="budget-content">
           <div className="budget-form">
-            {/* Shared Wallet Selection */}
-            {isSharedBudget && (
+            {/* Wallet Selection */}
+            {hasSharedWallet && (
               <div className="budget-field">
                 <div className="budget-label-with-icon">
-                  <label>Shared Wallet</label>
-                  {hasWalletData && (
+                  <label>Select Wallet</label>
+                  {isSharedBudget && (
                     <button
                       type="button"
                       className="budget-shared-icon"
@@ -319,57 +376,50 @@ export default function AddBudget() {
                     </button>
                   )}
                 </div>
-                {hasWalletData ? (
-                  <div className="budget-wallet-display">
-                    {selectedWallet}
-                  </div>
-                ) : (
-                  <div className="budget-select">
-                    <div 
-                      className="budget-select-display"
-                      onClick={(e) => {
-                        const parent = e.currentTarget.parentElement;
-                        if (!parent) return;
-                        const select = parent.querySelector('select');
-                        if (select) triggerSelectDropdown(select);
-                      }}
+                <div className="budget-select">
+                  <div 
+                    className="budget-select-display"
+                    onClick={(e) => {
+                      const parent = e.currentTarget.parentElement;
+                      if (!parent) return;
+                      const select = parent.querySelector('select');
+                      if (select) triggerSelectDropdown(select);
+                    }}
+                  >
+                    <span>
+                      {selectedWallet || 'Select Wallet'}
+                    </span>
+                    <button 
+                      type="button"
+                      onClick={(e) => handleDropdownClick(e, 'wallet')}
+                      className="budget-select-arrow"
                     >
-                      <span>
-                        {selectedWallet 
-                          ? availableWallets.find(w => w.id === selectedWallet)?.name 
-                          : 'Select Shared Wallet'}
-                      </span>
-                      <button 
-                        type="button"
-                        onClick={(e) => handleDropdownClick(e, 'wallet')}
-                        className="budget-select-arrow"
-                      >
-                        <FaChevronDown />
-                      </button>
-                    </div>
-                    <select
-                      value={selectedWallet}
-                      onChange={(e) => {
-                        if (e.target.value === 'create-new') {
-                          handleCreateNewSharedWallet();
-                        } else {
-                          setSelectedWallet(e.target.value);
-                        }
-                      }}
-                      className="budget-select-hidden"
-                    >
-                      <option value="">Select Shared Wallet</option>
-                      {availableWallets.map((wallet) => (
-                        <option key={wallet.id} value={wallet.id}>
-                          {wallet.name}
-                        </option>
-                      ))}
-                      {availableWallets.length === 0 && (
-                        <option value="create-new">Create New Shared Wallet</option>
-                      )}
-                    </select>
+                      <FaChevronDown />
+                    </button>
                   </div>
-                )}
+                  <select
+                    value={selectedWallet}
+                    onChange={(e) => {
+                      const walletName = e.target.value;
+                      setSelectedWallet(walletName);
+                      const wallet = availableWallets.find(w => w.name === walletName);
+                      setSelectedWalletData(wallet || null);
+                      if (wallet?.plan === 'Shared' && wallet.collaborators) {
+                        setCollaborators(wallet.collaborators);
+                      } else {
+                        setCollaborators([]);
+                      }
+                    }}
+                    className="budget-select-hidden"
+                  >
+                    <option value="">Select Wallet</option>
+                    {availableWallets.map((wallet, index) => (
+                      <option key={index} value={wallet.name}>
+                        {wallet.name} ({wallet.plan})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
 
