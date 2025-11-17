@@ -49,6 +49,9 @@ export default function AddWallet() {
   const [hasInteracted, setHasInteracted] = useState<HasInteracted>({ name: false, balance: false, walletType: false });
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [showPlanChangeModal, setShowPlanChangeModal] = useState<boolean>(false);
+  const [pendingPlan, setPendingPlan] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   
   const selectedCurrency = localStorage.getItem('selectedCurrency') || 'PHP';
   const currencySymbol = CURRENCY_SYMBOLS[selectedCurrency] || '₱';
@@ -124,24 +127,55 @@ export default function AddWallet() {
     setTextColor(template.textColor);
   };
 
+  const validateWallet = () => {
+    const missing: string[] = [];
+    const nextErrors: Record<string, string> = {};
+    if (!walletName.trim()) { missing.push('Wallet Name'); nextErrors.name = 'Wallet name is required.'; }
+    if (!walletBalance.trim()) { missing.push('Wallet Balance'); nextErrors.balance = 'Wallet balance is required.'; }
+    if (!walletType && !customWalletType.trim()) { missing.push('Wallet Type'); nextErrors.walletType = 'Please select a wallet type.'; }
+    if (!walletPlan) { missing.push('Wallet Plan'); nextErrors.walletPlan = 'Please select a wallet plan.'; }
+    setErrors(nextErrors);
+    return missing;
+  };
+
   const handleSave = () => {
+    const missing = validateWallet();
+    if (missing.length > 0) return;
     const walletDataToPass = {
+      id: editMode && existingWallet?.id ? existingWallet.id : Date.now().toString(),
       name: walletName,
       balance: walletBalance,
       plan: walletPlan,
+      type: customWalletType || walletType,
       walletType: customWalletType || walletType,
       collaborators: walletPlan === 'Shared' ? collaborators : [],
       backgroundColor: backgroundColor,
       textColor: textColor,
+      color1: backgroundColor,
+      color2: backgroundColor,
       template: selectedTemplate
     };
-    
-    navigate(returnTo, { 
-      state: { 
-        walletData: walletDataToPass,
-        walletIndex: editMode ? walletIndex : undefined
-      } 
-    });
+
+    if (returnTo === '/dashboard') {
+      const existingWallets = sessionStorage.getItem('wallets');
+      let wallets = existingWallets ? JSON.parse(existingWallets) : [];
+
+      if (editMode && walletIndex !== undefined) {
+        wallets[walletIndex] = walletDataToPass;
+      } else {
+        wallets.push(walletDataToPass);
+      }
+
+      sessionStorage.setItem('wallets', JSON.stringify(wallets));
+      navigate(returnTo);
+    } else {
+      navigate(returnTo, { 
+        state: { 
+          walletData: walletDataToPass,
+          walletIndex: editMode ? walletIndex : undefined
+        } 
+      });
+    }
   };
 
   const handleAddCollaborator = (input: string) => {
@@ -162,6 +196,60 @@ export default function AddWallet() {
     setCollaborators(collaborators.map(c => 
       c.id === id ? { ...c, role: newRole } : c
     ));
+  };
+
+  const handlePlanChange = (newPlan: string) => {
+    if (walletPlan === 'Shared' && newPlan === 'Personal') {
+      const hasCollabs = collaborators.length > 0;
+      let hasLinkedBudgets = false;
+      if (returnTo === '/dashboard' && editMode && existingWallet?.name) {
+        const raw = sessionStorage.getItem('budgets');
+        const budgets = raw ? JSON.parse(raw) : [];
+        hasLinkedBudgets = budgets.some((b: any) => b.wallet === existingWallet.name && b.plan === 'Shared');
+      }
+      if (hasCollabs || hasLinkedBudgets) {
+        setPendingPlan('Personal');
+        setShowPlanChangeModal(true);
+        return;
+      }
+    }
+    if (walletPlan === 'Personal' && newPlan === 'Shared') {
+      setPendingPlan('Shared');
+      setShowPlanChangeModal(true);
+      return;
+    }
+    setWalletPlan(newPlan);
+    if (newPlan === 'Personal') {
+      setCollaborators([]);
+    }
+  };
+
+  const confirmPlanChange = () => {
+    setShowPlanChangeModal(false);
+    if (pendingPlan === 'Personal') {
+      setWalletPlan('Personal');
+      setCollaborators([]);
+      if (returnTo === '/dashboard' && editMode && existingWallet?.name) {
+        const raw = sessionStorage.getItem('budgets');
+        const budgets = raw ? JSON.parse(raw) : [];
+        const updated = budgets.map((b: any) => {
+          if (b.wallet === existingWallet.name) {
+            return { ...b, plan: 'Personal', wallet: 'Personal Wallets', collaborators: [] };
+          }
+          return b;
+        });
+        sessionStorage.setItem('budgets', JSON.stringify(updated));
+      }
+    } else if (pendingPlan === 'Shared') {
+      setWalletPlan('Shared');
+      setShowShareModal(true);
+    }
+    setPendingPlan(null);
+  };
+
+  const cancelPlanChange = () => {
+    setShowPlanChangeModal(false);
+    setPendingPlan(null);
   };
 
   const handleWalletTypeSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -196,18 +284,18 @@ export default function AddWallet() {
       setHasInteracted(prev => ({ ...prev, walletType: false }));
       
       setTimeout(() => {
-        const parent = e.currentTarget.parentElement;
-        if (!parent) return;
-        const select = parent.querySelector('select');
-        if (select) triggerSelectDropdown(select);
+        const wrapper = (e.currentTarget as HTMLElement).closest('.wallet-select');
+        if (!wrapper) return;
+        const select = wrapper.querySelector('select');
+        if (select) triggerSelectDropdown(select as HTMLSelectElement);
       }, 50);
       return;
     }
     
-    const parent = e.currentTarget.parentElement;
-    if (!parent) return;
-    const select = parent.querySelector('select');
-    if (select) triggerSelectDropdown(select);
+    const wrapper = (e.currentTarget as HTMLElement).closest('.wallet-select');
+    if (!wrapper) return;
+    const select = wrapper.querySelector('select');
+    if (select) triggerSelectDropdown(select as HTMLSelectElement);
   };
 
   return (
@@ -217,7 +305,7 @@ export default function AddWallet() {
           <button className="wallet-back" type="button" onClick={() => navigate(returnTo)}>
             <FaChevronLeft />
           </button>
-          <h1 className="wallet-title">Add Wallet</h1>
+          <h1 className="wallet-title">{editMode ? 'Edit Wallet' : 'Add Wallet'}</h1>
         </div>
 
         <div className="wallet-content">
@@ -242,14 +330,16 @@ export default function AddWallet() {
                   type="text"
                   placeholder={walletName || !hasInteracted.name ? 'Enter wallet name' : ''}
                   value={walletName}
-                  onChange={handleNameChange}
+                  onChange={(e) => { setErrors(prev => ({...prev, name: ''})); handleNameChange(e); }}
                   onFocus={() => setHasInteracted(prev => ({ ...prev, name: true }))}
                   onBlur={() => {
                     if (!walletName.trim()) {
                       setHasInteracted(prev => ({ ...prev, name: false }));
                     }
                   }}
+                  className={errors.name ? 'input-error' : ''}
                 />
+                {errors.name && <div className="error-text">{errors.name}</div>}
               </div>
               <div className="wallet-field">
                 <label>Wallet Balance</label>
@@ -258,14 +348,16 @@ export default function AddWallet() {
                   inputMode="decimal"
                   placeholder={walletBalance || !hasInteracted.balance ? '0.00' : ''}
                   value={walletBalance}
-                  onChange={handleBalanceChange}
+                  onChange={(e) => { setErrors(prev => ({...prev, balance: ''})); handleBalanceChange(e); }}
                   onFocus={() => setHasInteracted(prev => ({ ...prev, balance: true }))}
                   onBlur={() => {
                     if (!walletBalance.trim()) {
                       setHasInteracted(prev => ({ ...prev, balance: false }));
                     }
                   }}
+                  className={errors.balance ? 'input-error' : ''}
                 />
+                {errors.balance && <div className="error-text">{errors.balance}</div>}
               </div>
               <div className="wallet-field">
                 <label>Wallet Type</label>
@@ -274,7 +366,7 @@ export default function AddWallet() {
                     <>
                       <input
                         type="text"
-                        className="wallet-select-input"
+                        className={`wallet-select-input ${errors.walletType ? 'input-error' : ''}`}
                         placeholder={!customWalletType.trim() ? 'Custom' : ''}
                         value={customWalletType}
                         onChange={handleCustomWalletTypeChange}
@@ -295,14 +387,20 @@ export default function AddWallet() {
                     </>
                   ) : (
                     <>
-                      <div className="wallet-select-display" onClick={(e) => e.preventDefault()}>
-                        {walletType || 'Select type'}
+                      <div 
+                        className={`wallet-select-display ${errors.walletType ? 'input-error' : ''}`}
+                        onClick={(e) => e.preventDefault()}
+                      >
+                        <span className={walletType ? '' : 'placeholder-text'}>
+                          {walletType || 'Select type'}
+                        </span>
                       </div>
                       <select 
                         value={walletType} 
-                        onChange={handleWalletTypeSelect}
+                        onChange={(e) => { setErrors(prev => ({...prev, walletType: ''})); handleWalletTypeSelect(e); }}
                         className="wallet-select-hidden"
                       >
+                        <option value="" disabled hidden>Select type</option>
                         {WALLET_TYPES.map((type) => (
                           <option key={type} value={type}>
                             {type}
@@ -320,6 +418,7 @@ export default function AddWallet() {
                     <FaChevronDown className="wallet-arrow" />
                   </button>
                 </div>
+                {errors.walletType && <div className="error-text">{errors.walletType}</div>}
               </div>
             </div>
           </div>
@@ -357,12 +456,37 @@ export default function AddWallet() {
                   )}
                 </div>
                 <div className="wallet-select">
-                  <div className="wallet-select-display" onClick={(e) => e.preventDefault()}>
-                    {walletPlan || 'Select plan'}
+                  <div 
+                    className={`wallet-select-display ${errors.walletPlan ? 'input-error' : ''}`}
+                    onClick={(e) => {
+                      const parent = e.currentTarget.parentElement;
+                      if (!parent) return;
+                      const select = parent.querySelector('select');
+                      if (select) triggerSelectDropdown(select);
+                    }}
+                  >
+                    <span>
+                      {walletPlan || 'Select plan'}
+                    </span>
+                    <button
+                      type="button"
+                      className="wallet-arrow-button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const parent = e.currentTarget.closest('.wallet-select');
+                        if (!parent) return;
+                        const select = parent.querySelector('select');
+                        if (select) triggerSelectDropdown(select);
+                      }}
+                      aria-label="Change wallet plan"
+                    >
+                      <FaChevronDown className="wallet-arrow" />
+                    </button>
                   </div>
                   <select 
                     value={walletPlan} 
-                    onChange={(e) => setWalletPlan(e.target.value)}
+                    onChange={(e) => { setErrors(prev => ({...prev, walletPlan: ''})); handlePlanChange(e.target.value); }}
                     className="wallet-select-hidden"
                   >
                     <option value="" disabled hidden>Select plan</option>
@@ -372,22 +496,8 @@ export default function AddWallet() {
                       </option>
                     ))}
                   </select>
-                  <button
-                    type="button"
-                    className="wallet-arrow-button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const parent = e.currentTarget.parentElement;
-                      if (!parent) return;
-                      const select = parent.querySelector('select');
-                      if (select) triggerSelectDropdown(select);
-                    }}
-                    aria-label="Change wallet plan"
-                  >
-                    <FaChevronDown className="wallet-arrow" />
-                  </button>
                 </div>
+                {errors.walletPlan && <div className="error-text">{errors.walletPlan}</div>}
               </div>
               <div className="wallet-colors">
                 <div className="wallet-field">
@@ -434,6 +544,23 @@ export default function AddWallet() {
         onRoleChange={handleRoleChange}
         variant="wallet"
       />
+
+      {showPlanChangeModal && (
+        <div className="wallet-modal-overlay" role="dialog" aria-modal="true">
+          <div className="wallet-modal">
+            <h3 className="wallet-modal-title">{pendingPlan === 'Shared' ? 'Convert to Shared?' : 'Convert to Personal?'}</h3>
+            <p className="wallet-confirm-text">
+              {pendingPlan === 'Shared'
+                ? 'Switching this wallet to Shared lets you add collaborators. Personal budgets are unaffected; new budgets under this wallet can be shared.'
+                : 'Switching this wallet to Personal will remove collaborators and convert its shared budgets to personal budgets linked to all personal wallets. This action cannot be undone.'}
+            </p>
+            <div className="wallet-confirm-actions">
+              <button type="button" className="wallet-modal-btn" onClick={confirmPlanChange}>Confirm</button>
+              <button type="button" className="wallet-modal-btn secondary" onClick={cancelPlanChange}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

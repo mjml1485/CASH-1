@@ -62,8 +62,36 @@ export default function Budget() {
   };
 
   const handleNext = () => {
+    const onboardingWallets = sessionStorage.getItem('onboardingWallets');
+    const onboardingBudgets = sessionStorage.getItem('onboardingBudgets');
+    
+    if (onboardingWallets) {
+      const walletsData = JSON.parse(onboardingWallets);
+      const formattedWallets = walletsData.map((wallet: any, index: number) => ({
+        ...wallet,
+        id: wallet.id || `wallet-${Date.now()}-${index}`,
+        type: wallet.walletType || wallet.type,
+        color1: wallet.backgroundColor || wallet.color1,
+        color2: wallet.backgroundColor || wallet.color2
+      }));
+      sessionStorage.setItem('wallets', JSON.stringify(formattedWallets));
+    }
+    
+    if (onboardingBudgets) {
+      const budgetsData = JSON.parse(onboardingBudgets);
+      const formattedBudgets = budgetsData.map((budget: any, index: number) => ({
+        ...budget,
+        id: budget.id || `budget-${Date.now()}-${index}`,
+        wallet: budget.walletName || budget.wallet,
+        plan: budget.walletPlan || budget.plan,
+        left: budget.amount
+      }));
+      sessionStorage.setItem('budgets', JSON.stringify(formattedBudgets));
+    }
+    
     sessionStorage.removeItem('onboardingWallets');
     sessionStorage.removeItem('onboardingBudgets');
+    
     navigate('/dashboard');
   };
 
@@ -117,7 +145,15 @@ export default function Budget() {
                   {currencySymbol}{formatAmount(budget.amount)}
                 </div>
                 <div className="onboarding-budget-created-period">{budget.period}</div>
-                <div className="onboarding-budget-created-wallet">{budget.walletName || 'No wallet'}</div>
+                <div className="onboarding-budget-created-wallet">
+                  {(() => {
+                    const plan = budget.walletPlan || budget.plan;
+                    const name = budget.walletName || budget.wallet;
+                    if (plan === 'Shared') return 'Shared';
+                    if (plan === 'Personal') return 'Personal';
+                    return name || 'Personal';
+                  })()}
+                </div>
               </div>
             ))}
             <button

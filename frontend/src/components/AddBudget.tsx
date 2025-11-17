@@ -40,11 +40,26 @@ export default function AddBudget() {
   const editMode = location.state?.editMode || false;
   const budgetIndex = location.state?.budgetIndex;
   const existingBudget = location.state?.budgetData;
+  const budgetPlan = location.state?.budgetPlan;
+  const returnTo = location.state?.returnTo || '/onboarding/budget';
+
+  const getWallets = () => {
+    if (returnTo === '/dashboard') {
+      const dashboardWallets = sessionStorage.getItem('wallets');
+      return dashboardWallets ? JSON.parse(dashboardWallets) : [];
+    } else {
+      const onboardingWallets = sessionStorage.getItem('onboardingWallets');
+      return onboardingWallets ? JSON.parse(onboardingWallets) : [];
+    }
+  };
   
-  const savedWallets = sessionStorage.getItem('onboardingWallets');
-  const availableWallets: Wallet[] = savedWallets ? JSON.parse(savedWallets) : [];
+  const allWallets: Wallet[] = getWallets();
   
-  const hasSharedWallet = availableWallets.some(w => w.plan === 'Shared');
+  const hasWalletSelectionDashboard = returnTo === '/dashboard' && allWallets.some(w => w.plan === 'Shared');
+  const sharedWallets = allWallets.filter(w => w.plan === 'Shared');
+  const personalWalletsExist = allWallets.some(w => w.plan === 'Personal');
+  const hasWalletSelectionShared = budgetPlan === 'Shared' && sharedWallets.length > 1;
+  const showWalletSelection = hasWalletSelectionDashboard || hasWalletSelectionShared;
   
   // State
   const [selectedWallet, setSelectedWallet] = useState<string>('');
@@ -66,6 +81,9 @@ export default function AddBudget() {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [calendarMonth, setCalendarMonth] = useState<number>(new Date().getMonth());
   const [calendarYear, setCalendarYear] = useState<number>(new Date().getFullYear());
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showWalletChangeModal, setShowWalletChangeModal] = useState<boolean>(false);
+  const [pendingWalletName, setPendingWalletName] = useState<string>('');
 
   const isSharedBudget = selectedWalletData?.plan === 'Shared';
 
@@ -73,25 +91,54 @@ export default function AddBudget() {
     ? { startDate: customStartDate, endDate: customEndDate }
     : calculateDateRange(period);
   const { startDate, endDate } = dateRange;
+  const validateBudget = () => {
+    const missing: string[] = [];
+    const nextErrors: Record<string, string> = {};
+    if (showWalletSelection && !selectedWallet) { missing.push('Wallet'); nextErrors.wallet = 'Please select a wallet.'; }
+    if (!budgetAmount.trim()) { missing.push('Budget Amount'); nextErrors.amount = 'Budget amount is required.'; }
+    if (!(customCategory || category)) { missing.push('Category'); nextErrors.category = 'Please select a category.'; }
+    if (!period) { missing.push('Period'); nextErrors.period = 'Please select a period.'; }
+    setErrors(nextErrors);
+    return missing;
+  };
+
 
   useEffect(() => {
-    if (!editMode && !hasSharedWallet && availableWallets.length > 0) {
-      setSelectedWalletData({ plan: 'Personal' } as Wallet);
+    if (!editMode) {
+      if (budgetPlan) {
+        if (budgetPlan === 'Personal') {
+          setSelectedWallet('Personal Wallets');
+          setSelectedWalletData({ plan: 'Personal' } as Wallet);
+        } else if (budgetPlan === 'Shared' && sharedWallets.length === 1) {
+          const wallet = sharedWallets[0];
+          setSelectedWallet(wallet.name);
+          setSelectedWalletData(wallet);
+          if (wallet.collaborators) setCollaborators(wallet.collaborators);
+        }
+      } else {
+        if (!allWallets.some(w => w.plan === 'Shared') && personalWalletsExist) {
+          setSelectedWallet('Personal Wallets');
+          setSelectedWalletData({ plan: 'Personal' } as Wallet);
+        }
+      }
     }
   }, []);
 
   useEffect(() => {
     if (editMode && existingBudget) {
-      setSelectedWallet(existingBudget.walletName || '');
+      const walletName = existingBudget.wallet || '';
+      setSelectedWallet(walletName);
       
-      const wallet = availableWallets.find(w => w.name === existingBudget.walletName);
+      const wallet = allWallets.find((w: Wallet) => w.name === walletName);
       if (wallet) {
         setSelectedWalletData(wallet);
+      } else if (!walletName && (existingBudget.plan === 'Personal' || budgetPlan === 'Personal')) {
+        setSelectedWallet('Personal Wallets');
+        setSelectedWalletData({ plan: 'Personal' } as Wallet);
       }
       
       setBudgetAmount(existingBudget.amount || '');
       setCategory(existingBudget.category || '');
-      setCustomCategory(existingBudget.customCategory || '');
       setPeriod(existingBudget.period || 'Monthly');
       setDescription(existingBudget.description || '');
       
@@ -161,34 +208,7 @@ export default function AddBudget() {
         const parent = e.currentTarget.parentElement;
         if (!parent) return;
         const select = parent.querySelector('select') as HTMLSelectElement | null;
-        if (!select) return;
-        
-        select.style.pointerEvents = 'auto';
-        select.style.opacity = '1';
-        select.style.zIndex = '1000';
-        
-        if ('showPicker' in HTMLSelectElement.prototype) {
-          try {
-            (select as any).showPicker();
-          } catch (error) {
-            select.focus();
-            const clickEvent = new MouseEvent('mousedown', { bubbles: true });
-            select.dispatchEvent(clickEvent);
-          }
-        } else {
-          select.focus();
-          const clickEvent = new MouseEvent('mousedown', { bubbles: true });
-          select.dispatchEvent(clickEvent);
-        }
-        
-        const hideSelect = () => {
-          select.style.pointerEvents = 'none';
-          select.style.opacity = '0';
-          select.style.zIndex = '10';
-        };
-        
-        select.addEventListener('blur', hideSelect, { once: true });
-        select.addEventListener('change', hideSelect, { once: true });
+        if (select) triggerSelectDropdown(select);
       }, 50);
       return;
     }
@@ -196,59 +216,46 @@ export default function AddBudget() {
     const parent = e.currentTarget.parentElement;
     if (!parent) return;
     const select = parent.querySelector('select') as HTMLSelectElement | null;
-    if (!select) return;
-    
-    select.style.pointerEvents = 'auto';
-    select.style.opacity = '1';
-    select.style.zIndex = '1000';
-    
-    if ('showPicker' in HTMLSelectElement.prototype) {
-      try {
-        (select as any).showPicker();
-      } catch (error) {
-        select.focus();
-        const clickEvent = new MouseEvent('mousedown', { bubbles: true });
-        select.dispatchEvent(clickEvent);
-      }
-    } else {
-      select.focus();
-      const clickEvent = new MouseEvent('mousedown', { bubbles: true });
-      select.dispatchEvent(clickEvent);
-    }
-    
-    const hideSelect = () => {
-      select.style.pointerEvents = 'none';
-      select.style.opacity = '0';
-      select.style.zIndex = '10';
-    };
-    
-    select.addEventListener('blur', hideSelect, { once: true });
-    select.addEventListener('change', hideSelect, { once: true });
+    if (select) triggerSelectDropdown(select);
   };
 
-  const returnTo = location.state?.returnTo || '/onboarding/budget';
-
   const handleSave = () => {
+    const missing = validateBudget();
+    if (missing.length > 0) return;
     const budgetDataToPass = {
-      walletName: selectedWallet,
-      walletPlan: selectedWalletData?.plan || 'Personal',
+      id: editMode && existingBudget?.id ? existingBudget.id : Date.now().toString(),
+      wallet: selectedWallet,
+      plan: selectedWalletData?.plan || 'Personal',
       amount: budgetAmount,
       category: customCategory || category,
-      customCategory: customCategory,
       period: period,
       description: description,
       startDate: customStartDate,
       endDate: customEndDate,
-      collaborators: isSharedBudget ? collaborators : [],
-      isShared: isSharedBudget
+      left: editMode && existingBudget?.left ? existingBudget.left : budgetAmount,
+      collaborators: isSharedBudget ? collaborators : []
     };
     
-    navigate(returnTo, { 
-      state: { 
-        budgetData: budgetDataToPass,
-        budgetIndex: editMode ? budgetIndex : undefined
-      } 
-    });
+    if (returnTo === '/dashboard') {
+      const existingBudgets = sessionStorage.getItem('budgets');
+      let budgets = existingBudgets ? JSON.parse(existingBudgets) : [];
+      
+      if (editMode && budgetIndex !== undefined) {
+        budgets[budgetIndex] = budgetDataToPass;
+      } else {
+        budgets.push(budgetDataToPass);
+      }
+      
+      sessionStorage.setItem('budgets', JSON.stringify(budgets));
+      navigate(returnTo);
+    } else {
+      navigate(returnTo, { 
+        state: { 
+          budgetData: budgetDataToPass,
+          budgetIndex: editMode ? budgetIndex : undefined
+        } 
+      });
+    }
   };
 
   const handleAddCollaborator = (input: string) => {
@@ -331,6 +338,30 @@ export default function AddBudget() {
     return days;
   };
 
+  const confirmWalletChange = () => {
+    const walletName = pendingWalletName;
+    if (!walletName) {
+      setShowWalletChangeModal(false);
+      return;
+    }
+    setSelectedWallet(walletName);
+    if (walletName === 'Personal Wallets') {
+      setSelectedWalletData({ plan: 'Personal' } as Wallet);
+      setCollaborators([]);
+    } else {
+      const wallet = allWallets.find(w => w.name === walletName);
+      setSelectedWalletData(wallet || null);
+      if (wallet?.collaborators) setCollaborators(wallet.collaborators); else setCollaborators([]);
+    }
+    setPendingWalletName('');
+    setShowWalletChangeModal(false);
+  };
+
+  const cancelWalletChange = () => {
+    setPendingWalletName('');
+    setShowWalletChangeModal(false);
+  };
+
   return (
     <div className="budget-page">
       <div className="budget-container">
@@ -342,26 +373,33 @@ export default function AddBudget() {
           >
             <FaChevronLeft />
           </button>
-          <h1 className="budget-title">Add Budget</h1>
+          <h1 className="budget-title">{editMode ? 'Edit Budget' : 'Add Budget'}</h1>
         </div>
 
         <div className="budget-content">
           <div className="budget-form">
             {/* Wallet Selection */}
-            {hasSharedWallet && (
+            {showWalletSelection && (
               <div className="budget-field">
                 <div className="budget-label-with-icon">
                   <label>Select Wallet</label>
-                  {isSharedBudget && (
+                  {(isSharedBudget || sharedWallets.length > 0) && (
                     <button
                       type="button"
                       className="budget-shared-icon"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        setShowShareModal(true);
+                        if (selectedWalletData?.plan === 'Shared') {
+                          setShowShareModal(true);
+                        } else {
+                          const parent = (e.currentTarget as HTMLElement).closest('.budget-select');
+                          if (!parent) return;
+                          const select = parent.querySelector('select') as HTMLSelectElement | null;
+                          if (select) triggerSelectDropdown(select);
+                        }
                       }}
-                      title="Manage Collaborators"
+                      title={selectedWalletData?.plan === 'Shared' ? 'Manage Collaborators' : 'Select a shared wallet to manage collaborators'}
                     >
                       <FaUsers />
                     </button>
@@ -369,7 +407,7 @@ export default function AddBudget() {
                 </div>
                 <div className="budget-select">
                   <div 
-                    className="budget-select-display"
+                    className={`budget-select-display ${errors.wallet ? 'input-error' : ''}`}
                     onClick={(e) => {
                       const parent = e.currentTarget.parentElement;
                       if (!parent) return;
@@ -378,7 +416,7 @@ export default function AddBudget() {
                     }}
                   >
                     <span>
-                      {selectedWallet || 'Select Wallet'}
+                      {selectedWallet || (budgetPlan === 'Shared' ? 'Select Shared Wallet' : 'Select Wallet')}
                     </span>
                     <button 
                       type="button"
@@ -392,24 +430,67 @@ export default function AddBudget() {
                     value={selectedWallet}
                     onChange={(e) => {
                       const walletName = e.target.value;
+                      setErrors(prev => ({...prev, wallet: ''}));
+                      if (selectedWallet && walletName !== selectedWallet) {
+                        setPendingWalletName(walletName);
+                        setShowWalletChangeModal(true);
+                        return;
+                      }
                       setSelectedWallet(walletName);
-                      const wallet = availableWallets.find(w => w.name === walletName);
-                      setSelectedWalletData(wallet || null);
-                      if (wallet?.plan === 'Shared' && wallet.collaborators) {
-                        setCollaborators(wallet.collaborators);
-                      } else {
+                      if (walletName === 'Personal Wallets') {
+                        setSelectedWalletData({ plan: 'Personal' } as Wallet);
                         setCollaborators([]);
+                      } else {
+                        const wallet = allWallets.find(w => w.name === walletName);
+                        setSelectedWalletData(wallet || null);
+                        if (wallet?.collaborators) setCollaborators(wallet.collaborators); else setCollaborators([]);
                       }
                     }}
                     className="budget-select-hidden"
                   >
-                    <option value="">Select Wallet</option>
-                    {availableWallets.map((wallet, index) => (
+                    <option value="" disabled hidden>{returnTo === '/dashboard' ? 'Select Wallet' : (budgetPlan === 'Shared' ? 'Select Shared Wallet' : 'Select Wallet')}</option>
+                    {returnTo === '/dashboard' && personalWalletsExist && (
+                      <option value="Personal Wallets">Personal Wallets</option>
+                    )}
+                    {sharedWallets.map((wallet, index) => (
                       <option key={index} value={wallet.name}>
-                        {wallet.name} ({wallet.plan})
+                        {wallet.name}
                       </option>
                     ))}
                   </select>
+                </div>
+                {errors.wallet && <div className="error-text">{errors.wallet}</div>}
+              </div>
+            )}
+
+            {!showWalletSelection && (budgetPlan === 'Shared' || isSharedBudget) && (
+              <div className="budget-field">
+                <div className="budget-label-with-icon">
+                  <label>Selected Wallet</label>
+                  <button
+                    type="button"
+                    className="budget-shared-icon"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowShareModal(true);
+                    }}
+                    title="Manage Collaborators"
+                  >
+                    <FaUsers />
+                  </button>
+                </div>
+                <div className="budget-wallet-display">
+                  {selectedWallet || (sharedWallets.length === 1 ? sharedWallets[0]?.name : 'Shared Wallet')}
+                </div>
+              </div>
+            )}
+
+            {budgetPlan === 'Personal' && !showWalletSelection && (
+              <div className="budget-field">
+                <label>Wallet Type</label>
+                <div className="budget-wallet-display">
+                  Personal Wallets
                 </div>
               </div>
             )}
@@ -422,14 +503,16 @@ export default function AddBudget() {
                 inputMode="decimal"
                 placeholder={budgetAmount || !hasInteracted.amount ? '0.00' : ''}
                 value={budgetAmount}
-                onChange={handleAmountChange}
+                onChange={(e) => { setErrors(prev => ({...prev, amount: ''})); handleAmountChange(e); }}
                 onFocus={() => setHasInteracted(prev => ({ ...prev, amount: true }))}
                 onBlur={() => {
                   if (!budgetAmount.trim()) {
                     setHasInteracted(prev => ({ ...prev, amount: false }));
                   }
                 }}
+                className={errors.amount ? 'input-error' : ''}
               />
+              {errors.amount && <div className="error-text">{errors.amount}</div>}
             </div>
 
             {/* Category */}
@@ -440,7 +523,7 @@ export default function AddBudget() {
                   <>
                     <input
                       type="text"
-                      className="budget-select-input"
+                      className={`budget-select-input ${errors.category ? 'input-error' : ''}`}
                       placeholder="Custom"
                       value={customCategory}
                       onChange={handleCustomCategoryChange}
@@ -449,7 +532,7 @@ export default function AddBudget() {
                     />
                     <select
                       value={category}
-                      onChange={handleCategorySelect}
+                      onChange={(e) => { setErrors(prev => ({...prev, category: ''})); handleCategorySelect(e); }}
                       className="budget-select-hidden"
                     >
                       {BUDGET_CATEGORIES.map((cat) => (
@@ -462,7 +545,7 @@ export default function AddBudget() {
                 ) : (
                   <>
                     <div 
-                      className="budget-select-display"
+                      className={`budget-select-display ${errors.category ? 'input-error' : ''}`}
                       onClick={(e) => e.preventDefault()}
                     >
                       <span className={category ? '' : 'placeholder-text'}>
@@ -471,9 +554,10 @@ export default function AddBudget() {
                     </div>
                     <select
                       value={category}
-                      onChange={handleCategorySelect}
+                      onChange={(e) => { setErrors(prev => ({...prev, category: ''})); handleCategorySelect(e); }}
                       className="budget-select-hidden"
                     >
+                      <option value="" disabled hidden>Select category</option>
                       {BUDGET_CATEGORIES.map((cat) => (
                         <option key={cat} value={cat}>
                           {cat}
@@ -482,6 +566,7 @@ export default function AddBudget() {
                     </select>
                   </>
                 )}
+                {errors.category && <div className="error-text">{errors.category}</div>}
                 <button
                   type="button"
                   className="budget-select-arrow"
@@ -643,6 +728,41 @@ export default function AddBudget() {
         onRoleChange={handleRoleChange}
         variant="budget"
       />
+
+      {showWalletChangeModal && (
+        <div className="wallet-modal-overlay">
+          <div className="wallet-modal">
+            {(() => {
+              const currentPlan = selectedWalletData?.plan || (selectedWallet === 'Personal Wallets' ? 'Personal' : undefined);
+              const nextPlan = pendingWalletName === 'Personal Wallets'
+                ? 'Personal'
+                : (allWallets.find(w => w.name === pendingWalletName)?.plan || 'Personal');
+              const title = nextPlan === 'Shared' && currentPlan === 'Personal' ? 'Convert to Shared Budget?' :
+                            nextPlan === 'Personal' && currentPlan === 'Shared' ? 'Convert to Personal Budget?' :
+                            'Change Selected Wallet?';
+              const body = nextPlan === 'Shared' && currentPlan === 'Personal'
+                ? "This will convert the budget to a shared budget tied to the selected shared wallet. Collaborators from that wallet will be applied."
+                : nextPlan === 'Personal' && currentPlan === 'Shared'
+                  ? "This will convert the budget to a personal budget linked to all personal wallets. Collaborators will be removed."
+                  : "Changing the wallet will update the budget's collaborators to match the selected wallet.";
+              return (
+                <>
+                  <h3>{title}</h3>
+                  <p className="wallet-confirm-text">{body}</p>
+                </>
+              );
+            })()}
+            <div className="wallet-confirm-actions">
+              <button type="button" className="wallet-modal-btn wallet-modal-btn-secondary" onClick={cancelWalletChange}>
+                Cancel
+              </button>
+              <button type="button" className="wallet-modal-btn wallet-modal-btn-primary" onClick={confirmWalletChange}>
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
