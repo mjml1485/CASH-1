@@ -167,6 +167,24 @@ export default function AddWallet() {
       }
 
       sessionStorage.setItem('wallets', JSON.stringify(wallets));
+
+      try {
+        const rawBudgets = sessionStorage.getItem('budgets');
+        if (rawBudgets) {
+          const budgets = JSON.parse(rawBudgets);
+          const targetNames = new Set<string>([
+            walletName,
+            ...(editMode && existingWallet?.name && existingWallet.name !== walletName ? [existingWallet.name] : [])
+          ]);
+          const updatedBudgets = budgets.map((b: any) => {
+            if (b.plan === 'Shared' && targetNames.has(b.wallet)) {
+              return { ...b, collaborators };
+            }
+            return b;
+          });
+          sessionStorage.setItem('budgets', JSON.stringify(updatedBudgets));
+        }
+      } catch {}
       navigate(returnTo);
     } else {
       navigate(returnTo, { 

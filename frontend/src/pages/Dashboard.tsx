@@ -114,8 +114,7 @@ export default function Dashboard() {
                     <div className="dashboard-wallet-header">
                       <span className="dashboard-wallet-label">Balance</span>
                       <button 
-                        className="dashboard-wallet-eye" 
-                        style={{ color: wallet.textColor || '#ffffff' }}
+                        className="dashboard-wallet-eye"
                         onClick={(e) => {
                           e.stopPropagation();
                           setHiddenWallets(prev => {
@@ -173,7 +172,11 @@ export default function Dashboard() {
               </div>
             ) : (
               <>
-                {budgets.map((budget, index) => (
+                {budgets.map((budget, index) => {
+                  const derivedPlan: 'Personal' | 'Shared' = budget.plan
+                    ? budget.plan
+                    : (wallets.some(w => w.name === budget.wallet && w.plan === 'Shared') ? 'Shared' : 'Personal');
+                  return (
                   <div 
                     key={budget.id} 
                     className="dashboard-budget-card"
@@ -184,7 +187,7 @@ export default function Dashboard() {
                           editMode: true,
                           budgetIndex: index,
                           budgetData: budget,
-                          budgetPlan: budget.plan || 'Personal'
+                          budgetPlan: derivedPlan
                         }
                       });
                     }}
@@ -194,17 +197,21 @@ export default function Dashboard() {
                       {CURRENCY_SYMBOLS[currency]} {formatAmount(budget.left || budget.amount)}
                     </div>
                     <div className="dashboard-budget-left">left</div>
-                    <div className="dashboard-budget-progress">
-                      <div
-                        className="dashboard-budget-progress-bar"
-                        style={{
-                          width: `${((parseFloat(budget.left || budget.amount) / parseFloat(budget.amount)) * 100)}%`,
-                        }}
-                      ></div>
-                    </div>
-                    <div className="dashboard-budget-plan">{budget.plan || 'Personal'}</div>
+                    {(() => {
+                      const amount = parseFloat(budget.amount || '0') || 0;
+                      const left = parseFloat(budget.left || budget.amount || '0') || 0;
+                      const pct = amount > 0 ? Math.min(Math.max((left / amount) * 100, 0), 100) : 0;
+                      const pctStep = Math.round(pct / 5) * 5; 
+                      const widthClass = `progress-w-${pctStep}`;
+                      return (
+                        <div className="dashboard-progress-pill">
+                          <div className={`dashboard-progress-remaining ${widthClass}`} />
+                          <div className="dashboard-progress-label">{derivedPlan}</div>
+                        </div>
+                      );
+                    })()}
                   </div>
-                ))}
+                );})}
                 <button
                   className="dashboard-add-card"
                   onClick={handleNavigateAddBudget}

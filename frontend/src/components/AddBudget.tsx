@@ -58,8 +58,9 @@ export default function AddBudget() {
   const hasWalletSelectionDashboard = returnTo === '/dashboard' && allWallets.some(w => w.plan === 'Shared');
   const sharedWallets = allWallets.filter(w => w.plan === 'Shared');
   const personalWalletsExist = allWallets.some(w => w.plan === 'Personal');
+  const hasWalletSelectionOnboarding = returnTo !== '/dashboard' && sharedWallets.length > 0;
   const hasWalletSelectionShared = budgetPlan === 'Shared' && sharedWallets.length > 1;
-  const showWalletSelection = hasWalletSelectionDashboard || hasWalletSelectionShared;
+  const showWalletSelection = !editMode && (hasWalletSelectionDashboard || hasWalletSelectionOnboarding || hasWalletSelectionShared);
   
   // State
   const [selectedWallet, setSelectedWallet] = useState<string>('');
@@ -222,6 +223,14 @@ export default function AddBudget() {
   const handleSave = () => {
     const missing = validateBudget();
     if (missing.length > 0) return;
+    const newAmountNum = parseFloat(budgetAmount || '0') || 0;
+    const prevAmountNum = parseFloat(existingBudget?.amount || '0') || 0;
+    const prevLeftNum = parseFloat(existingBudget?.left ?? existingBudget?.amount ?? '0') || 0;
+    const previouslySpent = Math.max(prevAmountNum - prevLeftNum, 0);
+    const recalculatedLeftNum = Math.max(newAmountNum - previouslySpent, 0);
+    const nextLeft = (editMode
+      ? recalculatedLeftNum
+      : newAmountNum).toFixed(2);
     const budgetDataToPass = {
       id: editMode && existingBudget?.id ? existingBudget.id : Date.now().toString(),
       wallet: selectedWallet,
@@ -232,7 +241,7 @@ export default function AddBudget() {
       description: description,
       startDate: customStartDate,
       endDate: customEndDate,
-      left: editMode && existingBudget?.left ? existingBudget.left : budgetAmount,
+      left: nextLeft,
       collaborators: isSharedBudget ? collaborators : []
     };
     
@@ -240,13 +249,45 @@ export default function AddBudget() {
       const existingBudgets = sessionStorage.getItem('budgets');
       let budgets = existingBudgets ? JSON.parse(existingBudgets) : [];
       
-      if (editMode && budgetIndex !== undefined) {
-        budgets[budgetIndex] = budgetDataToPass;
+      if (editMode) {
+        if (budgetIndex !== undefined) {
+          budgets[budgetIndex] = budgetDataToPass;
+        } else {
+          const idx = budgets.findIndex((b: any) => b.id === budgetDataToPass.id);
+          if (idx >= 0) budgets[idx] = budgetDataToPass; else budgets.push(budgetDataToPass);
+        }
       } else {
         budgets.push(budgetDataToPass);
       }
       
       sessionStorage.setItem('budgets', JSON.stringify(budgets));
+
+      if (selectedWalletData?.plan === 'Shared' && selectedWallet) {
+        try {
+          const rawWallets = sessionStorage.getItem('wallets');
+          if (rawWallets) {
+            const wallets = JSON.parse(rawWallets);
+            const updatedWallets = wallets.map((w: any) => {
+              if (w.name === selectedWallet && w.plan === 'Shared') {
+                return { ...w, collaborators };
+              }
+              return w;
+            });
+            sessionStorage.setItem('wallets', JSON.stringify(updatedWallets));
+          }
+          const syncBudgetsRaw = sessionStorage.getItem('budgets');
+          if (syncBudgetsRaw) {
+            const all = JSON.parse(syncBudgetsRaw);
+            const updated = all.map((b: any) => {
+              if (b.plan === 'Shared' && b.wallet === selectedWallet) {
+                return { ...b, collaborators };
+              }
+              return b;
+            });
+            sessionStorage.setItem('budgets', JSON.stringify(updated));
+          }
+        } catch {}
+      }
       navigate(returnTo);
     } else {
       navigate(returnTo, { 
@@ -449,7 +490,7 @@ export default function AddBudget() {
                     className="budget-select-hidden"
                   >
                     <option value="" disabled hidden>{returnTo === '/dashboard' ? 'Select Wallet' : (budgetPlan === 'Shared' ? 'Select Shared Wallet' : 'Select Wallet')}</option>
-                    {returnTo === '/dashboard' && personalWalletsExist && (
+                    {personalWalletsExist && (
                       <option value="Personal Wallets">Personal Wallets</option>
                     )}
                     {sharedWallets.map((wallet, index) => (
