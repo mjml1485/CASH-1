@@ -12,6 +12,7 @@ import Dashboard from './navigation/Dashboard';
 import Personal from './navigation/Personal';
 import Shared from './navigation/Shared';
 import Achievements from './navigation/Achievements';
+import Profile from './navigation/Profile';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
             <Route path="/personal" element={<Personal />} />
             <Route path="/shared" element={<Shared />} />
             <Route path="/achievements" element={<Achievements />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </main>
       </BrowserRouter>

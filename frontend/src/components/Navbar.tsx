@@ -1,4 +1,5 @@
 import { FaBell, FaUser } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 interface NavbarProps {
   activePage: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements';
@@ -6,6 +7,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ activePage, onPageChange }: NavbarProps) {
+  const navigate = useNavigate();
   return (
     <nav className="navbar">
       <div className="navbar-brand">CASH</div>
@@ -40,7 +42,7 @@ export default function Navbar({ activePage, onPageChange }: NavbarProps) {
           <FaBell />
           <span className="navbar-badge">1</span>
         </button>
-        <button className="navbar-icon" aria-label="Profile">
+        <button className="navbar-icon" aria-label="Profile" onClick={() => navigate('/profile')}>
           <FaUser />
         </button>
       </div>

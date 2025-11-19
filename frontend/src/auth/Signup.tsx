@@ -33,6 +33,13 @@ export default function Signup() {
     setSubmitting(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 700));
+      
+      sessionStorage.setItem('currentUser', JSON.stringify({
+        name,
+        email,
+        joinedDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      }));
+      
       navigate('/onboarding/welcome');
     } catch (err) {
       setError('Signup failed. Please try again.');
