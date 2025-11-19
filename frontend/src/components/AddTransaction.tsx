@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useAppState } from '../state/AppStateContext';
 import { triggerSelectDropdown } from '../utils/shared';
 import { FaTimes, FaTrash, FaChevronDown } from 'react-icons/fa';
 
@@ -13,6 +14,12 @@ export interface Transaction {
   walletFrom: string; 
   walletTo?: string; 
   description?: string;
+  createdById?: string;
+  createdByName?: string;
+  createdAtISO?: string;
+  updatedById?: string;
+  updatedByName?: string;
+  updatedAtISO?: string;
 }
 
 interface Wallet { name: string; plan: 'Personal' | 'Shared'; balance: string; }
@@ -23,13 +30,14 @@ interface Props {
   onClose: () => void;
   defaultWallet?: string; 
   editTx?: Transaction | null;
-  onDeleted?: (id: string) => void;
+  onDeleted?: (tx: Transaction) => void;
   onSaved?: (tx: Transaction) => void; 
 }
 
 const TRANSACTION_BASE_CATEGORIES = ['Food','Shopping','Bills','Car','Custom'] as const;
 
 export default function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onSaved }: Props) {
+  const { currentUser } = useAppState();
   const [type, setType] = useState<TxType>('Expense');
   const [amount, setAmount] = useState<string>('');
   const [dateISO, setDateISO] = useState<string>('');
@@ -42,6 +50,24 @@ export default function AddTransaction({ isOpen, onClose, defaultWallet, editTx,
 
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const activeWallet = useMemo(() => wallets.find(w => w.name === walletFrom), [walletFrom, wallets]);
+  const isSharedWallet = activeWallet?.plan === 'Shared';
+
+  const formatAuditStamp = (iso?: string) => {
+    if (!iso) return 'Not recorded';
+    try {
+      return new Intl.DateTimeFormat(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      }).format(new Date(iso));
+    } catch {
+      return iso;
+    }
+  };
+
 
   useEffect(() => {
     if (isOpen) {
@@ -52,8 +78,17 @@ export default function AddTransaction({ isOpen, onClose, defaultWallet, editTx,
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, '0');
       const v = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-      if (!editTx) setDateISO(v);
-      if (defaultWallet && !editTx) setWalletFrom(defaultWallet);
+      if (!editTx) {
+        setType('Expense');
+        setAmount('');
+        setDateISO(v);
+        setCategory('');
+        setCustomCategory('');
+        setDescription('');
+        setWalletTo('');
+        setErrors({});
+        if (defaultWallet) setWalletFrom(defaultWallet); else setWalletFrom('');
+      }
       if (editTx) {
         setType(editTx.type);
         setAmount(editTx.amount);
@@ -214,6 +249,9 @@ export default function AddTransaction({ isOpen, onClose, defaultWallet, editTx,
       } catch {}
     }
 
+    const nowIso = new Date().toISOString();
+    const actorId = currentUser.id;
+    const actorName = currentUser.name;
     const tx: Transaction = {
       id: editTx ? editTx.id : Date.now().toString(),
       type,
@@ -222,7 +260,13 @@ export default function AddTransaction({ isOpen, onClose, defaultWallet, editTx,
       category: chosenCategory,
       walletFrom,
       walletTo: type === 'Transfer' ? walletTo : undefined,
-      description
+      description,
+      createdById: editTx?.createdById || actorId,
+      createdByName: editTx?.createdByName || actorName,
+      createdAtISO: editTx?.createdAtISO || editTx?.dateISO || nowIso,
+      updatedById: actorId,
+      updatedByName: actorName,
+      updatedAtISO: nowIso
     };
 
     txArr.push(tx);
@@ -247,7 +291,7 @@ export default function AddTransaction({ isOpen, onClose, defaultWallet, editTx,
     sessionStorage.setItem('transactions', JSON.stringify(txArr));
     try { window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'transaction-delete' } })); } catch {}
     onClose();
-    if (onDeleted) onDeleted(editTx.id);
+    if (onDeleted) onDeleted(editTx);
   };
 
   if (!isOpen) return null;
@@ -262,6 +306,18 @@ export default function AddTransaction({ isOpen, onClose, defaultWallet, editTx,
           </button>
         </div>
         <div className="tx-modal-body">
+          {isSharedWallet && editTx && (
+            <div className="tx-audit">
+              <div className="tx-audit-row">
+                <span className="tx-audit-label">Created by</span>
+                <span className="tx-audit-value">{editTx.createdByName || 'Not recorded'} · {formatAuditStamp(editTx.createdAtISO || editTx.dateISO)}</span>
+              </div>
+              <div className="tx-audit-row">
+                <span className="tx-audit-label">Last updated by</span>
+                <span className="tx-audit-value">{editTx.updatedByName || editTx.createdByName || 'Not recorded'} · {formatAuditStamp(editTx.updatedAtISO || editTx.dateISO)}</span>
+              </div>
+            </div>
+          )}
           <div className="tx-field">
             <label>Type</label>
             <div className="tx-select">

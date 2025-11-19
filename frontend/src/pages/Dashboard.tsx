@@ -84,6 +84,7 @@ export default function Dashboard() {
     setActivePage(page);
     if (page === 'Dashboard') navigate('/dashboard');
     if (page === 'Personal Plan') navigate('/personal');
+    if (page === 'Shared Plan') navigate('/shared');
   };
 
   return (

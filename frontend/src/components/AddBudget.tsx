@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaChevronLeft, FaChevronDown, FaUsers, FaInfoCircle, FaCalendarAlt } from 'react-icons/fa';
 import type { Collaborator, Wallet } from '../utils/shared';
-import { 
-  getDaysInMonth, 
-  calculateDateRange, 
-  formatDate, 
-  triggerSelectDropdown 
+import {
+  getDaysInMonth,
+  calculateDateRange,
+  formatDate,
+  triggerSelectDropdown,
+  formatAmount,
+  CURRENCY_SYMBOLS
 } from '../utils/shared';
+import { useAppState } from '../state/AppStateContext';
 import CollaboratorModal from './CollaboratorModal';
 
 // CONSTANTS
@@ -17,7 +20,6 @@ const BUDGET_CATEGORIES_BASE = [
   'Shopping',
   'Bills',
   'Car',
-  'Income',
   'Custom'
 ] as const;
 
@@ -36,6 +38,7 @@ interface HasInteracted {
 export default function AddBudget() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logActivity, currentUser } = useAppState();
   
   const editMode = location.state?.editMode || false;
   const budgetIndex = location.state?.budgetIndex;
@@ -45,13 +48,12 @@ export default function AddBudget() {
   const returnTo = location.state?.returnTo || '/onboarding/budget';
 
   const getWallets = () => {
-    if (returnTo === '/dashboard' || returnTo === '/personal') {
-      const dashboardWallets = sessionStorage.getItem('wallets');
-      return dashboardWallets ? JSON.parse(dashboardWallets) : [];
-    } else {
-      const onboardingWallets = sessionStorage.getItem('onboardingWallets');
-      return onboardingWallets ? JSON.parse(onboardingWallets) : [];
+    if (returnTo === '/dashboard' || returnTo === '/personal' || returnTo === '/shared') {
+      const stored = sessionStorage.getItem('wallets');
+      return stored ? JSON.parse(stored) : [];
     }
+    const onboardingWallets = sessionStorage.getItem('onboardingWallets');
+    return onboardingWallets ? JSON.parse(onboardingWallets) : [];
   };
   
   const allWallets: Wallet[] = getWallets();
@@ -87,7 +89,10 @@ export default function AddBudget() {
   const [showWalletChangeModal, setShowWalletChangeModal] = useState<boolean>(false);
   const [pendingWalletName, setPendingWalletName] = useState<string>('');
 
-  const isSharedBudget = selectedWalletData?.plan === 'Shared';
+  const currency = localStorage.getItem('selectedCurrency') || 'PHP';
+  const currencySymbol = CURRENCY_SYMBOLS[currency] || '₱';
+
+  const isSharedBudget = (selectedWalletData?.plan || budgetPlan) === 'Shared';
 
   const dateRange = customStartDate && customEndDate 
     ? { startDate: customStartDate, endDate: customEndDate }
@@ -252,10 +257,22 @@ export default function AddBudget() {
         }
       } catch {}
     }
+    const resolvedWalletName = lockWalletName
+      || existingBudget?.wallet
+      || selectedWallet
+      || selectedWalletData?.name
+      || '';
+
+    const planForBudget = (budgetPlan === 'Shared')
+      || (selectedWalletData?.plan === 'Shared')
+      || (existingBudget?.plan === 'Shared')
+      ? 'Shared'
+      : 'Personal';
+
     const budgetDataToPass = {
       id: editMode && existingBudget?.id ? existingBudget.id : Date.now().toString(),
-      wallet: selectedWallet,
-      plan: selectedWalletData?.plan || 'Personal',
+      wallet: resolvedWalletName,
+      plan: planForBudget,
       amount: budgetAmount,
       category: chosenCategory,
       period: period,
@@ -263,10 +280,10 @@ export default function AddBudget() {
       startDate: customStartDate,
       endDate: customEndDate,
       left: nextLeft,
-      collaborators: isSharedBudget ? collaborators : []
+      collaborators: planForBudget === 'Shared' ? collaborators : []
     };
     
-    if (returnTo === '/dashboard' || returnTo === '/personal') {
+    if (returnTo === '/dashboard' || returnTo === '/personal' || returnTo === '/shared') {
       const existingBudgets = sessionStorage.getItem('budgets');
       let budgets = existingBudgets ? JSON.parse(existingBudgets) : [];
       
@@ -284,13 +301,25 @@ export default function AddBudget() {
       sessionStorage.setItem('budgets', JSON.stringify(budgets));
       try { window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'budget-save' } })); } catch {}
 
-      if (selectedWalletData?.plan === 'Shared' && selectedWallet) {
+      if (budgetDataToPass.plan === 'Shared') {
+        const walletIdForLog = selectedWalletData?.id || budgetDataToPass.wallet || 'shared-wallet';
+        const amountLabel = `${currencySymbol} ${formatAmount(budgetDataToPass.amount || '0')}`;
+        logActivity({
+          walletId: walletIdForLog,
+          action: editMode ? 'budget_updated' : 'budget_added',
+          entityType: 'budget',
+          entityId: budgetDataToPass.id,
+          message: `${currentUser.name} ${editMode ? 'updated' : 'created'} the ${budgetDataToPass.category} budget (${amountLabel})`
+        });
+      }
+
+      if (budgetDataToPass.plan === 'Shared' && resolvedWalletName) {
         try {
           const rawWallets = sessionStorage.getItem('wallets');
           if (rawWallets) {
             const wallets = JSON.parse(rawWallets);
             const updatedWallets = wallets.map((w: any) => {
-              if (w.name === selectedWallet && w.plan === 'Shared') {
+              if (w.name === resolvedWalletName && w.plan === 'Shared') {
                 return { ...w, collaborators };
               }
               return w;
@@ -301,7 +330,7 @@ export default function AddBudget() {
           if (syncBudgetsRaw) {
             const all = JSON.parse(syncBudgetsRaw);
             const updated = all.map((b: any) => {
-              if (b.plan === 'Shared' && b.wallet === selectedWallet) {
+              if (b.plan === 'Shared' && b.wallet === resolvedWalletName) {
                 return { ...b, collaborators };
               }
               return b;
@@ -312,6 +341,17 @@ export default function AddBudget() {
       }
       navigate(returnTo);
     } else {
+      if (budgetDataToPass.plan === 'Shared' && !returnTo.startsWith('/onboarding')) {
+        const walletIdForLog = selectedWalletData?.id || budgetDataToPass.wallet || 'shared-wallet';
+        const amountLabel = `${currencySymbol} ${formatAmount(budgetDataToPass.amount || '0')}`;
+        logActivity({
+          walletId: walletIdForLog,
+          action: editMode ? 'budget_updated' : 'budget_added',
+          entityType: 'budget',
+          entityId: budgetDataToPass.id,
+          message: `${currentUser.name} ${editMode ? 'updated' : 'created'} the ${budgetDataToPass.category} budget (${amountLabel})`
+        });
+      }
       navigate(returnTo, { 
         state: { 
           budgetData: budgetDataToPass,

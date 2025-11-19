@@ -10,6 +10,7 @@ import AddWallet from './components/AddWallet';
 import AddBudget from './components/AddBudget';
 import Dashboard from './pages/Dashboard';
 import Personal from './pages/Personal';
+import Shared from './pages/Shared';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path="/add-budget" element={<AddBudget />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/personal" element={<Personal />} />
+            <Route path="/shared" element={<Shared />} />
           </Routes>
         </main>
       </BrowserRouter>

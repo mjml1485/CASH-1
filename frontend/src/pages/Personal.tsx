@@ -130,6 +130,7 @@ export default function Personal() {
     setActivePage(page);
     if (page === 'Dashboard') navigate('/dashboard');
     if (page === 'Personal Plan') navigate('/personal');
+    if (page === 'Shared Plan') navigate('/shared');
   };
 
   const filteredTxForWallet = useMemo(() => {
@@ -159,15 +160,17 @@ export default function Personal() {
             {personalWallets.length > 0 ? (
               <>
                 <div className="personal-title-row">
-                  <h2 className="personal-section-title">Select Wallet</h2>
-                  <button
-                    type="button"
-                    className="personal-icon-btn"
-                    onClick={() => navigate('/add-wallet', { state: { returnTo: '/personal', walletPlan: 'Personal' } })}
-                    title="Create personal wallet"
-                  >
-                    <FaPlus />
-                  </button>
+                  <div className="personal-title-inline">
+                    <h2 className="personal-section-title">Select Wallet</h2>
+                    <button
+                      type="button"
+                      className="personal-icon-btn personal-icon-btn--compact"
+                      onClick={() => navigate('/add-wallet', { state: { returnTo: '/personal', walletPlan: 'Personal' } })}
+                      title="Create personal wallet"
+                    >
+                      <FaPlus />
+                    </button>
+                  </div>
                 </div>
 
                 <select
@@ -215,13 +218,18 @@ export default function Personal() {
 
           <div className="personal-right">
             <div className="personal-title-row">
-              <h2 className="personal-section-title with-icon">Budget Summary</h2>
-              <button
-                type="button"
-                className="personal-icon-btn"
-                onClick={() => setShowBudgetActionModal(true)}
-                title="Budget actions"
-              ><FaPen /></button>
+              <div className="personal-title-inline">
+                <h2 className="personal-section-title">Budget Summary</h2>
+                <button
+                  type="button"
+                  className="personal-icon-btn personal-icon-btn--inline"
+                  onClick={() => setShowBudgetActionModal(true)}
+                  title="Budget actions"
+                  disabled={!selectedWallet}
+                >
+                  <FaPen />
+                </button>
+              </div>
             </div>
             <div className="personal-table">
               <div className="personal-table-row personal-table-head">
@@ -262,7 +270,14 @@ export default function Personal() {
                 <button className={`personal-filter ${txFilter==='All'?'active':''}`} onClick={() => setTxFilter('All')}>All</button>
                 <button className={`personal-filter ${txFilter==='Expense'?'active':''}`} onClick={() => setTxFilter('Expense')}>Expense</button>
                 <button className={`personal-filter ${txFilter==='Income'?'active':''}`} onClick={() => setTxFilter('Income')}>Income</button>
-                <button className="personal-add-tx" title="Add transaction" onClick={() => setShowTxModal(true)}>
+                <button
+                  className="personal-add-tx"
+                  title="Add transaction"
+                  onClick={() => {
+                    setEditTx(null);
+                    setShowTxModal(true);
+                  }}
+                >
                   <FaPlus />
                 </button>
               </div>
@@ -347,7 +362,7 @@ export default function Personal() {
       onClose={() => { setShowTxModal(false); setEditTx(null); }}
       defaultWallet={selectedWalletName}
       editTx={editTx}
-      onDeleted={() => { setEditTx(null); }}
+      onDeleted={(_tx) => { setEditTx(null); reloadFinancialData(); }}
       onSaved={() => reloadFinancialData()}
     />
     {showBudgetActionModal && (
