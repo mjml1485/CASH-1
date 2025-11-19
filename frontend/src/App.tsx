@@ -1,17 +1,17 @@
 import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Signup from './pages/auth/Signup';
-import Signin from './pages/auth/Signin';
-import Welcome from './pages/onboarding/Welcome';
-import Currency from './pages/onboarding/Currency';
-import Wallet from './pages/onboarding/Wallet';
-import Budget from './pages/onboarding/Budget';
+import Signup from './auth/Signup';
+import Signin from './auth/Signin';
+import Welcome from './onboarding/Welcome';
+import Currency from './onboarding/Currency';
+import Wallet from './onboarding/Wallet';
+import Budget from './onboarding/Budget';
 import AddWallet from './components/AddWallet';
 import AddBudget from './components/AddBudget';
-import Dashboard from './pages/Dashboard';
-import Personal from './pages/Personal';
-import Shared from './pages/Shared';
-import Achievements from './pages/Achievements';
+import Dashboard from './navigation/Dashboard';
+import Personal from './navigation/Personal';
+import Shared from './navigation/Shared';
+import Achievements from './navigation/Achievements';
 
 function App() {
   return (
