@@ -76,9 +76,9 @@ export default function Signin() {
               <label className="sign-in-label" htmlFor="password">
                 Password
               </label>
-              <a className="sign-in-link-forgot" href="#" onClick={(e) => e.preventDefault()}>
+              <Link className="sign-in-link-forgot" to="/forgot">
                 Forgot?
-              </a>
+              </Link>
             </div>
 
             <div className="sign-in-wrapper-password">

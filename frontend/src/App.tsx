@@ -2,6 +2,7 @@ import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Signup from './auth/Signup';
 import Signin from './auth/Signin';
+import Forgot from './auth/Forgot';
 import Welcome from './onboarding/Welcome';
 import Currency from './onboarding/Currency';
 import Wallet from './onboarding/Wallet';
@@ -22,6 +23,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/signin" replace />} />
             <Route path="/signin" element={<Signin />} />
+            <Route path="/forgot" element={<Forgot />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/onboarding/welcome" element={<Welcome />} />
             <Route path="/onboarding/currency" element={<Currency />} />

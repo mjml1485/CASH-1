@@ -108,9 +108,6 @@ export default function Signup() {
               <label className="sign-up-label" htmlFor="password">
                 Password
               </label>
-              <a className="sign-up-link-forgot" href="#" onClick={(e) => e.preventDefault()}>
-                Forgot ?
-              </a>
             </div>
 
             <div className="sign-up-wrapper-password">
