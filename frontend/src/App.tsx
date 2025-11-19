@@ -9,6 +9,7 @@ import Budget from './pages/onboarding/Budget';
 import AddWallet from './components/AddWallet';
 import AddBudget from './components/AddBudget';
 import Dashboard from './pages/Dashboard';
+import Personal from './pages/Personal';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
             <Route path="/add-wallet" element={<AddWallet />} />
             <Route path="/add-budget" element={<AddBudget />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/personal" element={<Personal />} />
           </Routes>
         </main>
       </BrowserRouter>

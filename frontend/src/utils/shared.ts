@@ -29,6 +29,19 @@ export const CURRENCY_SYMBOLS: Record<string, string> = {
   INR: '₹',
 };
 
+export const CHART_COLORS = [
+  '#2d7d99',
+  '#6bb6d6',
+  '#87ceeb',
+  '#4a5568',
+  '#a0aec0',
+  '#2c5282',
+  '#2b6cb0',
+  '#285e61'
+];
+
+export const DEFAULT_TEXT_COLOR = '#ffffff';
+
 // SHARED UTILITY FUNCTIONS
 
 export const formatAmount = (value: string): string => {
@@ -37,6 +50,14 @@ export const formatAmount = (value: string): string => {
   const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   const decimalPart = parts[1] ? `.${parts[1]}` : '';
   return integerPart + decimalPart;
+};
+
+export const validateAndFormatAmount = (value: string): string => {
+  let v = value.replace(/[^0-9.]/g, '');
+  const parts = v.split('.');
+  if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+  if (parts[1] && parts[1].length > 2) v = parts[0] + '.' + parts[1].substring(0, 2);
+  return v;
 };
 
 export const getDaysInMonth = (year: number, month: number): number => {

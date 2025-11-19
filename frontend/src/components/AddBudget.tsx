@@ -12,7 +12,7 @@ import CollaboratorModal from './CollaboratorModal';
 
 // CONSTANTS
 
-const BUDGET_CATEGORIES = [
+const BUDGET_CATEGORIES_BASE = [
   'Food',
   'Shopping',
   'Bills',
@@ -41,10 +41,11 @@ export default function AddBudget() {
   const budgetIndex = location.state?.budgetIndex;
   const existingBudget = location.state?.budgetData;
   const budgetPlan = location.state?.budgetPlan;
+  const lockWalletName = location.state?.lockWalletName as string | undefined;
   const returnTo = location.state?.returnTo || '/onboarding/budget';
 
   const getWallets = () => {
-    if (returnTo === '/dashboard') {
+    if (returnTo === '/dashboard' || returnTo === '/personal') {
       const dashboardWallets = sessionStorage.getItem('wallets');
       return dashboardWallets ? JSON.parse(dashboardWallets) : [];
     } else {
@@ -60,10 +61,10 @@ export default function AddBudget() {
   const personalWalletsExist = allWallets.some(w => w.plan === 'Personal');
   const hasWalletSelectionOnboarding = returnTo !== '/dashboard' && sharedWallets.length > 0;
   const hasWalletSelectionShared = budgetPlan === 'Shared' && sharedWallets.length > 1;
-  const showWalletSelection = !editMode && (hasWalletSelectionDashboard || hasWalletSelectionOnboarding || hasWalletSelectionShared);
+  const showWalletSelection = !editMode && !lockWalletName && (hasWalletSelectionDashboard || hasWalletSelectionOnboarding || hasWalletSelectionShared);
   
   // State
-  const [selectedWallet, setSelectedWallet] = useState<string>('');
+  const [selectedWallet, setSelectedWallet] = useState<string>(() => lockWalletName ? lockWalletName : '');
   const [selectedWalletData, setSelectedWalletData] = useState<Wallet | null>(null);
   const [budgetAmount, setBudgetAmount] = useState<string>('');
   const [category, setCategory] = useState<string>('');
@@ -105,6 +106,15 @@ export default function AddBudget() {
 
 
   useEffect(() => {
+    if (lockWalletName) {
+      const wallet = allWallets.find(w => w.name === lockWalletName);
+      if (wallet) {
+        setSelectedWallet(lockWalletName);
+        setSelectedWalletData(wallet);
+        if (wallet.collaborators) setCollaborators(wallet.collaborators);
+      }
+      return;
+    }
     if (!editMode) {
       if (budgetPlan) {
         if (budgetPlan === 'Personal') {
@@ -231,12 +241,23 @@ export default function AddBudget() {
     const nextLeft = (editMode
       ? recalculatedLeftNum
       : newAmountNum).toFixed(2);
+    const chosenCategory = customCategory || category;
+    if (customCategory) {
+      try {
+        const raw = sessionStorage.getItem('customCategories');
+        const list = raw ? JSON.parse(raw) : [];
+        if (!list.includes(customCategory)) {
+          list.push(customCategory);
+          sessionStorage.setItem('customCategories', JSON.stringify(list));
+        }
+      } catch {}
+    }
     const budgetDataToPass = {
       id: editMode && existingBudget?.id ? existingBudget.id : Date.now().toString(),
       wallet: selectedWallet,
       plan: selectedWalletData?.plan || 'Personal',
       amount: budgetAmount,
-      category: customCategory || category,
+      category: chosenCategory,
       period: period,
       description: description,
       startDate: customStartDate,
@@ -245,7 +266,7 @@ export default function AddBudget() {
       collaborators: isSharedBudget ? collaborators : []
     };
     
-    if (returnTo === '/dashboard') {
+    if (returnTo === '/dashboard' || returnTo === '/personal') {
       const existingBudgets = sessionStorage.getItem('budgets');
       let budgets = existingBudgets ? JSON.parse(existingBudgets) : [];
       
@@ -261,6 +282,7 @@ export default function AddBudget() {
       }
       
       sessionStorage.setItem('budgets', JSON.stringify(budgets));
+      try { window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'budget-save' } })); } catch {}
 
       if (selectedWalletData?.plan === 'Shared' && selectedWallet) {
         try {
@@ -576,11 +598,14 @@ export default function AddBudget() {
                       onChange={(e) => { setErrors(prev => ({...prev, category: ''})); handleCategorySelect(e); }}
                       className="budget-select-hidden"
                     >
-                      {BUDGET_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
+                      {(() => {
+                        let extras: string[] = [];
+                        try { const raw = sessionStorage.getItem('customCategories'); extras = raw ? JSON.parse(raw) : []; } catch {}
+                        const merged = [...new Set([...BUDGET_CATEGORIES_BASE, ...extras])];
+                        return merged.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ));
+                      })()}
                     </select>
                   </>
                 ) : (
@@ -599,11 +624,15 @@ export default function AddBudget() {
                       className="budget-select-hidden"
                     >
                       <option value="" disabled hidden>Select category</option>
-                      {BUDGET_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
+                      {(() => {
+                        let extras: string[] = [];
+                        try { const raw = sessionStorage.getItem('customCategories'); extras = raw ? JSON.parse(raw) : []; } catch {}
+                        const merged = [...new Set([...BUDGET_CATEGORIES_BASE, ...extras])];
+                        return merged.filter(c => c !== 'Custom').map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ));
+                      })()}
+                      <option value="Custom">Custom</option>
                     </select>
                   </>
                 )}

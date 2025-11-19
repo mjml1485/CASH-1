@@ -36,12 +36,13 @@ export default function AddWallet() {
   const walletIndex = location.state?.walletIndex;
   const existingWallet = location.state?.walletData;
   const returnTo = location.state?.returnTo || '/onboarding/wallet';
+  const presetWalletPlan = location.state?.walletPlan;
   
   const [walletName, setWalletName] = useState<string>('');
   const [walletBalance, setWalletBalance] = useState<string>('');
   const [walletType, setWalletType] = useState<string>('');
   const [customWalletType, setCustomWalletType] = useState<string>('');
-  const [walletPlan, setWalletPlan] = useState<string>('');
+  const [walletPlan, setWalletPlan] = useState<string>(presetWalletPlan || '');
   const [backgroundColor, setBackgroundColor] = useState<string>('#e2e8f0');
   const [textColor, setTextColor] = useState<string>('#1a1a1a');
   const [selectedTemplate, setSelectedTemplate] = useState<string>('Default');
@@ -156,44 +157,50 @@ export default function AddWallet() {
       template: selectedTemplate
     };
 
-    if (returnTo === '/dashboard') {
-      const existingWallets = sessionStorage.getItem('wallets');
-      let wallets = existingWallets ? JSON.parse(existingWallets) : [];
-
-      if (editMode && walletIndex !== undefined) {
-        wallets[walletIndex] = walletDataToPass;
-      } else {
-        wallets.push(walletDataToPass);
-      }
-
-      sessionStorage.setItem('wallets', JSON.stringify(wallets));
-
-      try {
-        const rawBudgets = sessionStorage.getItem('budgets');
-        if (rawBudgets) {
-          const budgets = JSON.parse(rawBudgets);
-          const targetNames = new Set<string>([
-            walletName,
-            ...(editMode && existingWallet?.name && existingWallet.name !== walletName ? [existingWallet.name] : [])
-          ]);
-          const updatedBudgets = budgets.map((b: any) => {
-            if (b.plan === 'Shared' && targetNames.has(b.wallet)) {
-              return { ...b, collaborators };
-            }
-            return b;
-          });
-          sessionStorage.setItem('budgets', JSON.stringify(updatedBudgets));
-        }
-      } catch {}
-      navigate(returnTo);
-    } else {
-      navigate(returnTo, { 
-        state: { 
+    if (returnTo === '/onboarding/wallet') {
+      navigate(returnTo, {
+        state: {
           walletData: walletDataToPass,
           walletIndex: editMode ? walletIndex : undefined
-        } 
+        }
       });
+      return;
     }
+
+    const existingWallets = sessionStorage.getItem('wallets');
+    let wallets = existingWallets ? JSON.parse(existingWallets) : [];
+
+    if (editMode && walletIndex !== undefined) {
+      wallets[walletIndex] = walletDataToPass;
+    } else {
+      wallets.push(walletDataToPass);
+    }
+
+    sessionStorage.setItem('wallets', JSON.stringify(wallets));
+
+    try {
+      const rawBudgets = sessionStorage.getItem('budgets');
+      if (rawBudgets) {
+        const budgets = JSON.parse(rawBudgets);
+        const targetNames = new Set<string>([
+          walletName,
+          ...(editMode && existingWallet?.name && existingWallet.name !== walletName ? [existingWallet.name] : [])
+        ]);
+        const updatedBudgets = budgets.map((b: any) => {
+          if (b.plan === 'Shared' && targetNames.has(b.wallet)) {
+            return { ...b, collaborators };
+          }
+          return b;
+        });
+        sessionStorage.setItem('budgets', JSON.stringify(updatedBudgets));
+      }
+    } catch {}
+
+    try {
+      window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'wallet-save' } }));
+    } catch {}
+
+    navigate(returnTo);
   };
 
   const handleAddCollaborator = (input: string) => {

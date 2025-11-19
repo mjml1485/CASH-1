@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaWallet, FaMoneyBill, FaEye } from 'react-icons/fa';
-import { formatAmount, CURRENCY_SYMBOLS } from '../utils/shared';
+import { formatAmount, CURRENCY_SYMBOLS, DEFAULT_TEXT_COLOR } from '../utils/shared';
 import Navbar from '../components/Navbar';
 
 interface Wallet {
@@ -62,6 +62,16 @@ export default function Dashboard() {
     loadData();
   }, [location]);
 
+  useEffect(() => {
+    const handler = () => loadData();
+    window.addEventListener('data-updated', handler as EventListener);
+    window.addEventListener('storage', handler as EventListener);
+    return () => {
+      window.removeEventListener('data-updated', handler as EventListener);
+      window.removeEventListener('storage', handler as EventListener);
+    };
+  }, []);
+
   const handleNavigateAddWallet = () => {
     navigate('/add-wallet', { state: { returnTo: '/dashboard' } });
   };
@@ -70,9 +80,15 @@ export default function Dashboard() {
     navigate('/add-budget', { state: { returnTo: '/dashboard' } });
   };
 
+  const handleNavbarChange = (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements') => {
+    setActivePage(page);
+    if (page === 'Dashboard') navigate('/dashboard');
+    if (page === 'Personal Plan') navigate('/personal');
+  };
+
   return (
     <div className="dashboard-container">
-      <Navbar activePage={activePage} onPageChange={setActivePage} />
+      <Navbar activePage={activePage} onPageChange={handleNavbarChange} />
       
       <div className="dashboard-content">
         {/* Wallets Section */}
@@ -98,7 +114,7 @@ export default function Dashboard() {
                     className="dashboard-wallet-card"
                     style={{
                       background: `linear-gradient(135deg, ${wallet.color1} 0%, ${wallet.color2} 100%)`,
-                      color: wallet.textColor || '#ffffff'
+                      color: wallet.textColor || DEFAULT_TEXT_COLOR
                     }}
                     onClick={() => {
                       navigate('/add-wallet', {
