@@ -4523,6 +4523,119 @@
   border: 0;
 }
 
+/* ========== Achievements Page ========== */
+.achievements-page {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.achievements-content {
+  width: 100%;
+  padding: 32px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.achievements-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.achievements-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: 0.3px;
+}
+
+.achievements-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 24px;
+}
+
+.achievement-card {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  min-height: 180px;
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.achievement-card.achieved {
+  background: #e6f4fb;
+  border-color: #c3dce8;
+  box-shadow: 0 12px 24px rgba(15,23,42,0.08);
+}
+
+.achievement-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  background: rgba(148,163,184,0.25);
+  color: #0f172a;
+}
+.achievement-card.achieved .achievement-icon {
+  background: linear-gradient(135deg,#2d7d99 0%,#87ceeb 100%);
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(45,125,153,0.35);
+}
+
+.achievement-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.4px;
+  color: #1a1a1a;
+}
+.achievement-desc {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #475569;
+  margin: 0;
+}
+.achievement-earned {
+  font-size: 11px;
+  margin: 0;
+  font-weight: 600;
+  color: #1a1a1a;
+  letter-spacing: 0.3px;
+}
+
+.achievement-card:not(.achieved) .achievement-title,
+.achievement-card:not(.achieved) .achievement-desc {
+  color: #64748b;
+}
+.achievement-card:not(.achieved) .achievement-icon {
+  background: rgba(148,163,184,0.18);
+  color: #64748b;
+}
+
+@media (max-width: 768px) {
+  .achievements-content { padding: 24px 24px; }
+  .achievements-grid { gap: 16px; }
+  .achievement-card { padding: 16px 16px 18px; min-height: 160px; }
+}
+
 .shared-dialog-overlay {
   position: fixed;
   inset: 0;

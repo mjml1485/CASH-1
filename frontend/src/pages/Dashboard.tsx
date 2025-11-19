@@ -85,6 +85,7 @@ export default function Dashboard() {
     if (page === 'Dashboard') navigate('/dashboard');
     if (page === 'Personal Plan') navigate('/personal');
     if (page === 'Shared Plan') navigate('/shared');
+    if (page === 'Achievements') navigate('/achievements');
   };
 
   return (

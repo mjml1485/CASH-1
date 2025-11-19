@@ -11,6 +11,7 @@ import AddBudget from './components/AddBudget';
 import Dashboard from './pages/Dashboard';
 import Personal from './pages/Personal';
 import Shared from './pages/Shared';
+import Achievements from './pages/Achievements';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/personal" element={<Personal />} />
             <Route path="/shared" element={<Shared />} />
+            <Route path="/achievements" element={<Achievements />} />
           </Routes>
         </main>
       </BrowserRouter>
