@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { CURRENCY_SYMBOLS, formatAmount, CHART_COLORS, DEFAULT_TEXT_COLOR } from '../utils/shared';
+import { CURRENCY_SYMBOLS, formatAmount, CHART_COLORS, DEFAULT_TEXT_COLOR } from '../../utils/shared';
 import { FaPlus, FaPen } from 'react-icons/fa';
 import AddTransaction, { type Transaction } from '../components/AddTransaction';
 

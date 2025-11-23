@@ -3,11 +3,14 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.tsx';
 import { AppStateProvider } from './state/AppStateContext';
+import { AuthProvider } from './hooks/useAuth';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AppStateProvider>
-      <App />
-    </AppStateProvider>
+    <AuthProvider>
+      <AppStateProvider>
+        <App />
+      </AppStateProvider>
+    </AuthProvider>
   </StrictMode>,
 );

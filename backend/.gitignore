@@ -1,0 +1,16 @@
+node_modules/
+.env
+*.log
+.DS_Store
+
+# Sensitive files
+serviceAccount*.json
+.env.*
+*.env
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+firebase-debug.log
+

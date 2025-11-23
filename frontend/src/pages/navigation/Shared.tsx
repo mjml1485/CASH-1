@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { CURRENCY_SYMBOLS, formatAmount, CHART_COLORS, DEFAULT_TEXT_COLOR, type Collaborator } from '../utils/shared';
+import { CURRENCY_SYMBOLS, formatAmount, CHART_COLORS, DEFAULT_TEXT_COLOR, type Collaborator } from '../../utils/shared';
 import { FaPlus, FaPen, FaUsers, FaHistory, FaRegCommentDots } from 'react-icons/fa';
 import AddTransaction, { type Transaction } from '../components/AddTransaction';
 import ActivityLogPanel from '../components/ActivityLogPanel';
 import CollaboratorChat from '../components/CollaboratorChat';
 import CollaboratorModal from '../components/CollaboratorModal';
-import { useAppState } from '../state/AppStateContext';
+import { useAppState } from '../../state/AppStateContext';
 
 interface Wallet {
   id: string;
@@ -220,9 +220,7 @@ export default function Shared() {
 
     try {
       window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'collaborator-update' } }));
-    } catch {
-      /* ignore dispatch errors */
-    }
+    } catch {}
 
     if (activity && selectedWalletKey) {
       logActivity({

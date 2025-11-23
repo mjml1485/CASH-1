@@ -283,6 +283,21 @@
   transform: translateY(-1px);
 }
 
+/* Error state for inputs */
+.sign-up-input.input-error,
+.sign-in-input.input-error {
+  border-color: #fc8181 !important;
+  background: #fff5f5;
+}
+
+.sign-up-input.input-error:focus,
+.sign-in-input.input-error:focus {
+  border-color: #f56565 !important;
+  box-shadow: 
+    0 0 0 4px rgba(245, 101, 101, 0.15),
+    0 4px 6px rgba(245, 101, 101, 0.1) !important;
+}
+
 .sign-up-row-between {
 	display: flex;
   justify-content: space-between;
@@ -366,6 +381,17 @@
 
 .sign-up-toggle-password:active {
   transform: translateY(-50%) scale(0.9);
+}
+
+/* Password hint (avoids overlap with input) */
+.sign-up-password-hint {
+  font-size: 12px;
+  color: #4a5568;
+  margin-top: 6px;
+  margin-bottom: 8px;
+  padding-left: 4px;
+  line-height: 1.4;
+  display: block;
 }
 
 .sign-up-error {
@@ -822,6 +848,37 @@
 
 .sign-in-footer a:hover::after {
   width: 100%;
+}
+
+/* Success message styles for forgot password */
+.sign-in-success-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 8px;
+  margin-top: 50px;
+  text-align: center;
+}
+
+.sign-in-success-message {
+  font-size: 15px;
+  color: #4a5568;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+  word-wrap: break-word;
+  text-align: justify;
+  text-align-last: center;
+}
+
+/* Password hint (avoids overlap with input) */
+.sign-in-password-hint {
+  font-size: 12px;
+  color: #4a5568;
+  margin-top: 6px;
+  margin-bottom: 8px;
+  padding-left: 4px;
+  line-height: 1.4;
+  display: block;
 }
 
 /* ONBOARDING */

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaTimes } from 'react-icons/fa';
-import { formatAmount, CURRENCY_SYMBOLS } from '../utils/shared';
+import { formatAmount, CURRENCY_SYMBOLS } from '../../utils/shared';
 
 export default function Budget() {
   const navigate = useNavigate();
@@ -175,7 +175,6 @@ export default function Budget() {
         </div>
       </div>
 
-      {/* Delete Budget Confirmation Modal */}
       {showDeleteBudgetModal && (
         <div className="onboarding-delete-modal-overlay" onClick={cancelDeleteBudget}>
           <div className="onboarding-delete-modal" onClick={(e) => e.stopPropagation()}>

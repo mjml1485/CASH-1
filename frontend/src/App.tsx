@@ -1,19 +1,21 @@
 import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Signup from './auth/Signup';
-import Signin from './auth/Signin';
-import Forgot from './auth/Forgot';
-import Welcome from './onboarding/Welcome';
-import Currency from './onboarding/Currency';
-import Wallet from './onboarding/Wallet';
-import Budget from './onboarding/Budget';
-import AddWallet from './components/AddWallet';
-import AddBudget from './components/AddBudget';
-import Dashboard from './navigation/Dashboard';
-import Personal from './navigation/Personal';
-import Shared from './navigation/Shared';
-import Achievements from './navigation/Achievements';
-import Profile from './navigation/Profile';
+import Signup from './pages/auth/Signup';
+import Signin from './pages/auth/Signin';
+import Forgot from './pages/auth/Forgot';
+import ResetPassword from './pages/auth/ResetPassword';
+import Welcome from './pages/onboarding/Welcome';
+import Currency from './pages/onboarding/Currency';
+import Wallet from './pages/onboarding/Wallet';
+import Budget from './pages/onboarding/Budget';
+import AddWallet from './pages/components/AddWallet';
+import AddBudget from './pages/components/AddBudget';
+import Dashboard from './pages/navigation/Dashboard';
+import Personal from './pages/navigation/Personal';
+import Shared from './pages/navigation/Shared';
+import Achievements from './pages/navigation/Achievements';
+import Profile from './pages/navigation/Profile';
+import ProtectedRoute from './pages/components/ProtectedRoute';
 
 function App() {
   return (
@@ -24,18 +26,96 @@ function App() {
             <Route path="/" element={<Navigate to="/signin" replace />} />
             <Route path="/signin" element={<Signin />} />
             <Route path="/forgot" element={<Forgot />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/onboarding/welcome" element={<Welcome />} />
-            <Route path="/onboarding/currency" element={<Currency />} />
-            <Route path="/onboarding/wallet" element={<Wallet />} />
-            <Route path="/onboarding/budget" element={<Budget />} />
-            <Route path="/add-wallet" element={<AddWallet />} />
-            <Route path="/add-budget" element={<AddBudget />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/personal" element={<Personal />} />
-            <Route path="/shared" element={<Shared />} />
-            <Route path="/achievements" element={<Achievements />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route 
+              path="/onboarding/welcome" 
+              element={
+                <ProtectedRoute>
+                  <Welcome />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/onboarding/currency" 
+              element={
+                <ProtectedRoute>
+                  <Currency />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/onboarding/wallet" 
+              element={
+                <ProtectedRoute>
+                  <Wallet />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/onboarding/budget" 
+              element={
+                <ProtectedRoute>
+                  <Budget />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/add-wallet" 
+              element={
+                <ProtectedRoute>
+                  <AddWallet />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/add-budget" 
+              element={
+                <ProtectedRoute>
+                  <AddBudget />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/personal" 
+              element={
+                <ProtectedRoute>
+                  <Personal />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/shared" 
+              element={
+                <ProtectedRoute>
+                  <Shared />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/achievements" 
+              element={
+                <ProtectedRoute>
+                  <Achievements />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
           </Routes>
         </main>
       </BrowserRouter>

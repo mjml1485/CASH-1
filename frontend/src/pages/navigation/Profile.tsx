@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { FaCamera, FaSearch, FaTimes, FaArrowLeft } from 'react-icons/fa';
+import { FaCamera, FaSearch, FaTimes, FaArrowLeft, FaSignOutAlt } from 'react-icons/fa';
+import { useAuth } from '../../hooks/useAuth';
 
 interface UserProfile {
   id: string;
@@ -35,6 +36,7 @@ const ALL_USERS: Connection[] = [
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { signOut, currentUser } = useAuth();
   const [activePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements'>('Dashboard');
   const [profile, setProfile] = useState<UserProfile>({
     id: 'current-user',
@@ -63,6 +65,15 @@ export default function Profile() {
   const [searchResults, setSearchResults] = useState<Connection[]>([]);
 
   useEffect(() => {
+    if (currentUser) {
+      setProfile(prev => ({
+        ...prev,
+        name: currentUser.name || prev.name,
+        email: currentUser.email || prev.email,
+        username: prev.username || currentUser.email?.split('@')[0] || '',
+      }));
+    }
+
     const storedProfile = sessionStorage.getItem('profile');
     if (storedProfile) {
       try {
@@ -75,9 +86,9 @@ export default function Profile() {
         const userData = JSON.parse(storedUser);
         setProfile(prev => ({
           ...prev,
-          name: userData.name || '',
-          username: userData.username || userData.email?.split('@')[0] || '',
-          email: userData.email || '',
+          name: userData.name || prev.name || currentUser?.name || '',
+          username: userData.username || userData.email?.split('@')[0] || prev.username || '',
+          email: userData.email || prev.email || currentUser?.email || '',
         }));
       }
     }
@@ -86,7 +97,7 @@ export default function Profile() {
     const storedFollowing = sessionStorage.getItem('following');
     if (storedFollowers) setFollowers(JSON.parse(storedFollowers));
     if (storedFollowing) setFollowing(JSON.parse(storedFollowing));
-  }, []);
+  }, [currentUser]);
 
   const handleTabChange = (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements') => {
     const target = page === 'Dashboard' ? '/dashboard' : page === 'Personal Plan' ? '/personal' : page === 'Shared Plan' ? '/shared' : '/achievements';
@@ -177,6 +188,18 @@ export default function Profile() {
     sessionStorage.setItem('followers', JSON.stringify(newFollowers));
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      sessionStorage.clear();
+      navigate('/signin');
+    } catch (error) {
+      console.error('Logout error:', error);
+      sessionStorage.clear();
+      navigate('/signin');
+    }
+  };
+
   return (
     <div className="profile-page">
       <Navbar activePage={activePage} onPageChange={handleTabChange} />
@@ -262,20 +285,38 @@ export default function Profile() {
                     </>
                   )}
                 </div>
-                <button className="profile-edit-btn" onClick={() => {
-                  if (editMode) {
-                    handleSaveBio();
-                  } else {
-                    setEditMode(true);
-                    setEditedBio(profile.bio);
-                    setEditedName(profile.name);
-                    setEditedUsername(profile.username);
-                    setEditedEmail(profile.email);
-                    setEditedShowEmail(profile.showEmail);
-                  }
-                }}>
-                  {editMode ? 'Save' : 'Edit Profile'}
-                </button>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  <button className="profile-edit-btn" onClick={() => {
+                    if (editMode) {
+                      handleSaveBio();
+                    } else {
+                      setEditMode(true);
+                      setEditedBio(profile.bio);
+                      setEditedName(profile.name);
+                      setEditedUsername(profile.username);
+                      setEditedEmail(profile.email);
+                      setEditedShowEmail(profile.showEmail);
+                    }
+                  }}>
+                    {editMode ? 'Save' : 'Edit Profile'}
+                  </button>
+                  <button 
+                    className="profile-edit-btn" 
+                    onClick={handleLogout}
+                    style={{ 
+                      backgroundColor: '#dc3545', 
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 16px'
+                    }}
+                    title="Sign out"
+                  >
+                    <FaSignOutAlt />
+                    <span>Logout</span>
+                  </button>
+                </div>
               </div>
 
               {editMode ? (
@@ -299,7 +340,7 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Stats Full-Width Row */}
+          {/* Stats Row */}
           <div className="profile-stats-row">
             <div className="profile-stat-card" onClick={() => setShowFollowingModal(true)}>
               <div className="profile-stat-number">{following.length}</div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaChevronLeft, FaChevronDown, FaUsers, FaInfoCircle, FaCalendarAlt } from 'react-icons/fa';
-import type { Collaborator, Wallet } from '../utils/shared';
+import type { Collaborator, Wallet } from '../../utils/shared';
 import {
   getDaysInMonth,
   calculateDateRange,
@@ -9,8 +9,8 @@ import {
   triggerSelectDropdown,
   formatAmount,
   CURRENCY_SYMBOLS
-} from '../utils/shared';
-import { useAppState } from '../state/AppStateContext';
+} from '../../utils/shared';
+import { useAppState } from '../../state/AppStateContext';
 import CollaboratorModal from './CollaboratorModal';
 
 // CONSTANTS

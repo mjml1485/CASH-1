@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import type { ActivityEntry, EntityType } from '../state/AppStateContext';
-import { useActivityLog } from '../state/AppStateContext';
+import type { ActivityEntry, EntityType } from '../../state/AppStateContext';
+import { useActivityLog } from '../../state/AppStateContext';
 
 interface ActivityLogPanelProps {
   walletId?: string;

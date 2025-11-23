@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaTimes } from 'react-icons/fa';
-import { formatAmount, CURRENCY_SYMBOLS } from '../utils/shared';
+import { formatAmount, CURRENCY_SYMBOLS } from '../../utils/shared';
 
 export default function Wallet() {
   const navigate = useNavigate();
@@ -137,7 +137,6 @@ export default function Wallet() {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="onboarding-delete-modal-overlay" onClick={cancelDeleteWallet}>
           <div className="onboarding-delete-modal" onClick={(e) => e.stopPropagation()}>

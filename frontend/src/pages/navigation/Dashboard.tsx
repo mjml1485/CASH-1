@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaWallet, FaMoneyBill, FaEye } from 'react-icons/fa';
-import { formatAmount, CURRENCY_SYMBOLS, DEFAULT_TEXT_COLOR } from '../utils/shared';
+import { formatAmount, CURRENCY_SYMBOLS, DEFAULT_TEXT_COLOR } from '../../utils/shared';
 import Navbar from '../components/Navbar';
 
 interface Wallet {

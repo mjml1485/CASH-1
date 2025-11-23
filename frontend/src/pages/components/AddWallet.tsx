@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaChevronLeft, FaChevronDown, FaEye, FaEyeSlash, FaUsers } from 'react-icons/fa';
-import type { Collaborator } from '../utils/shared';
-import { CURRENCY_SYMBOLS, formatAmount, triggerSelectDropdown } from '../utils/shared';
+import type { Collaborator } from '../../utils/shared';
+import { CURRENCY_SYMBOLS, formatAmount, triggerSelectDropdown } from '../../utils/shared';
 import CollaboratorModal from './CollaboratorModal';
 
 // CONSTANTS

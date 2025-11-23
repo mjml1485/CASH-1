@@ -1,39 +1,66 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import type { FormEvent } from 'react';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function Signin() {
   const navigate = useNavigate();
+  const { signIn, currentUser, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [hasInteracted, setHasInteracted] = useState({ email: false, password: false });
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  const validate = (): string | null => {
-    if (!email.trim()) return 'Please enter an email';
-    if (!password) return 'Please enter your password';
-    return null;
-  };
+  useEffect(() => {
+    if (!loading && currentUser) {
+      navigate('/dashboard');
+    }
+  }, [currentUser, loading, navigate]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(null);
-    
-    const validationError = validate();
-    if (validationError) {
-      setError(validationError);
+    setSubmitting(true);
+    setAuthError(null);
+    const emailInput = e.currentTarget.elements.namedItem('email') as HTMLInputElement;
+    const passwordInput = e.currentTarget.elements.namedItem('password') as HTMLInputElement;
+    emailInput.setCustomValidity('');
+    passwordInput.setCustomValidity('');
+
+    if (!email.trim()) {
+      emailInput.setCustomValidity('Please enter your email address.');
+      emailInput.reportValidity();
+      setSubmitting(false);
+      return;
+    }
+    if (!password) {
+      passwordInput.setCustomValidity('Please enter your password.');
+      passwordInput.reportValidity();
+      setSubmitting(false);
       return;
     }
 
-    setSubmitting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await signIn(email, password);
       navigate('/onboarding/welcome');
-    } catch (err) {
-      setError('Something went wrong. Please try again.');
+    } catch (err: any) {
+      const code = err?.code || '';
+      // A. Email not registered
+      if (code === 'auth/user-not-found') {
+        setAuthError('This email is not registered.');
+      // B. Email registered but wrong password
+      } else if (code === 'auth/wrong-password') {
+        setAuthError('Incorrect password. Please try again.');
+      // Invalid email format or generic credential issue
+      } else if (code === 'auth/invalid-email' || code === 'auth/invalid-credential') {
+        setAuthError('Invalid email or password.');
+      } else if (err?.message) {
+        setAuthError(err.message);
+      } else {
+        setAuthError('Something went wrong. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -60,6 +87,8 @@ export default function Signin() {
               onChange={(e) => {
                 setEmail(e.target.value);
                 setHasInteracted(prev => ({ ...prev, email: true }));
+                e.target.setCustomValidity('');
+                if (authError) setAuthError(null);
               }}
               onFocus={() => setHasInteracted(prev => ({ ...prev, email: true }))}
               onBlur={() => {
@@ -67,8 +96,12 @@ export default function Signin() {
                   setHasInteracted(prev => ({ ...prev, email: false }));
                 }
               }}
+              onInvalid={(e) => {
+                e.currentTarget.setCustomValidity('Please enter a valid email address.');
+              }}
               disabled={submitting}
               autoComplete="email"
+              required
               className="sign-in-input"
             />
 
@@ -90,6 +123,8 @@ export default function Signin() {
                 onChange={(e) => {
                   setPassword(e.target.value);
                   setHasInteracted(prev => ({ ...prev, password: true }));
+                  e.target.setCustomValidity('');
+                  if (authError) setAuthError(null);
                 }}
                 onFocus={() => setHasInteracted(prev => ({ ...prev, password: true }))}
                 onBlur={() => {
@@ -97,8 +132,16 @@ export default function Signin() {
                     setHasInteracted(prev => ({ ...prev, password: false }));
                   }
                 }}
+                onInvalid={(e) => {
+                  if (!e.currentTarget.value) {
+                    e.currentTarget.setCustomValidity('Please enter your password.');
+                  } else {
+                    e.currentTarget.setCustomValidity('');
+                  }
+                }}
                 disabled={submitting}
                 autoComplete="current-password"
+                required
                 className="sign-in-input"
               />
               <button
@@ -113,8 +156,11 @@ export default function Signin() {
               </button>
             </div>
 
-            {error && <div className="sign-in-error">{error}</div>}
-
+            {authError && (
+              <div className="sign-in-error" style={{ margin: '12px 0', color: '#fc8181', fontWeight: 500 }}>
+                {authError}
+              </div>
+            )}
             <div className="sign-in-button-row">
               <button className="sign-in-button-primary" disabled={submitting} type="submit">
                 {submitting ? 'Signing in...' : 'Sign In'}

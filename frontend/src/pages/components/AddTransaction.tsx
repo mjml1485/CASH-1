@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useAppState } from '../state/AppStateContext';
-import { triggerSelectDropdown } from '../utils/shared';
+import { useAppState } from '../../state/AppStateContext';
+import { triggerSelectDropdown } from '../../utils/shared';
 import { FaTimes, FaTrash, FaChevronDown } from 'react-icons/fa';
 
 export type TxType = 'Income' | 'Expense' | 'Transfer';

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
-import { useAppState, useComments } from '../state/AppStateContext';
+import { useAppState, useComments } from '../../state/AppStateContext';
 
 interface CollaboratorChatProps {
   walletId?: string;

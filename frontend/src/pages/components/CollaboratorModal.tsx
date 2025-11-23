@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
-import type { Collaborator } from '../utils/shared';
+import type { Collaborator } from '../../utils/shared';
 
 interface CollaboratorModalProps {
   isOpen: boolean;
