@@ -1,8 +1,23 @@
+import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '../../config/cloudinary.private';
+
+async function uploadToCloudinary(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+  const data = await res.json();
+  if (!data.secure_url) throw new Error('Upload failed');
+  return data.secure_url;
+}
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { FaCamera, FaSearch, FaTimes, FaArrowLeft, FaSignOutAlt } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
+import { fetchProfileBackend, updateProfileBackend } from '../../services/userService';
 
 interface UserProfile {
   id: string;
@@ -50,10 +65,14 @@ export default function Profile() {
   const [editMode, setEditMode] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [showEmailChangeModal, setShowEmailChangeModal] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [emailChangeError, setEmailChangeError] = useState<string | null>(null);
+  const [emailChangeSuccess, setEmailChangeSuccess] = useState<string | null>(null);
   const [editedBio, setEditedBio] = useState('');
   const [editedName, setEditedName] = useState('');
   const [editedUsername, setEditedUsername] = useState('');
-  const [editedEmail, setEditedEmail] = useState('');
   const [editedShowEmail, setEditedShowEmail] = useState(true);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [followers, setFollowers] = useState<Connection[]>([]);
@@ -74,24 +93,63 @@ export default function Profile() {
       }));
     }
 
-    const storedProfile = sessionStorage.getItem('profile');
-    if (storedProfile) {
+    (async () => {
+      if (!currentUser) return;
       try {
-        const prof = JSON.parse(storedProfile);
-        setProfile(prev => ({ ...prev, ...prof }));
-      } catch {}
-    } else {
-      const storedUser = sessionStorage.getItem('currentUser');
-      if (storedUser) {
-        const userData = JSON.parse(storedUser);
-        setProfile(prev => ({
-          ...prev,
-          name: userData.name || prev.name || currentUser?.name || '',
-          username: userData.username || userData.email?.split('@')[0] || prev.username || '',
-          email: userData.email || prev.email || currentUser?.email || '',
-        }));
+        const backendProfile = await fetchProfileBackend();
+        if (backendProfile) {
+          setProfile(prev => ({
+            ...prev,
+            name: backendProfile.name || prev.name,
+            email: backendProfile.email || prev.email,
+            username: backendProfile.username || prev.username || currentUser.email?.split('@')[0] || '',
+            bio: backendProfile.bio || prev.bio,
+            showEmail: typeof backendProfile.showEmail === 'boolean' ? backendProfile.showEmail : prev.showEmail,
+            avatar: backendProfile.avatar || prev.avatar,
+            coverPhoto: backendProfile.header || prev.coverPhoto,
+          }));
+          sessionStorage.setItem('profile', JSON.stringify({ ...backendProfile, coverPhoto: backendProfile.header }));
+        } else {
+          const storedProfile = sessionStorage.getItem('profile');
+          if (storedProfile) {
+            try {
+              const prof = JSON.parse(storedProfile);
+              setProfile(prev => ({ ...prev, ...prof }));
+            } catch {}
+          } else {
+            const storedUser = sessionStorage.getItem('currentUser');
+            if (storedUser) {
+              const userData = JSON.parse(storedUser);
+              setProfile(prev => ({
+                ...prev,
+                name: userData.name || prev.name || currentUser?.name || '',
+                username: userData.username || userData.email?.split('@')[0] || prev.username || '',
+                email: userData.email || prev.email || currentUser?.email || '',
+              }));
+            }
+          }
+        }
+      } catch (err) {
+        const storedProfile = sessionStorage.getItem('profile');
+        if (storedProfile) {
+          try {
+            const prof = JSON.parse(storedProfile);
+            setProfile(prev => ({ ...prev, ...prof }));
+          } catch {}
+        } else {
+          const storedUser = sessionStorage.getItem('currentUser');
+          if (storedUser) {
+            const userData = JSON.parse(storedUser);
+            setProfile(prev => ({
+              ...prev,
+              name: userData.name || prev.name || currentUser?.name || '',
+              username: userData.username || userData.email?.split('@')[0] || prev.username || '',
+              email: userData.email || prev.email || currentUser?.email || '',
+            }));
+          }
+        }
       }
-    }
+    })();
 
     const storedFollowers = sessionStorage.getItem('followers');
     const storedFollowing = sessionStorage.getItem('following');
@@ -104,54 +162,88 @@ export default function Profile() {
     navigate(target);
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSaveBio = () => {
     if (!editedName.trim()) { setSaveError('Name is required'); return; }
     if (!editedUsername.trim()) { setSaveError('Username is required'); return; }
-    if (!editedEmail.trim() || !editedEmail.includes('@') || !editedEmail.includes('.')) { setSaveError('A valid email is required'); return; }
 
     const updated = {
       ...profile,
       name: editedName.trim(),
       username: editedUsername.trim(),
-      email: editedEmail.trim(),
       bio: editedBio,
       showEmail: editedShowEmail,
+      avatar: avatarPreview !== null ? avatarPreview : profile.avatar,
+      coverPhoto: coverPreview !== null ? coverPreview : profile.coverPhoto,
     } as UserProfile;
     setProfile(updated);
     sessionStorage.setItem('profile', JSON.stringify(updated));
     const currentUser = { name: updated.name, email: updated.email, username: updated.username, joinedDate: profile.joinedDate };
     sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-    setSaveError(null);
-    setEditMode(false);
+
+    (async () => {
+      try {
+        await updateProfileBackend({
+          name: updated.name,
+          username: updated.username,
+          bio: updated.bio,
+          showEmail: updated.showEmail,
+          avatar: updated.avatar,
+          coverPhoto: updated.coverPhoto,
+        });
+        const backendProfile = await fetchProfileBackend();
+        if (backendProfile) {
+          setProfile(prev => ({
+            ...prev,
+            ...backendProfile,
+            coverPhoto: backendProfile.header || prev.coverPhoto,
+          }));
+          sessionStorage.setItem('profile', JSON.stringify({ ...backendProfile, coverPhoto: backendProfile.header }));
+        }
+        setSaveError(null);
+        setEditMode(false);
+      } catch (err: any) {
+        if (err?.response?.status === 409) {
+          setSaveError('Username already exists. Please choose another.');
+        } else {
+          console.warn('Failed to persist profile to backend', err);
+          setSaveError('Failed to save profile to server. Changes saved locally.');
+        }
+      }
+    })();
+  };
+
+  const handleEmailChange = async () => {
+    setEmailChangeError(null);
+    setEmailChangeSuccess(null);
+    if (!newEmail.trim() || !newEmail.includes('@') || !newEmail.includes('.')) {
+      setEmailChangeError('A valid email is required');
+      return;
+    }
+    if (!emailPassword) {
+      setEmailChangeError('Password is required');
+      return;
+    }
+    try {
+      const { changeEmailBackend } = await import('../../services/userService');
+      await changeEmailBackend({ newEmail: newEmail.trim(), password: emailPassword });
+      setEmailChangeSuccess('Email changed successfully! Please use your new email next time you log in.');
+      setProfile(prev => ({ ...prev, email: newEmail.trim() }));
+      setShowEmailChangeModal(false);
+    } catch (err: any) {
+      if (err?.response?.status === 409) {
+        setEmailChangeError('Email already exists. Please use another.');
+      } else if (err?.response?.status === 401) {
+        setEmailChangeError('Password is incorrect.');
+      } else {
+        setEmailChangeError('Failed to change email.');
+      }
+    }
   };
 
   const handleCancelEdit = () => {
     setEditedBio(profile.bio);
     setEditedName(profile.name);
     setEditedUsername(profile.username);
-    setEditedEmail(profile.email);
     setEditedShowEmail(profile.showEmail);
     setEditMode(false);
   };
@@ -208,24 +300,51 @@ export default function Profile() {
         {/* Profile Card */}
         <div className="profile-card-main">
           {/* Cover Photo */}
-          <div className="profile-cover">
+          <div className="profile-cover" style={{ position: 'relative' }}>
             {coverPreview || profile.coverPhoto ? (
               <img src={coverPreview || profile.coverPhoto} alt="Cover" className="profile-cover-img" />
             ) : (
               <div className="profile-cover-placeholder"></div>
             )}
             {editMode && (
-              <label className="profile-cover-upload">
-                <input type="file" accept="image/*" onChange={handleCoverChange} hidden />
-                <FaCamera />
-              </label>
+              <>
+                <label className="profile-cover-upload" style={{ position: 'absolute', bottom: 16, right: 16, width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,255,255,0.95)', color: '#667eea', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', fontSize: 18 }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={async (e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        try {
+                          const url = await uploadToCloudinary(e.target.files[0]);
+                          setCoverPreview(url);
+                        } catch (err) {
+                          alert('Upload failed.');
+                        }
+                      }
+                    }}
+                  />
+                  <FaCamera />
+                </label>
+                <div style={{ marginTop: 8 }}>
+                  <label style={{ fontWeight: 500, fontSize: 13 }}>Header Image URL:</label>
+                  <input
+                    type="text"
+                    placeholder="Paste image URL (e.g. from Cloudinary)"
+                    value={coverPreview ?? profile.coverPhoto ?? ''}
+                    onChange={e => setCoverPreview(e.target.value)}
+                    style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 14, marginTop: 2 }}
+                  />
+                  <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Paste a direct image URL or use the camera icon to upload.</div>
+                </div>
+              </>
             )}
           </div>
 
           {/* Profile Info Section */}
           <div className="profile-info-section">
             <div className="profile-avatar-wrapper">
-              <div className="profile-avatar-large">
+              <div className="profile-avatar-large" style={{ position: 'relative' }}>
                 {avatarPreview || profile.avatar ? (
                   <img src={avatarPreview || profile.avatar} alt="Avatar" className="profile-avatar-img" />
                 ) : (
@@ -234,10 +353,37 @@ export default function Profile() {
                   </div>
                 )}
                 {editMode && (
-                  <label className="profile-avatar-upload-btn">
-                    <input type="file" accept="image/*" onChange={handleAvatarChange} hidden />
-                    <FaCamera />
-                  </label>
+                  <>
+                    <label className="profile-avatar-upload-btn" style={{ position: 'absolute', bottom: 8, right: 8, width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.95)', color: '#667eea', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', fontSize: 18 }}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            try {
+                              const url = await uploadToCloudinary(e.target.files[0]);
+                              setAvatarPreview(url);
+                            } catch (err) {
+                              alert('Upload failed.');
+                            }
+                          }
+                        }}
+                      />
+                      <FaCamera />
+                    </label>
+                    <div style={{ marginTop: 8 }}>
+                      <label style={{ fontWeight: 500, fontSize: 13 }}>Avatar Image URL:</label>
+                      <input
+                        type="text"
+                        placeholder="Paste image URL (e.g. from Cloudinary)"
+                        value={avatarPreview ?? profile.avatar ?? ''}
+                        onChange={e => setAvatarPreview(e.target.value)}
+                        style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 14, marginTop: 2 }}
+                      />
+                      <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Paste a direct image URL or use the camera icon to upload.</div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
@@ -261,13 +407,75 @@ export default function Profile() {
                         onChange={(e) => setEditedUsername(e.target.value)}
                         placeholder="Enter your username"
                       />
-                      <input
-                        type="email"
-                        className="profile-email-input"
-                        value={editedEmail}
-                        onChange={(e) => setEditedEmail(e.target.value)}
-                        placeholder="Enter your email"
-                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input
+                          type="email"
+                          className="profile-email-input"
+                          value={profile.email}
+                          disabled
+                          style={{ background: '#f5f5f5', color: '#888' }}
+                        />
+                        <button type="button" className="profile-edit-btn" style={{ padding: '4px 10px', fontSize: 13 }} onClick={() => {
+                          setShowEmailChangeModal(true);
+                          setNewEmail('');
+                          setEmailPassword('');
+                          setEmailChangeError(null);
+                          setEmailChangeSuccess(null);
+                        }}>Change</button>
+                      </div>
+                            {/* Email Change Modal */}
+                            {showEmailChangeModal && (
+                              <div className="profile-modal-overlay" onClick={() => setShowEmailChangeModal(false)}>
+                                <div
+                                  className="profile-modal"
+                                  onClick={e => e.stopPropagation()}
+                                  style={{ maxWidth: 400, padding: 28, borderRadius: 18, background: '#fff', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}
+                                >
+                                  <div className="profile-modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+                                    <h3 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Change Email</h3>
+                                    <button className="profile-modal-close" style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer' }} onClick={() => setShowEmailChangeModal(false)}><FaTimes /></button>
+                                  </div>
+                                  <div className="profile-modal-content" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                                    <label style={{ fontWeight: 500, marginBottom: 2 }}>New Email</label>
+                                    <input
+                                      type="email"
+                                      value={newEmail}
+                                      onChange={e => setNewEmail(e.target.value)}
+                                      className="profile-email-input"
+                                      placeholder="Enter new email"
+                                      style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 15, marginBottom: 6 }}
+                                    />
+                                    <label style={{ fontWeight: 500, marginBottom: 2 }}>Password</label>
+                                    <input
+                                      type="password"
+                                      value={emailPassword}
+                                      onChange={e => setEmailPassword(e.target.value)}
+                                      className="profile-email-input"
+                                      placeholder="Enter your password"
+                                      style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 15, marginBottom: 6 }}
+                                    />
+                                    {emailChangeError && <p className="profile-save-error" style={{ color: '#fc8181', fontWeight: 500, margin: '6px 0 0 0' }}>{emailChangeError}</p>}
+                                    {emailChangeSuccess && <p style={{ color: 'green', fontWeight: 500, margin: '6px 0 0 0' }}>{emailChangeSuccess}</p>}
+                                    <div style={{ display: 'flex', gap: 12, marginTop: 18, justifyContent: 'flex-end' }}>
+                                      <button
+                                        className="profile-edit-btn"
+                                        style={{ background: 'linear-gradient(90deg, #6b73ff 0%, #000dff 100%)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontWeight: 600, fontSize: 15, boxShadow: '0 2px 8px rgba(107,115,255,0.08)' }}
+                                        onClick={handleEmailChange}
+                                      >
+                                        Change Email
+                                      </button>
+                                      <button
+                                        className="profile-cancel-btn"
+                                        style={{ background: '#f3f4f6', color: '#333', border: 'none', borderRadius: 8, padding: '8px 20px', fontWeight: 500, fontSize: 15 }}
+                                        onClick={() => setShowEmailChangeModal(false)}
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                       <label className="profile-email-visibility">
                         <input
                           type="checkbox"
@@ -294,7 +502,6 @@ export default function Profile() {
                       setEditedBio(profile.bio);
                       setEditedName(profile.name);
                       setEditedUsername(profile.username);
-                      setEditedEmail(profile.email);
                       setEditedShowEmail(profile.showEmail);
                     }
                   }}>

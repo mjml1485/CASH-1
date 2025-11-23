@@ -1,11 +1,6 @@
-import { 
-  doc, 
-  setDoc, 
-  getDoc, 
-  updateDoc,
-  serverTimestamp 
-} from 'firebase/firestore';
-import { db } from '../config/firebase';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_CASH_API_URL || 'http://localhost:3001';
 
 export interface UserProfile {
   uid: string;
@@ -20,61 +15,76 @@ export interface UserProfile {
   updatedAt: any;
 }
 
-export const saveUserProfile = async (
-  uid: string,
-  profileData: Partial<UserProfile>
-): Promise<void> => {
+export const createOrUpdateProfileBackend = async (profile: { name?: string; username?: string }) => {
   try {
-    const userRef = doc(db, 'users', uid);
-    const existingDoc = await getDoc(userRef);
-    
-    if (existingDoc.exists()) {
-      await updateDoc(userRef, {
-        ...profileData,
-        updatedAt: serverTimestamp(),
-      });
-    } else {
-      await setDoc(userRef, {
-        uid,
-        ...profileData,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-    }
-  } catch (error) {
-    console.error('Error saving user profile:', error);
-    throw new Error('Failed to save user profile');
-  }
-};
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
 
-export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
-  try {
-    const userRef = doc(db, 'users', uid);
-    const userSnap = await getDoc(userRef);
-    
-    if (userSnap.exists()) {
-      return userSnap.data() as UserProfile;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error getting user profile:', error);
-    throw new Error('Failed to get user profile');
-  }
-};
-
-export const updateUserProfile = async (
-  uid: string,
-  updates: Partial<UserProfile>
-): Promise<void> => {
-  try {
-    const userRef = doc(db, 'users', uid);
-    await updateDoc(userRef, {
-      ...updates,
-      updatedAt: serverTimestamp(),
+    const res = await axios.post(`${API_URL}/api/users`, profile, {
+      headers: { Authorization: `Bearer ${token}` },
     });
-  } catch (error) {
-    console.error('Error updating user profile:', error);
-    throw new Error('Failed to update user profile');
+    return res.data.user;
+  } catch (err) {
+    console.warn('createOrUpdateProfileBackend failed', err);
+    throw err;
+  }
+};
+
+export const fetchProfileBackend = async () => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+
+    const res = await axios.get(`${API_URL}/api/users/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.user;
+  } catch (err) {
+    console.warn('fetchProfileBackend failed', err);
+    throw err;
+  }
+};
+
+export const updateProfileBackend = async (updates: Partial<UserProfile>) => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+
+    const allowed = ['name', 'username', 'bio', 'showEmail', 'avatar', 'coverPhoto', 'header'];
+    const filtered: any = {};
+    for (const key of allowed) {
+      if (key === 'coverPhoto' && (updates as any)['coverPhoto']) {
+        filtered['header'] = (updates as any)['coverPhoto'];
+      } else if (key !== 'coverPhoto' && key in updates) {
+        filtered[key] = (updates as any)[key];
+      }
+    }
+
+    const res = await axios.put(`${API_URL}/api/users/me`, filtered, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.user;
+  } catch (err) {
+    console.warn('updateProfileBackend failed', err);
+    throw err;
+  }
+};
+
+export const changeEmailBackend = async ({ newEmail, password }: { newEmail: string; password: string }) => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+    const res = await axios.post(`${API_URL}/api/users/me/email`, { newEmail, password }, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.user;
+  } catch (err) {
+    console.warn('changeEmailBackend failed', err);
+    throw err;
   }
 };
 

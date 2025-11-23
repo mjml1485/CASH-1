@@ -17,9 +17,6 @@ export interface AuthUser {
   emailVerified: boolean;
 }
 
-/**
- * Convert Firebase User to AuthUser
- */
 const firebaseUserToAuthUser = (user: { uid: string; email: string | null; displayName: string | null; emailVerified: boolean }): AuthUser => {
   return {
     uid: user.uid,
@@ -29,9 +26,6 @@ const firebaseUserToAuthUser = (user: { uid: string; email: string | null; displ
   };
 };
 
-/**
- * Sign up a new user
- */
 export const signUp = async (
   email: string,
   password: string,
@@ -44,34 +38,18 @@ export const signUp = async (
       password
     );
 
-    // Update display name if provided
     if (name && userCredential.user) {
       await updateProfile(userCredential.user, { displayName: name });
     }
 
-    // Save user profile to Firestore
     try {
-      const { saveUserProfile } = await import('./userService');
-      await saveUserProfile(userCredential.user.uid, {
-        uid: userCredential.user.uid,
-        email: email,
-        name: name || email.split('@')[0],
-        username: name || email.split('@')[0],
-        showEmail: true,
+      const defaultUsername = name || email.split('@')[0];
+      const token = await userCredential.user.getIdToken();
+      await axios.post(`${API_URL}/api/users`, { name: name || email.split('@')[0], username: defaultUsername }, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-    } catch (error) {
-      // Firestore save failed; continue without blocking signup
-    }
-
-    // Optionally create user in backend for additional metadata
-    try {
-      await axios.post(`${API_URL}/api/auth/signup`, {
-        email,
-        password,
-        name,
-      });
-    } catch (error) {
-      // Backend signup is optional; ignore backend failures during signup
+    } catch (err) {
+      console.warn('Backend profile create failed', err);
     }
 
     return firebaseUserToAuthUser(userCredential.user);
@@ -84,9 +62,6 @@ export const signUp = async (
   }
 };
 
-/**
- * Sign in an existing user
- */
 export const signIn = async (
   email: string,
   password: string
@@ -108,9 +83,6 @@ export const signIn = async (
   }
 };
 
-/**
- * Sign out the current user
- */
 export const signOutUser = async (): Promise<void> => {
   try {
     await signOut(auth);
@@ -123,9 +95,6 @@ export const signOutUser = async (): Promise<void> => {
   }
 };
 
-/**
- * Send password reset email using Firebase
- */
 export const resetPassword = async (email: string): Promise<void> => {
   try {
     await sendPasswordResetEmail(auth, email);
@@ -138,9 +107,6 @@ export const resetPassword = async (email: string): Promise<void> => {
   }
 };
 
-/**
- * Get the current user's ID token
- */
 export const getIdToken = async (): Promise<string | null> => {
   const user = auth.currentUser;
   if (!user) return null;
@@ -156,9 +122,6 @@ export const getIdToken = async (): Promise<string | null> => {
   }
 };
 
-/**
- * Verify token with backend
- */
 export const verifyToken = async (token: string): Promise<AuthUser> => {
   try {
     const response = await axios.post(`${API_URL}/api/auth/verify`, { token });
@@ -168,9 +131,6 @@ export const verifyToken = async (token: string): Promise<AuthUser> => {
   }
 };
 
-/**
- * Get current user info from backend
- */
 export const getCurrentUser = async (): Promise<AuthUser> => {
   try {
     const token = await getIdToken();
@@ -190,10 +150,6 @@ export const getCurrentUser = async (): Promise<AuthUser> => {
   }
 };
 
-/**
- * Convert Firebase error codes to user-friendly messages
- * Separates email errors from password errors for better UX
- */
 const getAuthErrorMessage = (errorCode: string): string => {
   switch (errorCode) {
     case 'auth/email-already-in-use':
@@ -211,9 +167,6 @@ const getAuthErrorMessage = (errorCode: string): string => {
     case 'auth/wrong-password':
       return 'Incorrect password. Please try again or use "Forgot Password" to reset it.';
     case 'auth/invalid-credential':
-      // Firebase v10+ uses invalid-credential for both wrong email and password
-      // We'll need to check which one it is, but for now show a generic message
-      // The actual error handling in components will help differentiate
       return 'Invalid email or password. Please check your credentials and try again.';
     case 'auth/too-many-requests':
       return 'Too many failed attempts. Please try again later or reset your password.';

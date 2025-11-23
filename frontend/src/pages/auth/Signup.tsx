@@ -3,15 +3,17 @@ import { useNavigate, Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import type { FormEvent } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { createOrUpdateProfileBackend } from '../../services/userService';
 
 export default function Signup() {
   const navigate = useNavigate();
-  const { signUp, currentUser, loading } = useAuth();
+  const { signUp, signIn, currentUser, loading } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [hasInteracted, setHasInteracted] = useState({ name: false, email: false, password: false, confirmPassword: false });
   const [authError, setAuthError] = useState<string | null>(null);
@@ -72,12 +74,20 @@ export default function Signup() {
     }
 
     try {
-      await signUp(email, password, name);
+      await signUp(email, password, name); 
       navigate('/onboarding/welcome');
     } catch (err: any) {
       const code = err?.code || '';
       if (code === 'auth/email-already-in-use') {
-        setAuthError('This email is already in use.');
+        try {
+          await signIn(email, password);
+          const defaultUsername = name || email.split('@')[0];
+          await createOrUpdateProfileBackend({ name: name || email.split('@')[0], username: defaultUsername });
+          navigate('/onboarding/welcome');
+          return;
+        } catch (innerErr) {
+          setAuthError('This email is already in use. Please sign in instead.');
+        }
       } else if (code === 'auth/weak-password') {
         setAuthError('Your password is too weak.');
       } else if (err?.message) {
@@ -205,6 +215,8 @@ export default function Signup() {
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
                 className="sign-up-toggle-password"
                 disabled={submitting}
+                tabIndex={-1}
+                style={{ marginLeft: 4 }}
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
@@ -217,7 +229,7 @@ export default function Signup() {
             <div className="sign-up-wrapper-password">
               <input
                 id="confirm-password"
-                type={showPassword ? 'text' : 'password'}
+                type={showConfirmPassword ? 'text' : 'password'}
                 placeholder={confirmPassword || !hasInteracted.confirmPassword ? 'Confirm your password' : ''}
                 value={confirmPassword}
                 onChange={(e) => {
@@ -249,13 +261,15 @@ export default function Signup() {
               />
               <button
                 type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                aria-pressed={showPassword}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                aria-pressed={showConfirmPassword}
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 className="sign-up-toggle-password"
                 disabled={submitting}
+                tabIndex={-1}
+                style={{ marginLeft: 4 }}
               >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
 

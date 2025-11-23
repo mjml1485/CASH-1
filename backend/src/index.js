@@ -1,9 +1,17 @@
 import express from 'express';
 import cors from 'cors';
+import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
+import usersRoutes from './routes/users.js';
+import connectDB from './config/db.js';
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Connect to MongoDB
+connectDB(process.env.MONGO_URI);
 
 // Middleware
 app.use(cors({
@@ -20,6 +28,7 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -28,15 +37,14 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  console.error('Error:', err?.message || err);
   res.status(500).json({ 
     error: 'Internal Server Error', 
-    message: err.message || 'Something went wrong' 
+    message: err?.message || 'Something went wrong' 
   });
 });
 
 app.listen(PORT, () => {
   console.log(`CASH Backend API running on http://localhost:${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
 });
 

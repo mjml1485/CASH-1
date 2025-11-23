@@ -32,7 +32,7 @@ router.post('/signup', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Signup error:', error);
+    console.error('Signup error:', error?.message || error);
     
     if (error.code === 'auth/email-already-exists') {
       return res.status(409).json({ 
@@ -55,9 +55,10 @@ router.post('/signup', async (req, res) => {
       });
     }
 
+    const message = process.env.NODE_ENV === 'production' ? 'Failed to create user' : (error && error.message ? error.message : 'Failed to create user');
     res.status(500).json({ 
       error: 'Internal server error', 
-      message: 'Failed to create user' 
+      message
     });
   }
 });
@@ -86,7 +87,7 @@ router.post('/verify', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Token verification error:', error);
+    console.error('Token verification error:', error?.message || error);
     res.status(401).json({ 
       error: 'Unauthorized', 
       message: 'Invalid or expired token' 
@@ -109,7 +110,7 @@ router.get('/me', verifyToken, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Get user error:', error);
+    console.error('Get user error:', error?.message || error);
     res.status(500).json({ 
       error: 'Internal server error', 
       message: 'Failed to get user info' 
