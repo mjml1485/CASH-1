@@ -167,7 +167,7 @@ const getAuthErrorMessage = (errorCode: string): string => {
     case 'auth/wrong-password':
       return 'Incorrect password. Please try again or use "Forgot Password" to reset it.';
     case 'auth/invalid-credential':
-      return 'Invalid email or password. Please check your credentials and try again.';
+      return 'No account found with this email address. Please sign up first or check your email.';
     case 'auth/too-many-requests':
       return 'Too many failed attempts. Please try again later or reset your password.';
     case 'auth/network-request-failed':

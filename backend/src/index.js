@@ -3,6 +3,13 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
+import walletsRoutes from './routes/wallets.js';
+import budgetsRoutes from './routes/budgets.js';
+import transactionsRoutes from './routes/transactions.js';
+import activitiesRoutes from './routes/activities.js';
+import commentsRoutes from './routes/comments.js';
+import customCategoriesRoutes from './routes/customCategories.js';
+import settingsRoutes from './routes/settings.js';
 import connectDB from './config/db.js';
 
 dotenv.config();
@@ -15,7 +22,7 @@ connectDB(process.env.MONGO_URI);
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: process.env.FRONTEND_URL || 'http://localhost:5174',
   credentials: true,
 }));
 app.use(express.json());
@@ -29,6 +36,13 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/wallets', walletsRoutes);
+app.use('/api/budgets', budgetsRoutes);
+app.use('/api/transactions', transactionsRoutes);
+app.use('/api/activities', activitiesRoutes);
+app.use('/api/comments', commentsRoutes);
+app.use('/api/custom-categories', customCategoriesRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -38,9 +52,9 @@ app.use((req, res) => {
 // Error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err?.message || err);
-  res.status(500).json({ 
-    error: 'Internal Server Error', 
-    message: err?.message || 'Something went wrong' 
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: err?.message || 'Something went wrong'
   });
 });
 

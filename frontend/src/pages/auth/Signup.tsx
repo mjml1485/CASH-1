@@ -3,11 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import type { FormEvent } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { createOrUpdateProfileBackend } from '../../services/userService';
 
 export default function Signup() {
   const navigate = useNavigate();
-  const { signUp, signIn, currentUser, loading } = useAuth();
+  const { signUp, currentUser, loading } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,70 +27,20 @@ export default function Signup() {
     e.preventDefault();
     setSubmitting(true);
     setAuthError(null);
-    const emailInput = e.currentTarget.elements.namedItem('email') as HTMLInputElement;
-    const passwordInput = e.currentTarget.elements.namedItem('password') as HTMLInputElement;
-    const confirmInput = e.currentTarget.elements.namedItem('confirm-password') as HTMLInputElement;
-    emailInput.setCustomValidity('');
-    passwordInput.setCustomValidity('');
-    confirmInput.setCustomValidity('');
 
-    if (!email.trim()) {
-      emailInput.setCustomValidity('Please enter your email address.');
-      emailInput.reportValidity();
-      setSubmitting(false);
-      return;
-    }
-    if (emailInput.validity.typeMismatch) {
-      emailInput.setCustomValidity('Please enter a valid email address.');
-      emailInput.reportValidity();
-      setSubmitting(false);
-      return;
-    }
-        const strongPassword = /^(?=.*[A-Z])(?=.*\d).{6,}$/;
-        if (!password) {
-          passwordInput.setCustomValidity('Please create a password.');
-          passwordInput.reportValidity();
-          setSubmitting(false);
-          return;
-        }
-        if (!strongPassword.test(password)) {
-          passwordInput.setCustomValidity('Password must be at least 6 characters, include a number and an uppercase letter.');
-          passwordInput.reportValidity();
-          setSubmitting(false);
-          return;
-        }
-    if (!confirmPassword) {
-      confirmInput.setCustomValidity('Please confirm your password.');
-      confirmInput.reportValidity();
-      setSubmitting(false);
-      return;
-    }
     if (password !== confirmPassword) {
-      confirmInput.setCustomValidity('Password and confirmation do not match.');
-      confirmInput.reportValidity();
+      setAuthError('Passwords do not match');
       setSubmitting(false);
       return;
     }
 
     try {
-      await signUp(email, password, name); 
+      await signUp(email, password, name);
       navigate('/onboarding/welcome');
     } catch (err: any) {
       const code = err?.code || '';
       if (code === 'auth/email-already-in-use') {
-        try {
-          await signIn(email, password);
-          const defaultUsername = name || email.split('@')[0];
-          await createOrUpdateProfileBackend({ name: name || email.split('@')[0], username: defaultUsername });
-          navigate('/onboarding/welcome');
-          return;
-        } catch (innerErr) {
-          setAuthError('This email is already in use. Please sign in instead.');
-        }
-      } else if (code === 'auth/weak-password') {
-        setAuthError('Your password is too weak.');
-      } else if (err?.message) {
-        setAuthError(err.message);
+        setAuthError('Email already registered. Please sign in.');
       } else {
         setAuthError('Something went wrong. Please try again.');
       }
@@ -155,11 +104,7 @@ export default function Signup() {
                 }
               }}
               onInvalid={(e) => {
-                if (!e.currentTarget.value) {
-                  e.currentTarget.setCustomValidity('Please enter your email address.');
-                } else {
-                  e.currentTarget.setCustomValidity('Please enter a valid email address.');
-                }
+                e.currentTarget.setCustomValidity('Please enter a valid email address.');
               }}
               disabled={submitting}
               autoComplete="email"
@@ -194,13 +139,7 @@ export default function Signup() {
                   }
                 }}
                 onInvalid={(e) => {
-                  if (!e.currentTarget.value) {
-                    e.currentTarget.setCustomValidity('Please create a password.');
-                  } else if (!/^(?=.*[A-Z])(?=.*\d).{6,}$/.test(e.currentTarget.value)) {
-                    e.currentTarget.setCustomValidity('Password must be at least 6 characters, include a number and an uppercase letter.');
-                  } else {
-                    e.currentTarget.setCustomValidity('');
-                  }
+                  e.currentTarget.setCustomValidity('Password must be at least 6 characters, with a number and an uppercase letter.');
                 }}
                 disabled={submitting}
                 autoComplete="new-password"
@@ -242,15 +181,6 @@ export default function Signup() {
                 onBlur={() => {
                   if (!confirmPassword.trim()) {
                     setHasInteracted(prev => ({ ...prev, confirmPassword: false }));
-                  }
-                }}
-                onInvalid={(e) => {
-                  if (!e.currentTarget.value) {
-                    e.currentTarget.setCustomValidity('Please confirm your password.');
-                  } else if (e.currentTarget.value.length < 6) {
-                    e.currentTarget.setCustomValidity('Password must be at least 6 characters.');
-                  } else {
-                    e.currentTarget.setCustomValidity('');
                   }
                 }}
                 disabled={submitting}

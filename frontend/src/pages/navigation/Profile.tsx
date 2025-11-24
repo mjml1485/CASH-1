@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { FaCamera, FaSearch, FaTimes, FaArrowLeft, FaSignOutAlt } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
-import { fetchProfileBackend, updateProfileBackend } from '../../services/userService';
+import { fetchProfileBackend, updateProfileBackend, createOrUpdateProfileBackend } from '../../services/userService';
 
 interface UserProfile {
   id: string;
@@ -84,73 +84,73 @@ export default function Profile() {
   const [searchResults, setSearchResults] = useState<Connection[]>([]);
 
   useEffect(() => {
-    if (currentUser) {
-      setProfile(prev => ({
-        ...prev,
-        name: currentUser.name || prev.name,
-        email: currentUser.email || prev.email,
-        username: prev.username || currentUser.email?.split('@')[0] || '',
-      }));
-    }
+    if (!currentUser) return;
 
     (async () => {
-      if (!currentUser) return;
       try {
+        // Always fetch from backend first
         const backendProfile = await fetchProfileBackend();
         if (backendProfile) {
-          setProfile(prev => ({
-            ...prev,
-            name: backendProfile.name || prev.name,
-            email: backendProfile.email || prev.email,
-            username: backendProfile.username || prev.username || currentUser.email?.split('@')[0] || '',
-            bio: backendProfile.bio || prev.bio,
-            showEmail: typeof backendProfile.showEmail === 'boolean' ? backendProfile.showEmail : prev.showEmail,
-            avatar: backendProfile.avatar || prev.avatar,
-            coverPhoto: backendProfile.header || prev.coverPhoto,
-          }));
-          sessionStorage.setItem('profile', JSON.stringify({ ...backendProfile, coverPhoto: backendProfile.header }));
+          setProfile({
+            uid: backendProfile.uid || currentUser.uid || '',
+            name: backendProfile.name || currentUser.name || '',
+            email: backendProfile.email || currentUser.email || '',
+            username: backendProfile.username || currentUser.email?.split('@')[0] || '',
+            bio: backendProfile.bio || '',
+            showEmail: typeof backendProfile.showEmail === 'boolean' ? backendProfile.showEmail : false,
+            avatar: backendProfile.avatar || '',
+            coverPhoto: backendProfile.header || '',
+            createdAt: backendProfile.createdAt,
+            updatedAt: backendProfile.updatedAt
+          });
         } else {
-          const storedProfile = sessionStorage.getItem('profile');
-          if (storedProfile) {
-            try {
-              const prof = JSON.parse(storedProfile);
-              setProfile(prev => ({ ...prev, ...prof }));
-            } catch {}
-          } else {
-            const storedUser = sessionStorage.getItem('currentUser');
-            if (storedUser) {
-              const userData = JSON.parse(storedUser);
-              setProfile(prev => ({
-                ...prev,
-                name: userData.name || prev.name || currentUser?.name || '',
-                username: userData.username || userData.email?.split('@')[0] || prev.username || '',
-                email: userData.email || prev.email || currentUser?.email || '',
-              }));
-            }
-          }
-        }
-      } catch (err) {
-        const storedProfile = sessionStorage.getItem('profile');
-        if (storedProfile) {
+          // If no profile exists, create one with default values
           try {
-            const prof = JSON.parse(storedProfile);
-            setProfile(prev => ({ ...prev, ...prof }));
-          } catch {}
-        } else {
-          const storedUser = sessionStorage.getItem('currentUser');
-          if (storedUser) {
-            const userData = JSON.parse(storedUser);
+            const defaultUsername = currentUser.email?.split('@')[0] || 'user';
+            await createOrUpdateProfileBackend({
+              name: currentUser.name || defaultUsername,
+              username: defaultUsername
+            });
+            // Fetch again after creation
+            const newProfile = await fetchProfileBackend();
+            if (newProfile) {
+              setProfile({
+                uid: newProfile.uid || currentUser.uid || '',
+                name: newProfile.name || currentUser.name || '',
+                email: newProfile.email || currentUser.email || '',
+                username: newProfile.username || defaultUsername,
+                bio: newProfile.bio || '',
+                showEmail: typeof newProfile.showEmail === 'boolean' ? newProfile.showEmail : false,
+                avatar: newProfile.avatar || '',
+                coverPhoto: newProfile.header || '',
+                createdAt: newProfile.createdAt,
+                updatedAt: newProfile.updatedAt
+              });
+            }
+          } catch (createErr) {
+            console.error('Failed to create profile:', createErr);
+            // Fallback to current user data
             setProfile(prev => ({
               ...prev,
-              name: userData.name || prev.name || currentUser?.name || '',
-              username: userData.username || userData.email?.split('@')[0] || prev.username || '',
-              email: userData.email || prev.email || currentUser?.email || '',
+              name: currentUser.name || prev.name || '',
+              email: currentUser.email || prev.email || '',
+              username: prev.username || currentUser.email?.split('@')[0] || '',
             }));
           }
         }
+      } catch (err) {
+        console.error('Failed to fetch profile:', err);
+        // Only use currentUser as fallback, not sessionStorage
+        setProfile(prev => ({
+          ...prev,
+          name: currentUser.name || prev.name || '',
+          email: currentUser.email || prev.email || '',
+          username: prev.username || currentUser.email?.split('@')[0] || '',
+        }));
       }
     })();
 
+    // Followers/Following can stay in sessionStorage for now (social features)
     const storedFollowers = sessionStorage.getItem('followers');
     const storedFollowing = sessionStorage.getItem('following');
     if (storedFollowers) setFollowers(JSON.parse(storedFollowers));
@@ -162,54 +162,56 @@ export default function Profile() {
     navigate(target);
   };
 
-  const handleSaveBio = () => {
+  const handleSaveBio = async () => {
     if (!editedName.trim()) { setSaveError('Name is required'); return; }
     if (!editedUsername.trim()) { setSaveError('Username is required'); return; }
 
-    const updated = {
-      ...profile,
-      name: editedName.trim(),
-      username: editedUsername.trim(),
-      bio: editedBio,
-      showEmail: editedShowEmail,
-      avatar: avatarPreview !== null ? avatarPreview : profile.avatar,
-      coverPhoto: coverPreview !== null ? coverPreview : profile.coverPhoto,
-    } as UserProfile;
-    setProfile(updated);
-    sessionStorage.setItem('profile', JSON.stringify(updated));
-    const currentUser = { name: updated.name, email: updated.email, username: updated.username, joinedDate: profile.joinedDate };
-    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-
-    (async () => {
-      try {
-        await updateProfileBackend({
-          name: updated.name,
-          username: updated.username,
-          bio: updated.bio,
-          showEmail: updated.showEmail,
-          avatar: updated.avatar,
-          coverPhoto: updated.coverPhoto,
+    try {
+      // Save to backend first
+      await updateProfileBackend({
+        name: editedName.trim(),
+        username: editedUsername.trim(),
+        bio: editedBio,
+        showEmail: editedShowEmail,
+        avatar: avatarPreview !== null ? avatarPreview : profile.avatar,
+        coverPhoto: coverPreview !== null ? coverPreview : profile.coverPhoto,
+      });
+      
+      // Fetch updated profile from backend
+      const backendProfile = await fetchProfileBackend();
+      if (backendProfile) {
+        setProfile({
+          ...profile,
+          name: backendProfile.name || editedName.trim(),
+          email: backendProfile.email || profile.email,
+          username: backendProfile.username || editedUsername.trim(),
+          bio: backendProfile.bio || editedBio,
+          showEmail: typeof backendProfile.showEmail === 'boolean' ? backendProfile.showEmail : editedShowEmail,
+          avatar: backendProfile.avatar || (avatarPreview !== null ? avatarPreview : profile.avatar),
+          coverPhoto: backendProfile.header || (coverPreview !== null ? coverPreview : profile.coverPhoto),
         });
-        const backendProfile = await fetchProfileBackend();
-        if (backendProfile) {
-          setProfile(prev => ({
-            ...prev,
-            ...backendProfile,
-            coverPhoto: backendProfile.header || prev.coverPhoto,
-          }));
-          sessionStorage.setItem('profile', JSON.stringify({ ...backendProfile, coverPhoto: backendProfile.header }));
-        }
-        setSaveError(null);
-        setEditMode(false);
-      } catch (err: any) {
-        if (err?.response?.status === 409) {
-          setSaveError('Username already exists. Please choose another.');
-        } else {
-          console.warn('Failed to persist profile to backend', err);
-          setSaveError('Failed to save profile to server. Changes saved locally.');
-        }
+      } else {
+        // Fallback to local state if fetch fails
+        setProfile({
+          ...profile,
+          name: editedName.trim(),
+          username: editedUsername.trim(),
+          bio: editedBio,
+          showEmail: editedShowEmail,
+          avatar: avatarPreview !== null ? avatarPreview : profile.avatar,
+          coverPhoto: coverPreview !== null ? coverPreview : profile.coverPhoto,
+        });
       }
-    })();
+      setSaveError(null);
+      setEditMode(false);
+    } catch (err: any) {
+      if (err?.response?.status === 409) {
+        setSaveError('Username already exists. Please choose another.');
+      } else {
+        console.error('Failed to save profile:', err);
+        setSaveError(err?.response?.data?.message || err?.message || 'Failed to save profile');
+      }
+    }
   };
 
   const handleEmailChange = async () => {

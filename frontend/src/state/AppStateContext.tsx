@@ -1,5 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from 'react';
 import type { ReactNode } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import * as activityService from '../services/activityService';
+import * as commentService from '../services/commentService';
+
+const MAX_ACTIVITY = 100;
+const MAX_COMMENTS = 50;
 
 export type EntityType = 'wallet' | 'budget' | 'transaction' | 'member' | 'comment' | 'system';
 
@@ -49,20 +55,11 @@ interface AppState {
   comments: CommentEntry[];
 }
 
-const STORAGE_KEYS = {
-  activity: 'cash-app-activity-log',
-  comments: 'cash-app-comments',
-  user: 'cash-app-current-user'
-};
-
 const defaultUser: CurrentUser = {
-  id: 'user-local-demo',
+  id: '',
   name: 'You',
-  email: 'demo@cash.app'
+  email: ''
 };
-
-const MAX_ACTIVITY = 200;
-const MAX_COMMENTS = 200;
 
 const initialState: AppState = {
   currentUser: defaultUser,
@@ -120,20 +117,11 @@ interface AddCommentInput {
 }
 
 interface AppStateContextValue extends AppState {
-  logActivity: (input: LogActivityInput) => ActivityEntry;
-  addComment: (input: AddCommentInput) => CommentEntry;
+  logActivity: (input: LogActivityInput) => Promise<ActivityEntry>;
+  addComment: (input: AddCommentInput) => Promise<CommentEntry>;
 }
 
 const AppStateContext = createContext<AppStateContextValue | undefined>(undefined);
-
-const safeParse = <T,>(raw: string | null): T | undefined => {
-  if (!raw) return undefined;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return undefined;
-  }
-};
 
 const generateId = () => {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -144,47 +132,57 @@ const generateId = () => {
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const { currentUser: authUser } = useAuth();
 
+  // Load initial data from backend
   useEffect(() => {
-    const storedActivity = safeParse<ActivityEntry[]>(sessionStorage.getItem(STORAGE_KEYS.activity));
-    const storedComments = safeParse<CommentEntry[]>(sessionStorage.getItem(STORAGE_KEYS.comments));
-    const storedUser = safeParse<CurrentUser>(sessionStorage.getItem(STORAGE_KEYS.user));
-    dispatch({
-      type: 'LOAD_INITIAL',
-      payload: {
-        activity: storedActivity || [],
-        comments: storedComments || [],
-        currentUser: storedUser || defaultUser
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(STORAGE_KEYS.activity, JSON.stringify(state.activity));
-    } catch {
-      /* noop */
+    if (authUser?.uid) {
+      const loadData = async () => {
+        try {
+          const [activities, comments] = await Promise.all([
+            activityService.getActivities().catch(() => []),
+            commentService.getComments().catch(() => [])
+          ]);
+          
+          dispatch({
+            type: 'LOAD_INITIAL',
+            payload: {
+              activity: activities,
+              comments: comments,
+              currentUser: {
+                id: authUser.uid,
+                name: authUser.name || 'You',
+                email: authUser.email || ''
+              }
+            }
+          });
+        } catch (err) {
+          console.error('Failed to load initial data:', err);
+          dispatch({
+            type: 'LOAD_INITIAL',
+            payload: {
+              currentUser: {
+                id: authUser.uid,
+                name: authUser.name || 'You',
+                email: authUser.email || ''
+              }
+            }
+          });
+        }
+      };
+      loadData();
+    } else {
+      dispatch({
+        type: 'LOAD_INITIAL',
+        payload: {
+          currentUser: defaultUser
+        }
+      });
     }
-  }, [state.activity]);
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(STORAGE_KEYS.comments, JSON.stringify(state.comments));
-    } catch {
-      /* noop */
-    }
-  }, [state.comments]);
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(STORAGE_KEYS.user, JSON.stringify(state.currentUser));
-    } catch {
-      /* noop */
-    }
-  }, [state.currentUser]);
+  }, [authUser]);
 
   const logActivity = useCallback(
-    (input: LogActivityInput): ActivityEntry => {
+    async (input: LogActivityInput): Promise<ActivityEntry> => {
       const entry: ActivityEntry = {
         id: generateId(),
         walletId: input.walletId,
@@ -196,6 +194,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         actorName: input.actorName || state.currentUser.name,
         createdAt: input.timestamp || new Date().toISOString()
       };
+      
+      // Save to backend
+      try {
+        const saved = await activityService.createActivity({
+          walletId: entry.walletId,
+          action: entry.action,
+          entityType: entry.entityType,
+          entityId: entry.entityId,
+          message: entry.message,
+          actorId: entry.actorId,
+          actorName: entry.actorName
+        });
+        entry.id = saved.id;
+        entry.createdAt = saved.createdAt;
+      } catch (err) {
+        console.error('Failed to save activity to backend:', err);
+      }
+      
       dispatch({ type: 'LOG_ACTIVITY', payload: entry });
       return entry;
     },
@@ -203,7 +219,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   );
 
   const addComment = useCallback(
-    (input: AddCommentInput): CommentEntry => {
+    async (input: AddCommentInput): Promise<CommentEntry> => {
       const entry: CommentEntry = {
         id: generateId(),
         walletId: input.walletId,
@@ -213,6 +229,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         authorName: input.authorName || state.currentUser.name,
         createdAt: input.createdAt || new Date().toISOString()
       };
+      
+      // Save to backend
+      try {
+        const saved = await commentService.createComment({
+          walletId: entry.walletId,
+          entityId: entry.entityId,
+          message: entry.message,
+          authorId: entry.authorId,
+          authorName: entry.authorName
+        });
+        entry.id = saved.id;
+        entry.createdAt = saved.createdAt;
+      } catch (err) {
+        console.error('Failed to save comment to backend:', err);
+      }
+      
       dispatch({ type: 'ADD_COMMENT', payload: entry });
       if (input.logActivity !== false) {
         const sanitized = entry.message.replace(/\s+/g, ' ').trim();

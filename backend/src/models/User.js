@@ -11,6 +11,7 @@ const UserSchema = new Schema({
   avatar: { type: String, default: '' },
   header: { type: String, default: '' }, 
   showEmail: { type: Boolean, default: false },
+  onboardingCompleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
 const User = model('User', UserSchema);

@@ -50,7 +50,7 @@ router.put('/me', verifyToken, async (req, res) => {
     delete updates.firebaseUid;
     delete updates.email;
 
-    const allowedFields = ['name', 'username', 'bio', 'avatar', 'header', 'showEmail'];
+    const allowedFields = ['name', 'username', 'bio', 'avatar', 'header', 'showEmail', 'onboardingCompleted'];
     const filteredUpdates = {};
     for (const key of allowedFields) {
       if (key in updates) filteredUpdates[key] = updates[key];

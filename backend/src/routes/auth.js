@@ -63,6 +63,29 @@ router.post('/signup', async (req, res) => {
   }
 });
 
+router.post('/check-user', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ 
+        error: 'Bad Request', 
+        message: 'Email is required' 
+      });
+    }
+
+    await admin.auth().getUserByEmail(email);
+    res.status(200).json({ exists: true });
+  } catch (error) {
+    if (error.code === 'auth/user-not-found') {
+      res.status(200).json({ exists: false });
+    } else {
+      console.error('Check user error:', error?.message || error);
+      res.status(500).json({ error: 'Error checking user' });
+    }
+  }
+});
+
 router.post('/verify', async (req, res) => {
   try {
     const { token } = req.body;

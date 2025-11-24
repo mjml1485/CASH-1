@@ -1,9 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { CURRENCY_SYMBOLS, formatAmount, CHART_COLORS, DEFAULT_TEXT_COLOR } from '../../utils/shared';
 import { FaPlus, FaPen } from 'react-icons/fa';
 import AddTransaction, { type Transaction } from '../components/AddTransaction';
+import * as walletService from '../../services/walletService';
+import * as budgetService from '../../services/budgetService';
+import * as transactionService from '../../services/transactionService';
+import { useCurrency } from '../../hooks/useCurrency';
 
 interface Wallet {
   id: string;
@@ -33,7 +37,7 @@ export default function Personal() {
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [selectedWalletName, setSelectedWalletName] = useState<string>('');
-  const currency = localStorage.getItem('selectedCurrency') || 'PHP';
+  const { currency } = useCurrency();
   const [txFilter, setTxFilter] = useState<'All' | 'Expense' | 'Income'>('All');
   const [showTxModal, setShowTxModal] = useState<boolean>(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -41,38 +45,81 @@ export default function Personal() {
   const [showBudgetActionModal, setShowBudgetActionModal] = useState(false);
   const [showBudgetSelectModal, setShowBudgetSelectModal] = useState(false);
 
-  const reloadFinancialData = () => {
-    const w = sessionStorage.getItem('wallets');
-    setWallets(w ? JSON.parse(w) : []);
-    const b = sessionStorage.getItem('budgets');
-    setBudgets(b ? JSON.parse(b) : []);
-    const t = sessionStorage.getItem('transactions');
-    setTransactions(t ? JSON.parse(t) : []);
+  const isInitialLoad = useRef(true);
+
+  const reloadFinancialData = async (showLoading = false) => {
+    // Only show loading on initial load to prevent glitching
+    if (showLoading && isInitialLoad.current) {
+      // Could add a loading state here if needed, but for now just load silently
+    }
+    
+    try {
+      const [walletsData, budgetsData, transactionsData] = await Promise.all([
+        walletService.getWallets().catch(() => []),
+        budgetService.getBudgets().catch(() => []),
+        transactionService.getTransactions().catch(() => [])
+      ]);
+      
+      setWallets(walletsData.map(w => ({
+        id: w.id || w._id || '',
+        name: w.name,
+        balance: w.balance,
+        plan: w.plan,
+        color1: w.color1 || w.backgroundColor || '#e2e8f0',
+        color2: w.color2 || w.backgroundColor || '#e2e8f0',
+        textColor: w.textColor,
+        walletType: w.walletType,
+        type: w.walletType
+      })));
+      
+      setBudgets(budgetsData.map(b => ({
+        id: b.id || b._id || '',
+        category: b.category,
+        amount: b.amount,
+        period: b.period,
+        wallet: b.wallet,
+        left: b.left,
+        plan: b.plan
+      })));
+      
+      setTransactions(transactionsData.map(t => ({
+        id: t.id || t._id || '',
+        type: t.type,
+        amount: t.amount,
+        dateISO: typeof t.dateISO === 'string' ? t.dateISO : new Date(t.dateISO).toISOString(),
+        category: t.category,
+        walletFrom: t.walletFrom,
+        walletTo: t.walletTo,
+        description: t.description,
+        createdById: t.createdById,
+        createdByName: t.createdByName,
+        createdAtISO: t.createdAtISO,
+        updatedById: t.updatedById,
+        updatedByName: t.updatedByName,
+        updatedAtISO: t.updatedAtISO
+      })));
+    } catch (err) {
+      console.error('Failed to reload data:', err);
+      // Don't clear data on error, keep previous data visible
+    } finally {
+      isInitialLoad.current = false;
+    }
   };
 
   const personalWallets = useMemo(() => wallets.filter(w => w.plan === 'Personal'), [wallets]);
 
   useEffect(() => {
-    const handler = () => reloadFinancialData();
+    reloadFinancialData(true); // Initial load
+  }, []);
+
+  // Only reload when data-updated event fires, not on every modal/state change
+  useEffect(() => {
+    const handler = () => reloadFinancialData(false);
     window.addEventListener('data-updated', handler as EventListener);
-    window.addEventListener('storage', handler as EventListener);
     return () => {
       window.removeEventListener('data-updated', handler as EventListener);
-      window.removeEventListener('storage', handler as EventListener);
     };
   }, []);
-
-  useEffect(() => {
-    const w = sessionStorage.getItem('wallets');
-    const b = sessionStorage.getItem('budgets');
-    setWallets(w ? JSON.parse(w) : []);
-    setBudgets(b ? JSON.parse(b) : []);
-  }, []);
-
-  useEffect(() => {
-    const t = sessionStorage.getItem('transactions');
-    setTransactions(t ? JSON.parse(t) : []);
-  }, [showTxModal, selectedWalletName]);
 
   useEffect(() => {
     if (personalWallets.length > 0 && !selectedWalletName) {
@@ -240,10 +287,10 @@ export default function Personal() {
                 <div>Remaining</div>
                 <div>Status Bar</div>
               </div>
-              {rows.map(r => (
+                {rows.map(r => (
                 <div key={r.id} className="personal-table-row personal-row-clickable" onClick={() => {
                   const b = budgets.find(x => x.id === r.id);
-                  if (b) navigate('/add-budget', { state: { returnTo: '/personal', editMode: true, budgetIndex: budgets.findIndex(x => x.id === b.id), budgetData: b, budgetPlan: b.plan || 'Personal' } });
+                  if (b) navigate('/add-budget', { state: { returnTo: '/personal', editMode: true, budgetData: b, budgetPlan: b.plan || 'Personal' } }); 
                 }}>
                   <div>{r.name}</div>
                   <div>{CURRENCY_SYMBOLS[currency]} {formatAmount(String(r.allocated))}</div>

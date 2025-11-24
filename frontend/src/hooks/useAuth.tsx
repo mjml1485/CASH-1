@@ -14,6 +14,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<AuthUser>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  checkUserExists: (email: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -70,6 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authService.resetPassword(email);
   };
 
+  const checkUserExists = async (email: string): Promise<boolean> => {
+    return await authService.checkUserExists(email);
+  };
+
   const value: AuthContextType = {
     currentUser,
     firebaseUser,
@@ -78,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signIn,
     signOut,
     resetPassword,
+    checkUserExists,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

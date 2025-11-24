@@ -4,6 +4,9 @@ import { FaChevronLeft, FaChevronDown, FaEye, FaEyeSlash, FaUsers } from 'react-
 import type { Collaborator } from '../../utils/shared';
 import { CURRENCY_SYMBOLS, formatAmount, triggerSelectDropdown } from '../../utils/shared';
 import CollaboratorModal from './CollaboratorModal';
+import * as walletService from '../../services/walletService';
+import * as budgetService from '../../services/budgetService';
+import { useCurrency } from '../../hooks/useCurrency';
 
 // CONSTANTS
 
@@ -54,7 +57,7 @@ export default function AddWallet() {
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  const selectedCurrency = localStorage.getItem('selectedCurrency') || 'PHP';
+  const { currency: selectedCurrency } = useCurrency();
   const currencySymbol = CURRENCY_SYMBOLS[selectedCurrency] || '₱';
 
   useEffect(() => {
@@ -139,15 +142,14 @@ export default function AddWallet() {
     return missing;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const missing = validateWallet();
     if (missing.length > 0) return;
-    const walletDataToPass = {
-      id: editMode && existingWallet?.id ? existingWallet.id : Date.now().toString(),
+    
+    const walletData = {
       name: walletName,
       balance: walletBalance,
       plan: walletPlan,
-      type: customWalletType || walletType,
       walletType: customWalletType || walletType,
       collaborators: walletPlan === 'Shared' ? collaborators : [],
       backgroundColor: backgroundColor,
@@ -158,6 +160,10 @@ export default function AddWallet() {
     };
 
     if (returnTo === '/onboarding/wallet') {
+      const walletDataToPass = {
+        id: editMode && existingWallet?.id ? existingWallet.id : Date.now().toString(),
+        ...walletData
+      };
       navigate(returnTo, {
         state: {
           walletData: walletDataToPass,
@@ -167,40 +173,38 @@ export default function AddWallet() {
       return;
     }
 
-    const existingWallets = sessionStorage.getItem('wallets');
-    let wallets = existingWallets ? JSON.parse(existingWallets) : [];
-
-    if (editMode && walletIndex !== undefined) {
-      wallets[walletIndex] = walletDataToPass;
+    try {
+      let savedWallet;
+      if (editMode && existingWallet?.id) {
+        savedWallet = await walletService.updateWallet(existingWallet.id, walletData);
     } else {
-      wallets.push(walletDataToPass);
+        savedWallet = await walletService.createWallet(walletData);
     }
 
-    sessionStorage.setItem('wallets', JSON.stringify(wallets));
-
-    try {
-      const rawBudgets = sessionStorage.getItem('budgets');
-      if (rawBudgets) {
-        const budgets = JSON.parse(rawBudgets);
-        const targetNames = new Set<string>([
-          walletName,
-          ...(editMode && existingWallet?.name && existingWallet.name !== walletName ? [existingWallet.name] : [])
-        ]);
-        const updatedBudgets = budgets.map((b: any) => {
-          if (b.plan === 'Shared' && targetNames.has(b.wallet)) {
-            return { ...b, collaborators };
+      // Update budgets if wallet name changed
+      if (editMode && existingWallet?.name && existingWallet.name !== walletName) {
+        try {
+          const budgets = await budgetService.getBudgets();
+          const targetNames = new Set<string>([walletName, existingWallet.name]);
+          for (const budget of budgets) {
+            if (budget.plan === 'Shared' && targetNames.has(budget.wallet)) {
+              await budgetService.updateBudget(budget.id!, { collaborators });
           }
-          return b;
-        });
-        sessionStorage.setItem('budgets', JSON.stringify(updatedBudgets));
+          }
+        } catch (err) {
+          console.error('Failed to update budgets:', err);
       }
-    } catch {}
+      }
 
     try {
       window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'wallet-save' } }));
     } catch {}
 
     navigate(returnTo);
+    } catch (err) {
+      console.error('Failed to save wallet:', err);
+      alert('Failed to save wallet. Please try again.');
+    }
   };
 
   const handleAddCollaborator = (input: string) => {

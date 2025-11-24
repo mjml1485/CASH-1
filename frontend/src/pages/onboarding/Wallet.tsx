@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaTimes } from 'react-icons/fa';
 import { formatAmount, CURRENCY_SYMBOLS } from '../../utils/shared';
+import { useCurrency } from '../../hooks/useCurrency';
 
 export default function Wallet() {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ export default function Wallet() {
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [walletToDelete, setWalletToDelete] = useState<number | null>(null);
 
-  const currency = localStorage.getItem('selectedCurrency') || 'PHP';
+  const { currency } = useCurrency();
   const currencySymbol = CURRENCY_SYMBOLS[currency] || '₱';
 
   useEffect(() => {

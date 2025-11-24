@@ -16,7 +16,23 @@ export default function Signin() {
 
   useEffect(() => {
     if (!loading && currentUser) {
-      navigate('/dashboard');
+      // Check onboarding status and route accordingly
+      const checkAndRoute = async () => {
+        try {
+          const { fetchProfileBackend } = await import('../../services/userService');
+          const profile = await fetchProfileBackend();
+          if (profile?.onboardingCompleted) {
+            navigate('/dashboard');
+          } else {
+            navigate('/onboarding/welcome');
+          }
+        } catch (err) {
+          console.error('Failed to check onboarding status:', err);
+          // Default to onboarding if check fails
+          navigate('/onboarding/welcome');
+        }
+      };
+      checkAndRoute();
     }
   }, [currentUser, loading, navigate]);
 
@@ -24,40 +40,17 @@ export default function Signin() {
     e.preventDefault();
     setSubmitting(true);
     setAuthError(null);
-    const emailInput = e.currentTarget.elements.namedItem('email') as HTMLInputElement;
-    const passwordInput = e.currentTarget.elements.namedItem('password') as HTMLInputElement;
-    emailInput.setCustomValidity('');
-    passwordInput.setCustomValidity('');
-
-    if (!email.trim()) {
-      emailInput.setCustomValidity('Please enter your email address.');
-      emailInput.reportValidity();
-      setSubmitting(false);
-      return;
-    }
-    if (!password) {
-      passwordInput.setCustomValidity('Please enter your password.');
-      passwordInput.reportValidity();
-      setSubmitting(false);
-      return;
-    }
 
     try {
       await signIn(email, password);
-      navigate('/onboarding/welcome');
     } catch (err: any) {
       const code = err?.code || '';
-      // A. Email not registered
       if (code === 'auth/user-not-found') {
-        setAuthError('This email is not registered.');
-      // B. Email registered but wrong password
-      } else if (code === 'auth/wrong-password') {
-        setAuthError('Incorrect password. Please try again.');
-      // Invalid email format or generic credential issue
-      } else if (code === 'auth/invalid-email' || code === 'auth/invalid-credential') {
-        setAuthError('Invalid email or password.');
-      } else if (err?.message) {
-        setAuthError(err.message);
+        setAuthError('Email not registered. Please sign up.');
+      } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+        setAuthError('Invalid email or password. Please try again.');
+      } else if (code === 'auth/network-request-failed') {
+        setAuthError('Unable to connect to the database. Please try again later.');
       } else {
         setAuthError('Something went wrong. Please try again.');
       }
@@ -130,13 +123,6 @@ export default function Signin() {
                 onBlur={() => {
                   if (!password.trim()) {
                     setHasInteracted(prev => ({ ...prev, password: false }));
-                  }
-                }}
-                onInvalid={(e) => {
-                  if (!e.currentTarget.value) {
-                    e.currentTarget.setCustomValidity('Please enter your password.');
-                  } else {
-                    e.currentTarget.setCustomValidity('');
                   }
                 }}
                 disabled={submitting}

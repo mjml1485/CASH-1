@@ -41,7 +41,11 @@ export const fetchProfileBackend = async () => {
       headers: { Authorization: `Bearer ${token}` },
     });
     return res.data.user;
-  } catch (err) {
+  } catch (err: any) {
+    if (err.response?.status === 404) {
+      // Profile not found, return default
+      return { onboardingCompleted: false };
+    }
     console.warn('fetchProfileBackend failed', err);
     throw err;
   }
@@ -84,6 +88,21 @@ export const changeEmailBackend = async ({ newEmail, password }: { newEmail: str
     return res.data.user;
   } catch (err) {
     console.warn('changeEmailBackend failed', err);
+    throw err;
+  }
+};
+
+export const markOnboardingCompleted = async () => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+    const res = await axios.put(`${API_URL}/api/users/me`, { onboardingCompleted: true }, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.user;
+  } catch (err) {
+    console.warn('markOnboardingCompleted failed', err);
     throw err;
   }
 };

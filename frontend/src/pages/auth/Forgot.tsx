@@ -17,34 +17,14 @@ export default function Forgot() {
     setSuccess(false);
     setSubmitting(true);
     setAuthError(null);
-    const emailInput = e.currentTarget.elements.namedItem('email') as HTMLInputElement;
-    emailInput.setCustomValidity('');
-
-    if (!email.trim()) {
-      emailInput.setCustomValidity('Please enter your email address.');
-      emailInput.reportValidity();
-      setSubmitting(false);
-      return;
-    }
-    if (emailInput.validity.typeMismatch) {
-      emailInput.setCustomValidity('Please enter a valid email address.');
-      emailInput.reportValidity();
-      setSubmitting(false);
-      return;
-    }
 
     try {
       await resetPassword(email.trim());
       setSuccess(true);
     } catch (err: any) {
       const code = err?.code || '';
-      if (code === 'auth/user-not-found') {
-        setAuthError('This email is not registered.');
-      } else if (code === 'auth/invalid-email') {
-        emailInput.setCustomValidity('Please enter a valid email address.');
-        emailInput.reportValidity();
-      } else if (err?.message) {
-        setAuthError(err.message);
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
+        setAuthError('Email not registered. Please sign up.');
       } else {
         setAuthError('Something went wrong. Please try again.');
       }
@@ -71,22 +51,18 @@ export default function Forgot() {
                   type="email"
                   placeholder={email || !hasInteracted.email ? 'Enter your email' : ''}
                   value={email}
-                  onChange={(e) => { 
-                      setEmail(e.target.value); 
-                      setHasInteracted(p => ({ ...p, email: true }));
-                      e.target.setCustomValidity('');
-                      if (authError) setAuthError(null);
-                    }}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setHasInteracted(p => ({ ...p, email: true }));
+                    e.target.setCustomValidity('');
+                    if (authError) setAuthError(null);
+                  }}
                   onFocus={() => setHasInteracted(p => ({ ...p, email: true }))}
-                  onBlur={() => { 
-                      if (!email.trim()) setHasInteracted(p => ({ ...p, email: false })); 
-                    }}
+                  onBlur={() => {
+                    if (!email.trim()) setHasInteracted(p => ({ ...p, email: false }));
+                  }}
                   onInvalid={(e) => {
-                    if (!e.currentTarget.value) {
-                      e.currentTarget.setCustomValidity('Please enter your email address.');
-                    } else {
-                      e.currentTarget.setCustomValidity('Please enter a valid email address.');
-                    }
+                    e.currentTarget.setCustomValidity('Please enter a valid email address.');
                   }}
                   disabled={submitting}
                   autoComplete="email"
@@ -114,9 +90,9 @@ export default function Forgot() {
                   We’ve sent a password reset link to your email. Click the link to create a new password.
                 </p>
                 <div className="sign-in-button-row">
-                  <button 
-                    className="sign-in-button-primary" 
-                    type="button" 
+                  <button
+                    className="sign-in-button-primary"
+                    type="button"
                     onClick={() => {
                       setSuccess(false);
                       setEmail('');

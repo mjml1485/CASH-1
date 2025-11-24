@@ -11,7 +11,11 @@ import {
   CURRENCY_SYMBOLS
 } from '../../utils/shared';
 import { useAppState } from '../../state/AppStateContext';
+import { useCurrency } from '../../hooks/useCurrency';
 import CollaboratorModal from './CollaboratorModal';
+import * as walletService from '../../services/walletService';
+import * as budgetService from '../../services/budgetService';
+import * as customCategoryService from '../../services/customCategoryService';
 
 // CONSTANTS
 
@@ -47,16 +51,32 @@ export default function AddBudget() {
   const lockWalletName = location.state?.lockWalletName as string | undefined;
   const returnTo = location.state?.returnTo || '/onboarding/budget';
 
-  const getWallets = () => {
+  const [allWallets, setAllWallets] = useState<Wallet[]>([]);
+
+  useEffect(() => {
+    const loadWallets = async () => {
     if (returnTo === '/dashboard' || returnTo === '/personal' || returnTo === '/shared') {
-      const stored = sessionStorage.getItem('wallets');
-      return stored ? JSON.parse(stored) : [];
+        try {
+          const wallets = await walletService.getWallets();
+          setAllWallets(wallets.map(w => ({
+            id: w.id || w._id,
+            name: w.name,
+            plan: w.plan,
+            balance: w.balance,
+            type: w.walletType,
+            collaborators: w.collaborators
+          })));
+        } catch (err) {
+          console.error('Failed to load wallets:', err);
+          setAllWallets([]);
     }
+      } else {
     const onboardingWallets = sessionStorage.getItem('onboardingWallets');
-    return onboardingWallets ? JSON.parse(onboardingWallets) : [];
+        setAllWallets(onboardingWallets ? JSON.parse(onboardingWallets) : []);
+      }
   };
-  
-  const allWallets: Wallet[] = getWallets();
+    loadWallets();
+  }, [returnTo]);
   
   const hasWalletSelectionDashboard = returnTo === '/dashboard' && allWallets.some(w => w.plan === 'Shared');
   const sharedWallets = allWallets.filter(w => w.plan === 'Shared');
@@ -89,7 +109,7 @@ export default function AddBudget() {
   const [showWalletChangeModal, setShowWalletChangeModal] = useState<boolean>(false);
   const [pendingWalletName, setPendingWalletName] = useState<string>('');
 
-  const currency = localStorage.getItem('selectedCurrency') || 'PHP';
+  const { currency } = useCurrency();
   const currencySymbol = CURRENCY_SYMBOLS[currency] || '₱';
 
   const isSharedBudget = (selectedWalletData?.plan || budgetPlan) === 'Shared';
@@ -235,7 +255,7 @@ export default function AddBudget() {
     if (select) triggerSelectDropdown(select);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const missing = validateBudget();
     if (missing.length > 0) return;
     const newAmountNum = parseFloat(budgetAmount || '0') || 0;
@@ -249,13 +269,10 @@ export default function AddBudget() {
     const chosenCategory = customCategory || category;
     if (customCategory) {
       try {
-        const raw = sessionStorage.getItem('customCategories');
-        const list = raw ? JSON.parse(raw) : [];
-        if (!list.includes(customCategory)) {
-          list.push(customCategory);
-          sessionStorage.setItem('customCategories', JSON.stringify(list));
+        await customCategoryService.createCustomCategory(customCategory);
+      } catch (err) {
+        console.error('Failed to save custom category:', err);
         }
-      } catch {}
     }
     const resolvedWalletName = lockWalletName
       || existingBudget?.wallet
@@ -269,82 +286,73 @@ export default function AddBudget() {
       ? 'Shared'
       : 'Personal';
 
-    const budgetDataToPass = {
-      id: editMode && existingBudget?.id ? existingBudget.id : Date.now().toString(),
+    const budgetData = {
       wallet: resolvedWalletName,
       plan: planForBudget,
       amount: budgetAmount,
       category: chosenCategory,
       period: period,
       description: description,
-      startDate: customStartDate,
-      endDate: customEndDate,
+      startDate: customStartDate || undefined,
+      endDate: customEndDate || undefined,
       left: nextLeft,
       collaborators: planForBudget === 'Shared' ? collaborators : []
     };
     
     if (returnTo === '/dashboard' || returnTo === '/personal' || returnTo === '/shared') {
-      const existingBudgets = sessionStorage.getItem('budgets');
-      let budgets = existingBudgets ? JSON.parse(existingBudgets) : [];
-      
-      if (editMode) {
-        if (budgetIndex !== undefined) {
-          budgets[budgetIndex] = budgetDataToPass;
+      try {
+        let savedBudget;
+        if (editMode && existingBudget?.id) {
+          savedBudget = await budgetService.updateBudget(existingBudget.id, budgetData);
         } else {
-          const idx = budgets.findIndex((b: any) => b.id === budgetDataToPass.id);
-          if (idx >= 0) budgets[idx] = budgetDataToPass; else budgets.push(budgetDataToPass);
-        }
-      } else {
-        budgets.push(budgetDataToPass);
+          savedBudget = await budgetService.createBudget(budgetData);
       }
       
-      sessionStorage.setItem('budgets', JSON.stringify(budgets));
       try { window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'budget-save' } })); } catch {}
 
-      if (budgetDataToPass.plan === 'Shared') {
-        const walletIdForLog = selectedWalletData?.id || budgetDataToPass.wallet || 'shared-wallet';
-        const amountLabel = `${currencySymbol} ${formatAmount(budgetDataToPass.amount || '0')}`;
-        logActivity({
+        if (budgetData.plan === 'Shared') {
+          const walletIdForLog = selectedWalletData?.id || budgetData.wallet || 'shared-wallet';
+          const amountLabel = `${currencySymbol} ${formatAmount(budgetData.amount || '0')}`;
+          await logActivity({
           walletId: walletIdForLog,
           action: editMode ? 'budget_updated' : 'budget_added',
           entityType: 'budget',
-          entityId: budgetDataToPass.id,
-          message: `${currentUser.name} ${editMode ? 'updated' : 'created'} the ${budgetDataToPass.category} budget (${amountLabel})`
+            entityId: savedBudget.id || savedBudget._id || '',
+            message: `${currentUser.name} ${editMode ? 'updated' : 'created'} the ${budgetData.category} budget (${amountLabel})`
         });
       }
 
-      if (budgetDataToPass.plan === 'Shared' && resolvedWalletName) {
+        if (budgetData.plan === 'Shared' && resolvedWalletName) {
         try {
-          const rawWallets = sessionStorage.getItem('wallets');
-          if (rawWallets) {
-            const wallets = JSON.parse(rawWallets);
-            const updatedWallets = wallets.map((w: any) => {
-              if (w.name === resolvedWalletName && w.plan === 'Shared') {
-                return { ...w, collaborators };
-              }
-              return w;
-            });
-            sessionStorage.setItem('wallets', JSON.stringify(updatedWallets));
+            const wallets = await walletService.getWallets();
+            const wallet = wallets.find(w => w.name === resolvedWalletName && w.plan === 'Shared');
+            if (wallet) {
+              await walletService.updateWallet(wallet.id || wallet._id || '', { collaborators });
           }
-          const syncBudgetsRaw = sessionStorage.getItem('budgets');
-          if (syncBudgetsRaw) {
-            const all = JSON.parse(syncBudgetsRaw);
-            const updated = all.map((b: any) => {
+            const budgets = await budgetService.getBudgets();
+            for (const b of budgets) {
               if (b.plan === 'Shared' && b.wallet === resolvedWalletName) {
-                return { ...b, collaborators };
+                await budgetService.updateBudget(b.id || b._id || '', { collaborators });
               }
-              return b;
-            });
-            sessionStorage.setItem('budgets', JSON.stringify(updated));
           }
-        } catch {}
+          } catch (err) {
+            console.error('Failed to sync collaborators:', err);
+          }
       }
       navigate(returnTo);
+      } catch (err) {
+        console.error('Failed to save budget:', err);
+        alert('Failed to save budget. Please try again.');
+      }
     } else {
+      const budgetDataToPass = {
+        id: editMode && existingBudget?.id ? existingBudget.id : Date.now().toString(),
+        ...budgetData
+      };
       if (budgetDataToPass.plan === 'Shared' && !returnTo.startsWith('/onboarding')) {
         const walletIdForLog = selectedWalletData?.id || budgetDataToPass.wallet || 'shared-wallet';
         const amountLabel = `${currencySymbol} ${formatAmount(budgetDataToPass.amount || '0')}`;
-        logActivity({
+        await logActivity({
           walletId: walletIdForLog,
           action: editMode ? 'budget_updated' : 'budget_added',
           entityType: 'budget',
@@ -638,14 +646,9 @@ export default function AddBudget() {
                       onChange={(e) => { setErrors(prev => ({...prev, category: ''})); handleCategorySelect(e); }}
                       className="budget-select-hidden"
                     >
-                      {(() => {
-                        let extras: string[] = [];
-                        try { const raw = sessionStorage.getItem('customCategories'); extras = raw ? JSON.parse(raw) : []; } catch {}
-                        const merged = [...new Set([...BUDGET_CATEGORIES_BASE, ...extras])];
-                        return merged.map(cat => (
+                      {BUDGET_CATEGORIES_BASE.map(cat => (
                           <option key={cat} value={cat}>{cat}</option>
-                        ));
-                      })()}
+                      ))}
                     </select>
                   </>
                 ) : (
@@ -664,14 +667,9 @@ export default function AddBudget() {
                       className="budget-select-hidden"
                     >
                       <option value="" disabled hidden>Select category</option>
-                      {(() => {
-                        let extras: string[] = [];
-                        try { const raw = sessionStorage.getItem('customCategories'); extras = raw ? JSON.parse(raw) : []; } catch {}
-                        const merged = [...new Set([...BUDGET_CATEGORIES_BASE, ...extras])];
-                        return merged.filter(c => c !== 'Custom').map(cat => (
+                      {BUDGET_CATEGORIES_BASE.filter(c => c !== 'Custom').map(cat => (
                           <option key={cat} value={cat}>{cat}</option>
-                        ));
-                      })()}
+                      ))}
                       <option value="Custom">Custom</option>
                     </select>
                   </>

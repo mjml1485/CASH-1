@@ -1,13 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { CURRENCY_SYMBOLS, formatAmount, CHART_COLORS, DEFAULT_TEXT_COLOR, type Collaborator } from '../../utils/shared';
+import { CURRENCY_SYMBOLS, formatAmount, CHART_COLORS, DEFAULT_TEXT_COLOR } from '../../utils/shared';
+import type { Collaborator } from '../../utils/shared';
 import { FaPlus, FaPen, FaUsers, FaHistory, FaRegCommentDots } from 'react-icons/fa';
 import AddTransaction, { type Transaction } from '../components/AddTransaction';
 import ActivityLogPanel from '../components/ActivityLogPanel';
 import CollaboratorChat from '../components/CollaboratorChat';
 import CollaboratorModal from '../components/CollaboratorModal';
 import { useAppState } from '../../state/AppStateContext';
+import * as walletService from '../../services/walletService';
+import * as budgetService from '../../services/budgetService';
+import * as transactionService from '../../services/transactionService';
+import { useCurrency } from '../../hooks/useCurrency';
 
 interface Wallet {
   id: string;
@@ -33,6 +38,19 @@ interface Budget {
   collaborators?: Collaborator[];
 }
 
+const mapTransactionData = (t: any): Transaction => ({
+  id: t.id || t._id || '',
+  type: t.type,
+  amount: t.amount,
+  dateISO: typeof t.dateISO === 'string' ? t.dateISO : t.dateISO?.toISOString() || '',
+  category: t.category,
+  walletFrom: t.walletFrom,
+  walletTo: t.walletTo,
+  description: t.description,
+  createdAtISO: t.createdAtISO?.toString() || '',
+  updatedAtISO: t.updatedAtISO?.toString() || ''
+});
+
 export default function Shared() {
   const navigate = useNavigate();
   const [activePage, setActivePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements'>('Shared Plan');
@@ -51,27 +69,57 @@ export default function Shared() {
   const [showCollaboratorModal, setShowCollaboratorModal] = useState(false);
   const [collaboratorDraft, setCollaboratorDraft] = useState<Collaborator[]>([]);
   const [collaboratorModalReturn, setCollaboratorModalReturn] = useState<'none' | 'chat'>('none');
-  const currency = localStorage.getItem('selectedCurrency') || 'PHP';
+  const { currency } = useCurrency();
 
-  const reloadFinancialData = useCallback(() => {
-    const w = sessionStorage.getItem('wallets');
-    setWallets(w ? JSON.parse(w) : []);
-    const b = sessionStorage.getItem('budgets');
-    setBudgets(b ? JSON.parse(b) : []);
-    const t = sessionStorage.getItem('transactions');
-    setTransactions(t ? JSON.parse(t) : []);
+  const reloadFinancialData = useCallback(async () => {
+    try {
+      const [walletsData, budgetsData, transactionsData] = await Promise.all([
+        walletService.getWallets().catch(() => []),
+        budgetService.getBudgets().catch(() => []),
+        transactionService.getTransactions().catch(() => [])
+      ]);
+      
+      setWallets(walletsData.map(w => ({
+        id: w.id || w._id || '',
+        name: w.name,
+        balance: w.balance,
+        plan: w.plan,
+        color1: w.color1 || w.backgroundColor || '#e2e8f0',
+        color2: w.color2 || w.backgroundColor || '#e2e8f0',
+        textColor: w.textColor,
+        walletType: w.walletType,
+        type: w.walletType,
+        collaborators: w.collaborators
+      })));
+      
+      setBudgets(budgetsData.map(b => ({
+        id: b.id || b._id || '',
+        category: b.category,
+        amount: b.amount,
+        period: b.period,
+        wallet: b.wallet,
+        left: b.left,
+        plan: b.plan,
+        collaborators: b.collaborators
+      })));
+      
+      setTransactions(transactionsData.map(mapTransactionData));
+    } catch (err) {
+      console.error('Failed to reload data:', err);
+    }
   }, []);
 
   const sharedWallets = useMemo(() => wallets.filter(w => w.plan === 'Shared'), [wallets]);
 
+  const isInitialLoad = useRef(true);
+
   useEffect(() => {
     reloadFinancialData();
+    isInitialLoad.current = false;
     const handler = () => reloadFinancialData();
     window.addEventListener('data-updated', handler as EventListener);
-    window.addEventListener('storage', handler as EventListener);
     return () => {
       window.removeEventListener('data-updated', handler as EventListener);
-      window.removeEventListener('storage', handler as EventListener);
     };
   }, [reloadFinancialData]);
 
@@ -180,7 +228,7 @@ export default function Shared() {
     }
   };
 
-  const persistCollaborators = (
+  const persistCollaborators = async (
     next: Collaborator[],
     activity?: { action: 'member_added' | 'member_removed' | 'system_message'; message: string; entityId?: string }
   ) => {
@@ -188,33 +236,39 @@ export default function Shared() {
     const walletIdentifier = selectedWallet.id;
     const walletName = selectedWallet.name;
 
-    setWallets((prev) => {
-      const updated = prev.map((wallet) => {
-        const matches = walletIdentifier ? wallet.id === walletIdentifier : wallet.name === walletName;
-        return matches ? { ...wallet, collaborators: next } : wallet;
-      });
-      try {
-        sessionStorage.setItem('wallets', JSON.stringify(updated));
-      } catch {
-        /* ignore storage errors */
+    try {
+      // Update wallet
+      if (walletIdentifier) {
+        await walletService.updateWallet(walletIdentifier, { collaborators: next });
       }
-      return updated;
-    });
 
-    setBudgets((prev) => {
-      const updated = prev.map((budget) => {
+      // Update budgets
+      const budgetsData = await budgetService.getBudgets();
+      for (const budget of budgetsData) {
         if (budget.plan === 'Shared' && budget.wallet === walletName) {
-          return { ...budget, collaborators: next };
+          await budgetService.updateBudget(budget.id || budget._id || '', { collaborators: next });
         }
-        return budget;
-      });
-      try {
-        sessionStorage.setItem('budgets', JSON.stringify(updated));
-      } catch {
-        /* ignore storage errors */
       }
-      return updated;
-    });
+
+      // Update local state
+      setWallets((prev) => {
+        return prev.map((wallet) => {
+          const matches = walletIdentifier ? wallet.id === walletIdentifier : wallet.name === walletName;
+          return matches ? { ...wallet, collaborators: next } : wallet;
+        });
+      });
+
+      setBudgets((prev) => {
+        return prev.map((budget) => {
+          if (budget.plan === 'Shared' && budget.wallet === walletName) {
+            return { ...budget, collaborators: next };
+          }
+          return budget;
+        });
+      });
+    } catch (err) {
+      console.error('Failed to persist collaborators:', err);
+    }
 
     setCollaboratorDraft(next);
 

@@ -1,17 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaChevronDown } from 'react-icons/fa';
+import * as settingsService from '../../services/settingsService';
 
 export default function Currency() {
   const navigate = useNavigate();
-  const [currency, setCurrency] = useState(() => localStorage.getItem('selectedCurrency') || 'PHP');
+  const [currency, setCurrency] = useState('PHP');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadCurrency = async () => {
+      try {
+        const settings = await settingsService.getSettings();
+        setCurrency(settings.currency || 'PHP');
+      } catch (err) {
+        console.error('Failed to load currency:', err);
+        // Fallback to PHP if load fails
+        setCurrency('PHP');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCurrency();
+  }, []);
 
   const handleBack = () => {
     navigate('/onboarding/welcome');
   };
 
-  const handleNext = () => {
-    navigate('/onboarding/wallet');
+  const handleNext = async () => {
+    try {
+      // Save currency to database
+      await settingsService.updateSettings({ currency });
+      navigate('/onboarding/wallet');
+    } catch (err) {
+      console.error('Failed to save currency:', err);
+      // Still navigate even if save fails
+      navigate('/onboarding/wallet');
+    }
   };
 
   return (
@@ -29,9 +55,9 @@ export default function Currency() {
                 onChange={(e) => {
                   const newCurrency = e.target.value;
                   setCurrency(newCurrency);
-                  localStorage.setItem('selectedCurrency', newCurrency);
                 }}
                 className="onboarding-currency-dropdown"
+                disabled={loading}
               >
                 <option value="PHP">PHP</option>
                 <option value="USD">USD</option>

@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import { triggerSelectDropdown } from '../../utils/shared';
 import { FaTimes, FaTrash, FaChevronDown } from 'react-icons/fa';
+import * as walletService from '../../services/walletService';
+import * as budgetService from '../../services/budgetService';
+import * as transactionService from '../../services/transactionService';
+import * as customCategoryService from '../../services/customCategoryService';
 
 export type TxType = 'Income' | 'Expense' | 'Transfer';
 
@@ -71,10 +75,32 @@ export default function AddTransaction({ isOpen, onClose, defaultWallet, editTx,
 
   useEffect(() => {
     if (isOpen) {
-      const w = sessionStorage.getItem('wallets');
-      const b = sessionStorage.getItem('budgets');
-      setWallets(w ? JSON.parse(w) : []);
-      setBudgets(b ? JSON.parse(b) : []);
+      const loadData = async () => {
+        try {
+          const [walletsData, budgetsData] = await Promise.all([
+            walletService.getWallets().catch(() => []),
+            budgetService.getBudgets().catch(() => [])
+          ]);
+          setWallets(walletsData.map(w => ({
+            name: w.name,
+            plan: w.plan,
+            balance: w.balance
+          })));
+          setBudgets(budgetsData.map(b => ({
+            id: b.id || b._id,
+            category: b.category,
+            amount: b.amount,
+            left: b.left,
+            plan: b.plan,
+            wallet: b.wallet
+          })));
+        } catch (err) {
+          console.error('Failed to load data:', err);
+          setWallets([]);
+          setBudgets([]);
+        }
+      };
+      loadData();
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, '0');
       const v = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
@@ -125,21 +151,27 @@ export default function AddTransaction({ isOpen, onClose, defaultWallet, editTx,
   };
 
   const allWallets = useMemo(() => wallets, [wallets]);
-  const mergedCategories = useMemo(() => {
-    const extrasFromBudgets: string[] = [];
-    budgets.forEach(b => {
-      const c = b.category;
-      if (c && c.toLowerCase() !== 'income' && !extrasFromBudgets.includes(c)) extrasFromBudgets.push(c);
-    });
-    let customExtras: string[] = [];
-    try {
-      const raw = sessionStorage.getItem('customCategories');
-      if (raw) customExtras = JSON.parse(raw); 
-    } catch {}
-    customExtras = customExtras.filter(c => c.toLowerCase() !== 'income');
-    const baseNoCustom = TRANSACTION_BASE_CATEGORIES.filter(c => c !== 'Custom');
-    const orderedUnique = [...new Set([...baseNoCustom, ...extrasFromBudgets, ...customExtras])];
-    return orderedUnique;
+  const [mergedCategories, setMergedCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      const extrasFromBudgets: string[] = [];
+      budgets.forEach(b => {
+        const c = b.category;
+        if (c && c.toLowerCase() !== 'income' && !extrasFromBudgets.includes(c)) extrasFromBudgets.push(c);
+      });
+      let customExtras: string[] = [];
+      try {
+        customExtras = await customCategoryService.getCustomCategories();
+      } catch (err) {
+        console.error('Failed to load custom categories:', err);
+      }
+      customExtras = customExtras.filter(c => c.toLowerCase() !== 'income');
+      const baseNoCustom = TRANSACTION_BASE_CATEGORIES.filter(c => c !== 'Custom');
+      const orderedUnique = [...new Set([...baseNoCustom, ...extrasFromBudgets, ...customExtras])];
+      setMergedCategories(orderedUnique);
+    };
+    loadCategories();
   }, [budgets]);
 
   const validate = () => {
@@ -155,105 +187,127 @@ export default function AddTransaction({ isOpen, onClose, defaultWallet, editTx,
     return Object.keys(errs).length === 0;
   };
 
-  const revertOriginalIfEditing = (original: Transaction) => {
-    const walletsArr = JSON.parse(sessionStorage.getItem('wallets') || '[]');
-    const budgetsArr = JSON.parse(sessionStorage.getItem('budgets') || '[]');
+  const revertOriginalIfEditing = async (original: Transaction) => {
     const amt = parseFloat(original.amount || '0') || 0;
-    const mutateWallet = (name: string, delta: number) => {
-      const idx = walletsArr.findIndex((w: any) => w.name === name);
-      if (idx >= 0) {
-        const bal = parseFloat(walletsArr[idx].balance || '0') || 0;
-        walletsArr[idx].balance = (bal - delta).toFixed(2); 
-      }
-    };
-    if (original.type === 'Income') {
-      mutateWallet(original.walletFrom, parseFloat(original.amount));
-    } else if (original.type === 'Expense') {
-      mutateWallet(original.walletFrom, -amt); 
-      budgetsArr.forEach((b: any) => {
-        const isMatch = String(b.category).toLowerCase() === String(original.category).toLowerCase();
-        const isPersonal = (b.plan || 'Personal') === 'Personal';
-        const isSharedMatch = b.plan === 'Shared' && b.wallet === original.walletFrom;
-        if (isMatch && (isPersonal || isSharedMatch)) {
-          const leftNum = parseFloat(b.left ?? b.amount ?? '0') || 0;
-          b.left = (leftNum + amt).toFixed(2);
+    
+    try {
+      const walletsData = await walletService.getWallets();
+      const budgetsData = await budgetService.getBudgets();
+      
+      if (original.type === 'Income') {
+        const wallet = walletsData.find(w => w.name === original.walletFrom);
+        if (wallet) {
+          const newBalance = (parseFloat(wallet.balance) - amt).toFixed(2);
+          await walletService.updateWallet(wallet.id || wallet._id || '', { balance: newBalance });
         }
-      });
-    } else if (original.type === 'Transfer') {
-      mutateWallet(original.walletFrom, -amt);
-      if (original.walletTo) mutateWallet(original.walletTo, amt);
+      } else if (original.type === 'Expense') {
+        const wallet = walletsData.find(w => w.name === original.walletFrom);
+        if (wallet) {
+          const newBalance = (parseFloat(wallet.balance) + amt).toFixed(2);
+          await walletService.updateWallet(wallet.id || wallet._id || '', { balance: newBalance });
+        }
+        for (const b of budgetsData) {
+          const isMatch = String(b.category).toLowerCase() === String(original.category).toLowerCase();
+          const isPersonal = (b.plan || 'Personal') === 'Personal';
+          const isSharedMatch = b.plan === 'Shared' && b.wallet === original.walletFrom;
+          if (isMatch && (isPersonal || isSharedMatch)) {
+            const leftNum = parseFloat(b.left ?? b.amount ?? '0') || 0;
+            const newLeft = (leftNum + amt).toFixed(2);
+            await budgetService.updateBudget(b.id || b._id || '', { left: newLeft });
+          }
+        }
+      } else if (original.type === 'Transfer') {
+        const walletFrom = walletsData.find(w => w.name === original.walletFrom);
+        if (walletFrom) {
+          const newBalance = (parseFloat(walletFrom.balance) + amt).toFixed(2);
+          await walletService.updateWallet(walletFrom.id || walletFrom._id || '', { balance: newBalance });
+        }
+        if (original.walletTo) {
+          const walletTo = walletsData.find(w => w.name === original.walletTo);
+          if (walletTo) {
+            const newBalance = (parseFloat(walletTo.balance) - amt).toFixed(2);
+            await walletService.updateWallet(walletTo.id || walletTo._id || '', { balance: newBalance });
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to revert transaction:', err);
     }
-    sessionStorage.setItem('wallets', JSON.stringify(walletsArr));
-    sessionStorage.setItem('budgets', JSON.stringify(budgetsArr));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validate()) return;
 
     const amt = parseFloat(amount);
-    const rawWallets = sessionStorage.getItem('wallets');
-    const rawBudgets = sessionStorage.getItem('budgets');
-    const rawTx = sessionStorage.getItem('transactions');
-    const walletsArr: any[] = rawWallets ? JSON.parse(rawWallets) : [];
-    const budgetsArr: any[] = rawBudgets ? JSON.parse(rawBudgets) : [];
-    const txArr: Transaction[] = rawTx ? JSON.parse(rawTx) : [];
 
-    if (editTx) {
-      revertOriginalIfEditing(editTx);
-      const rw = sessionStorage.getItem('wallets');
-      const rb = sessionStorage.getItem('budgets');
-      const rt = sessionStorage.getItem('transactions');
-      walletsArr.splice(0, walletsArr.length, ... (rw ? JSON.parse(rw) : []));
-      budgetsArr.splice(0, budgetsArr.length, ... (rb ? JSON.parse(rb) : []));
-      const originalIdx = (rt ? JSON.parse(rt) : txArr).findIndex((t: Transaction) => t.id === editTx.id);
-      if (originalIdx >= 0) txArr.splice(originalIdx, 1);
+    if (editTx && editTx.id) {
+      await revertOriginalIfEditing(editTx);
+      try {
+        await transactionService.deleteTransaction(editTx.id);
+      } catch (err) {
+        console.error('Failed to delete old transaction:', err);
+      }
     }
 
-    const mutateWallet = (name: string, delta: number) => {
-      const idx = walletsArr.findIndex(w => w.name === name);
-      if (idx >= 0) {
-        const bal = parseFloat(walletsArr[idx].balance || '0') || 0;
-        const newBal = (bal + delta).toFixed(2);
-        walletsArr[idx] = { ...walletsArr[idx], balance: newBal };
-      }
-    };
-
     const chosenCategory = customCategory || category;
-    if (type === 'Income') {
-      mutateWallet(walletFrom, amt);
-    } else if (type === 'Expense') {
-      mutateWallet(walletFrom, -amt);
-      budgetsArr.forEach((b: any, idx: number) => {
-        const isMatch = String(b.category).toLowerCase() === chosenCategory.toLowerCase();
-        const isPersonal = (b.plan || 'Personal') === 'Personal';
-        const isSharedMatch = b.plan === 'Shared' && b.wallet === walletFrom;
-        if (isMatch && (isPersonal || isSharedMatch)) {
-          const leftNum = parseFloat(b.left ?? b.amount ?? '0') || 0;
-          const nextLeft = Math.max(leftNum - amt, 0).toFixed(2);
-          budgetsArr[idx] = { ...b, left: nextLeft };
+    
+    // Update wallets and budgets
+    try {
+      const walletsData = await walletService.getWallets();
+      const budgetsData = await budgetService.getBudgets();
+
+      if (type === 'Income') {
+        const wallet = walletsData.find(w => w.name === walletFrom);
+        if (wallet) {
+          const newBalance = (parseFloat(wallet.balance) + amt).toFixed(2);
+          await walletService.updateWallet(wallet.id || wallet._id || '', { balance: newBalance });
         }
-      });
-    } else if (type === 'Transfer') {
-      mutateWallet(walletFrom, -amt);
-      if (walletTo) mutateWallet(walletTo, amt);
+      } else if (type === 'Expense') {
+        const wallet = walletsData.find(w => w.name === walletFrom);
+        if (wallet) {
+          const newBalance = (parseFloat(wallet.balance) - amt).toFixed(2);
+          await walletService.updateWallet(wallet.id || wallet._id || '', { balance: newBalance });
+        }
+        for (const b of budgetsData) {
+          const isMatch = String(b.category).toLowerCase() === chosenCategory.toLowerCase();
+          const isPersonal = (b.plan || 'Personal') === 'Personal';
+          const isSharedMatch = b.plan === 'Shared' && b.wallet === walletFrom;
+          if (isMatch && (isPersonal || isSharedMatch)) {
+            const leftNum = parseFloat(b.left ?? b.amount ?? '0') || 0;
+            const nextLeft = Math.max(leftNum - amt, 0).toFixed(2);
+            await budgetService.updateBudget(b.id || b._id || '', { left: nextLeft });
+          }
+        }
+      } else if (type === 'Transfer') {
+        const walletFromData = walletsData.find(w => w.name === walletFrom);
+        if (walletFromData) {
+          const newBalance = (parseFloat(walletFromData.balance) - amt).toFixed(2);
+          await walletService.updateWallet(walletFromData.id || walletFromData._id || '', { balance: newBalance });
+        }
+        if (walletTo) {
+          const walletToData = walletsData.find(w => w.name === walletTo);
+          if (walletToData) {
+            const newBalance = (parseFloat(walletToData.balance) + amt).toFixed(2);
+            await walletService.updateWallet(walletToData.id || walletToData._id || '', { balance: newBalance });
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update wallets/budgets:', err);
     }
 
     if (customCategory && !mergedCategories.includes(customCategory)) {
       try {
-        const existing = sessionStorage.getItem('customCategories');
-        const list = existing ? JSON.parse(existing) : [];
-        if (!list.includes(customCategory)) {
-          list.push(customCategory);
-          sessionStorage.setItem('customCategories', JSON.stringify(list));
-        }
-      } catch {}
+        await customCategoryService.createCustomCategory(customCategory);
+      } catch (err) {
+        console.error('Failed to save custom category:', err);
+      }
     }
 
     const nowIso = new Date().toISOString();
     const actorId = currentUser.id;
     const actorName = currentUser.name;
-    const tx: Transaction = {
-      id: editTx ? editTx.id : Date.now().toString(),
+    const txData = {
       type,
       amount: amt.toFixed(2),
       dateISO: new Date(dateISO).toISOString(),
@@ -269,29 +323,36 @@ export default function AddTransaction({ isOpen, onClose, defaultWallet, editTx,
       updatedAtISO: nowIso
     };
 
-    txArr.push(tx);
+    try {
+      let savedTx;
+      if (editTx && editTx.id) {
+        savedTx = await transactionService.updateTransaction(editTx.id, txData);
+      } else {
+        savedTx = await transactionService.createTransaction(txData);
+      }
 
-    sessionStorage.setItem('wallets', JSON.stringify(walletsArr));
-    sessionStorage.setItem('budgets', JSON.stringify(budgetsArr));
-    sessionStorage.setItem('transactions', JSON.stringify(txArr));
+      try { window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'transaction-save' } })); } catch {}
 
-    try { window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'transaction-save' } })); } catch {}
-
-    if (onSaved) onSaved(tx);
-    onClose();
+      if (onSaved) onSaved(savedTx);
+      onClose();
+    } catch (err) {
+      console.error('Failed to save transaction:', err);
+      alert('Failed to save transaction. Please try again.');
+    }
   };
 
-  const handleDelete = () => {
-    if (!editTx) return;
-    revertOriginalIfEditing(editTx);
-    const rawTx = sessionStorage.getItem('transactions');
-    const txArr: Transaction[] = rawTx ? JSON.parse(rawTx) : [];
-    const idx = txArr.findIndex(t => t.id === editTx.id);
-    if (idx >= 0) txArr.splice(idx, 1);
-    sessionStorage.setItem('transactions', JSON.stringify(txArr));
-    try { window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'transaction-delete' } })); } catch {}
-    onClose();
-    if (onDeleted) onDeleted(editTx);
+  const handleDelete = async () => {
+    if (!editTx || !editTx.id) return;
+    try {
+      await revertOriginalIfEditing(editTx);
+      await transactionService.deleteTransaction(editTx.id);
+      try { window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'transaction-delete' } })); } catch {}
+      onClose();
+      if (onDeleted) onDeleted(editTx);
+    } catch (err) {
+      console.error('Failed to delete transaction:', err);
+      alert('Failed to delete transaction. Please try again.');
+    }
   };
 
   if (!isOpen) return null;
