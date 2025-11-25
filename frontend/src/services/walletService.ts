@@ -16,6 +16,7 @@ export interface Wallet {
   color1?: string;
   color2?: string;
   template?: string;
+  description?: string;
   collaborators?: Array<{
     id: string;
     name: string;

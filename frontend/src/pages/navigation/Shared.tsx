@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar';
 import { CURRENCY_SYMBOLS, formatAmount, CHART_COLORS, DEFAULT_TEXT_COLOR } from '../../utils/shared';
 import type { Collaborator } from '../../utils/shared';
 import { FaPlus, FaPen, FaUsers, FaHistory, FaRegCommentDots } from 'react-icons/fa';
-import AddTransaction, { type Transaction } from '../components/AddTransaction';
+import AddTransaction, { type Transaction as AddTransactionType } from '../components/AddTransaction';
 import ActivityLogPanel from '../components/ActivityLogPanel';
 import CollaboratorChat from '../components/CollaboratorChat';
 import CollaboratorModal from '../components/CollaboratorModal';
@@ -13,6 +13,7 @@ import * as walletService from '../../services/walletService';
 import * as budgetService from '../../services/budgetService';
 import * as transactionService from '../../services/transactionService';
 import { useCurrency } from '../../hooks/useCurrency';
+import type { Transaction } from '../../services/transactionService';
 
 interface Wallet {
   id: string;
@@ -60,7 +61,7 @@ export default function Shared() {
   const [selectedWalletName, setSelectedWalletName] = useState<string>('');
   const [txFilter, setTxFilter] = useState<'All' | 'Expense' | 'Income'>('All');
   const [showTxModal, setShowTxModal] = useState(false);
-  const [editTx, setEditTx] = useState<Transaction | null>(null);
+  const [editTx, setEditTx] = useState<AddTransactionType | null>(null);
   const [showBudgetActionModal, setShowBudgetActionModal] = useState(false);
   const [showBudgetSelectModal, setShowBudgetSelectModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
@@ -219,12 +220,12 @@ export default function Shared() {
     return inWallet.filter(tx => tx.type === txFilter);
   }, [transactions, selectedWalletName, txFilter]);
 
-  const fmtTime = (iso: string) => {
+  const fmtTime = (iso: string | Date) => {
     try {
       const d = new Date(iso);
       return d.toLocaleString();
     } catch {
-      return iso;
+      return String(iso);
     }
   };
 
@@ -421,7 +422,24 @@ export default function Shared() {
                           color: selectedWallet.textColor || DEFAULT_TEXT_COLOR
                         }}
                       >
-                        <div className="shared-wallet-balance-label">Balance</div>
+                        <div className="shared-wallet-header">
+                          <div className="shared-wallet-balance-label">Balance</div>
+                          <button
+                            className="shared-wallet-edit"
+                            onClick={() => {
+                              navigate('/add-wallet', {
+                                state: {
+                                  returnTo: '/shared',
+                                  editMode: true,
+                                  walletData: selectedWallet
+                                }
+                              });
+                            }}
+                            title="Edit wallet"
+                          >
+                            <FaPen />
+                          </button>
+                        </div>
                         <div className="shared-wallet-balance">{CURRENCY_SYMBOLS[currency]} {formatAmount(selectedWallet.balance || '0')}</div>
                         <div className="shared-wallet-name">{selectedWallet.name}</div>
                         <div className="shared-wallet-plan">{selectedWallet.plan} Wallet</div>
@@ -547,7 +565,7 @@ export default function Shared() {
                     <div
                       key={tx.id}
                       className={`shared-tx-item type-${tx.type.toLowerCase()}`}
-                      onClick={() => { setEditTx(tx); setShowTxModal(true); }}
+                      onClick={() => { setEditTx(tx as AddTransactionType); setShowTxModal(true); }}
                     >
                       <div className="shared-tx-top">
                         <span className="shared-tx-type">{tx.type}</span>

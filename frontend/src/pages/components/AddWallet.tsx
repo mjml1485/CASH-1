@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaChevronLeft, FaChevronDown, FaEye, FaEyeSlash, FaUsers } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronDown, FaEye, FaEyeSlash, FaUsers, FaTrash } from 'react-icons/fa';
 import type { Collaborator } from '../../utils/shared';
 import { CURRENCY_SYMBOLS, formatAmount, triggerSelectDropdown } from '../../utils/shared';
 import CollaboratorModal from './CollaboratorModal';
@@ -52,6 +52,7 @@ export default function AddWallet() {
   const [showBalance, setShowBalance] = useState<boolean>(true);
   const [hasInteracted, setHasInteracted] = useState<HasInteracted>({ name: false, balance: false, walletType: false });
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [showPlanChangeModal, setShowPlanChangeModal] = useState<boolean>(false);
   const [pendingPlan, setPendingPlan] = useState<string | null>(null);
@@ -174,14 +175,17 @@ export default function AddWallet() {
     }
 
     try {
-      let savedWallet;
       if (editMode && existingWallet?.id) {
-        savedWallet = await walletService.updateWallet(existingWallet.id, walletData);
-    } else {
-        savedWallet = await walletService.createWallet(walletData);
-    }
-
-      // Update budgets if wallet name changed
+        await walletService.updateWallet(existingWallet.id, {
+          ...walletData,
+          plan: walletPlan as "Personal" | "Shared"
+        });
+      } else {
+        await walletService.createWallet({
+          ...walletData,
+          plan: walletPlan as "Personal" | "Shared"
+        });
+      }      // Update budgets if wallet name changed
       if (editMode && existingWallet?.name && existingWallet.name !== walletName) {
         try {
           const budgets = await budgetService.getBudgets();
@@ -204,6 +208,19 @@ export default function AddWallet() {
     } catch (err) {
       console.error('Failed to save wallet:', err);
       alert('Failed to save wallet. Please try again.');
+    }
+  };
+
+  const handleDeleteWallet = async () => {
+    if (!existingWallet) return;
+    try {
+      await walletService.deleteWallet(existingWallet.id);
+      setShowDeleteModal(false);
+      navigate(returnTo);
+      window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'wallet-delete' } }));
+    } catch (err) {
+      console.error('Failed to delete wallet:', err);
+      alert('Failed to delete wallet. Please try again.');
     }
   };
 
@@ -335,6 +352,16 @@ export default function AddWallet() {
             <FaChevronLeft />
           </button>
           <h1 className="wallet-title">{editMode ? 'Edit Wallet' : 'Add Wallet'}</h1>
+          {editMode && (returnTo === '/personal' || returnTo === '/shared') && (
+            <button
+              className="wallet-delete-btn"
+              type="button"
+              onClick={() => setShowDeleteModal(true)}
+              title="Delete wallet"
+            >
+              <FaTrash />
+            </button>
+          )}
         </div>
 
         <div className="wallet-content">
@@ -586,6 +613,21 @@ export default function AddWallet() {
             <div className="wallet-confirm-actions">
               <button type="button" className="wallet-modal-btn" onClick={confirmPlanChange}>Confirm</button>
               <button type="button" className="wallet-modal-btn secondary" onClick={cancelPlanChange}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="wallet-modal-overlay" role="dialog" aria-modal="true">
+          <div className="wallet-modal">
+            <h3 className="wallet-modal-title">Delete Wallet</h3>
+            <p className="wallet-confirm-text">
+              Are you sure you want to delete the wallet "{walletName}"? This action cannot be undone.
+            </p>
+            <div className="wallet-confirm-actions">
+              <button type="button" className="wallet-modal-btn secondary" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+              <button type="button" className="wallet-modal-btn" onClick={handleDeleteWallet}>Delete</button>
             </div>
           </div>
         </div>

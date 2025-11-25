@@ -1,6 +1,7 @@
 import express from 'express';
 import { verifyToken } from '../middleware/auth.js';
 import Wallet from '../models/Wallet.js';
+import Budget from '../models/Budget.js';
 
 const router = express.Router();
 
@@ -66,10 +67,17 @@ router.put('/:id', verifyToken, async (req, res) => {
 // Delete wallet
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
-    const wallet = await Wallet.findOneAndDelete({ _id: req.params.id, userId: req.user.uid });
+    const wallet = await Wallet.findOne({ _id: req.params.id, userId: req.user.uid });
     if (!wallet) {
       return res.status(404).json({ error: 'Not Found', message: 'Wallet not found' });
     }
+
+    // If shared wallet, delete associated shared budgets
+    if (wallet.plan === 'Shared') {
+      await Budget.deleteMany({ userId: req.user.uid, wallet: wallet.name, plan: 'Shared' });
+    }
+
+    await Wallet.findOneAndDelete({ _id: req.params.id, userId: req.user.uid });
     res.json({ success: true, message: 'Wallet deleted' });
   } catch (err) {
     console.error('Delete wallet error:', err?.message || err);

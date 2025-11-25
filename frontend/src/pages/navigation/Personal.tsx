@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { CURRENCY_SYMBOLS, formatAmount, CHART_COLORS, DEFAULT_TEXT_COLOR } from '../../utils/shared';
 import { FaPlus, FaPen } from 'react-icons/fa';
-import AddTransaction, { type Transaction } from '../components/AddTransaction';
+import AddTransaction, { type Transaction as AddTransactionType } from '../components/AddTransaction';
 import * as walletService from '../../services/walletService';
 import * as budgetService from '../../services/budgetService';
 import * as transactionService from '../../services/transactionService';
 import { useCurrency } from '../../hooks/useCurrency';
+import type { Transaction } from '../../services/transactionService';
 
 interface Wallet {
   id: string;
@@ -41,7 +42,7 @@ export default function Personal() {
   const [txFilter, setTxFilter] = useState<'All' | 'Expense' | 'Income'>('All');
   const [showTxModal, setShowTxModal] = useState<boolean>(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [editTx, setEditTx] = useState<Transaction | null>(null);
+  const [editTx, setEditTx] = useState<AddTransactionType | null>(null);
   const [showBudgetActionModal, setShowBudgetActionModal] = useState(false);
   const [showBudgetSelectModal, setShowBudgetSelectModal] = useState(false);
 
@@ -93,10 +94,10 @@ export default function Personal() {
         description: t.description,
         createdById: t.createdById,
         createdByName: t.createdByName,
-        createdAtISO: t.createdAtISO,
+        createdAtISO: typeof t.createdAtISO === 'string' ? t.createdAtISO : t.createdAtISO?.toISOString() || '',
         updatedById: t.updatedById,
         updatedByName: t.updatedByName,
-        updatedAtISO: t.updatedAtISO
+        updatedAtISO: typeof t.updatedAtISO === 'string' ? t.updatedAtISO : t.updatedAtISO?.toISOString() || ''
       })));
     } catch (err) {
       console.error('Failed to reload data:', err);
@@ -190,11 +191,11 @@ export default function Personal() {
     return inWallet.filter(tx => tx.type === txFilter);
   }, [transactions, selectedWalletName, txFilter]);
 
-  const fmtTime = (iso: string) => {
+  const fmtTime = (iso: string | Date) => {
     try {
       const d = new Date(iso);
       return d.toLocaleString();
-    } catch { return iso; }
+    } catch { return String(iso); }
   };
 
   return (
@@ -239,7 +240,24 @@ export default function Personal() {
                       color: selectedWallet.textColor || DEFAULT_TEXT_COLOR
                     }}
                   >
-                    <div className="personal-wallet-balance-label">Balance</div>
+                    <div className="personal-wallet-header">
+                      <div className="personal-wallet-balance-label">Balance</div>
+                      <button
+                        className="personal-wallet-edit"
+                        onClick={() => {
+                          navigate('/add-wallet', {
+                            state: {
+                              returnTo: '/personal',
+                              editMode: true,
+                              walletData: selectedWallet
+                            }
+                          });
+                        }}
+                        title="Edit wallet"
+                      >
+                        <FaPen />
+                      </button>
+                    </div>
                     <div className="personal-wallet-balance">{CURRENCY_SYMBOLS[currency]} {formatAmount(selectedWallet.balance || '0')}</div>
                     <div className="personal-wallet-name">{selectedWallet.name}</div>
                     <div className="personal-wallet-plan">{selectedWallet.plan} Wallet</div>
@@ -335,7 +353,7 @@ export default function Personal() {
             ) : (
               <div className="personal-tx-list">
                 {filteredTxForWallet.map(tx => (
-                  <div key={tx.id} className={`personal-tx-item type-${tx.type.toLowerCase()}`} onClick={() => { setEditTx(tx); setShowTxModal(true); }}>
+                  <div key={tx.id} className={`personal-tx-item type-${tx.type.toLowerCase()}`} onClick={() => { setEditTx(tx as AddTransactionType); setShowTxModal(true); }}>
                     <div className="personal-tx-top">
                       <span className="personal-tx-type">{tx.type}</span>
                       <span className="personal-tx-amount">{CURRENCY_SYMBOLS[currency]} {formatAmount(tx.amount)}</span>

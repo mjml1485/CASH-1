@@ -6,6 +6,8 @@ import Navbar from '../components/Navbar';
 import * as walletService from '../../services/walletService';
 import * as budgetService from '../../services/budgetService';
 import { useCurrency } from '../../hooks/useCurrency';
+import WalletSummaryModal from '../components/WalletSummaryModal';
+import BudgetSummaryModal from '../components/BudgetSummaryModal';
 
 interface Wallet {
   id: string;
@@ -41,6 +43,10 @@ export default function Dashboard() {
 
   const [isLoading, setIsLoading] = useState(false);
   const isInitialLoad = useRef(true);
+  const [showWalletSummaryModal, setShowWalletSummaryModal] = useState(false);
+  const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
+  const [showBudgetSummaryModal, setShowBudgetSummaryModal] = useState(false);
+  const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
 
   const loadData = async (showLoading = false) => {
     // Don't show loading spinner on subsequent loads to prevent glitching
@@ -182,13 +188,8 @@ export default function Dashboard() {
                         color: wallet.textColor || DEFAULT_TEXT_COLOR
                       }}
                       onClick={() => {
-                        navigate('/add-wallet', {
-                          state: {
-                            returnTo: '/dashboard',
-                            editMode: true,
-                            walletData: wallet
-                          }
-                        });
+                        setSelectedWallet(wallet);
+                        setShowWalletSummaryModal(true);
                       }}
                     >
                       <div className="dashboard-wallet-header">
@@ -261,14 +262,8 @@ export default function Dashboard() {
                         key={budget.id}
                         className="dashboard-budget-card"
                         onClick={() => {
-                          navigate('/add-budget', {
-                            state: {
-                              returnTo: '/dashboard',
-                              editMode: true,
-                              budgetData: budget,
-                              budgetPlan: derivedPlan
-                            }
-                          });
+                          setSelectedBudget(budget);
+                          setShowBudgetSummaryModal(true);
                         }}
                       >
                         <div className="dashboard-budget-category">{budget.category}</div>
@@ -324,6 +319,18 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      <WalletSummaryModal
+        isOpen={showWalletSummaryModal}
+        onClose={() => setShowWalletSummaryModal(false)}
+        wallet={selectedWallet}
+      />
+
+      <BudgetSummaryModal
+        isOpen={showBudgetSummaryModal}
+        onClose={() => setShowBudgetSummaryModal(false)}
+        budget={selectedBudget}
+      />
 
     </div>
   );
