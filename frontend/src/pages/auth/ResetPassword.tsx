@@ -85,8 +85,8 @@ export default function ResetPassword() {
               <h1 className="sign-in-title">CASH</h1>
               <p className="sign-in-subtitle">CLOUD ACCESS SYNCHRONIZED HUB</p>
             </div>
-            <div className="sign-in-label" style={{ color: '#22c55e', marginBottom: '16px' }}>Password Reset Successful!</div>
-            <p className="sign-in-subtitle" style={{ marginTop: '0', marginBottom: '20px', lineHeight: '1.5' }}>
+            <div className="sign-in-label sign-in-label-success">Password Reset Successful!</div>
+            <p className="sign-in-subtitle sign-in-subtitle-reset-success">
               Your password has been reset. Redirecting to sign in...
             </p>
             <div className="sign-in-button-row">
@@ -190,7 +190,7 @@ export default function ResetPassword() {
             </div>
 
             {authError && (
-              <div className="sign-in-error" style={{ margin: '12px 0', color: '#fc8181', fontWeight: 500 }}>
+              <div className="sign-in-error sign-in-error-custom">
                 {authError}
               </div>
             )}

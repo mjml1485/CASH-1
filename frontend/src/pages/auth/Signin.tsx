@@ -143,7 +143,7 @@ export default function Signin() {
             </div>
 
             {authError && (
-              <div className="sign-in-error" style={{ margin: '12px 0', color: '#fc8181', fontWeight: 500 }}>
+              <div className="sign-in-error sign-in-error-custom">
                 {authError}
               </div>
             )}

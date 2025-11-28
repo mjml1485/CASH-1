@@ -921,7 +921,7 @@ export default function Personal() {
                 <ul className="personal-legend">
                   {spendingData.entries.map((e, idx) => (
                     <li key={e.cat} className="personal-legend-item">
-                      <span className="personal-legend-swatch" style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}></span>
+                      <span className="personal-legend-swatch personal-legend-swatch-color" style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}></span>
                       <span className="personal-legend-label">{e.cat} {e.pct.toFixed(0)}%</span>
                     </li>
                   ))}

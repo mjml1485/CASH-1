@@ -86,12 +86,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   // Only show loading on initial auth check, not on navigation
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh'
-      }}>
+      <div className="protected-route-loading-container">
         <div>Loading...</div>
       </div>
     );

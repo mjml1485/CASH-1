@@ -306,7 +306,7 @@ export default function Profile() {
         {/* Profile Card */}
         <div className="profile-card-main">
           {/* Cover Photo */}
-          <div className="profile-cover" style={{ position: 'relative' }}>
+          <div className="profile-cover profile-cover-relative">
             {coverPreview || profile.coverPhoto ? (
               <img src={coverPreview || profile.coverPhoto} alt="Cover" className="profile-cover-img" />
             ) : (
@@ -314,11 +314,11 @@ export default function Profile() {
             )}
             {editMode && (
               <>
-                <label className="profile-cover-upload" style={{ position: 'absolute', bottom: 16, right: 16, width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,255,255,0.95)', color: '#667eea', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', fontSize: 18 }}>
+                <label className="profile-cover-upload profile-cover-upload-absolute">
                   <input
                     type="file"
                     accept="image/*"
-                    style={{ display: 'none' }}
+                    className="profile-upload-input-hidden"
                     onChange={async (e) => {
                       if (e.target.files && e.target.files[0]) {
                         try {
@@ -332,16 +332,16 @@ export default function Profile() {
                   />
                   <FaCamera />
                 </label>
-                <div style={{ marginTop: 8 }}>
-                  <label style={{ fontWeight: 500, fontSize: 13 }}>Header Image URL:</label>
+                <div className="profile-upload-url-block">
+                  <label className="profile-upload-url-label">Header Image URL:</label>
                   <input
                     type="text"
                     placeholder="Paste image URL (e.g. from Cloudinary)"
                     value={coverPreview ?? profile.coverPhoto ?? ''}
                     onChange={e => setCoverPreview(e.target.value)}
-                    style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 14, marginTop: 2 }}
+                    className="profile-upload-url-input"
                   />
-                  <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Paste a direct image URL or use the camera icon to upload.</div>
+                  <div className="profile-upload-url-desc">Paste a direct image URL or use the camera icon to upload.</div>
                 </div>
               </>
             )}
@@ -350,7 +350,7 @@ export default function Profile() {
           {/* Profile Info Section */}
           <div className="profile-info-section">
             <div className="profile-avatar-wrapper">
-              <div className="profile-avatar-large" style={{ position: 'relative' }}>
+              <div className="profile-avatar-large profile-avatar-large-relative">
                 {avatarPreview || profile.avatar ? (
                   <img src={avatarPreview || profile.avatar} alt="Avatar" className="profile-avatar-img" />
                 ) : (
@@ -360,11 +360,11 @@ export default function Profile() {
                 )}
                 {editMode && (
                   <>
-                    <label className="profile-avatar-upload-btn" style={{ position: 'absolute', bottom: 8, right: 8, width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.95)', color: '#667eea', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', fontSize: 18 }}>
+                    <label className="profile-avatar-upload-btn profile-avatar-upload-btn-absolute">
                       <input
                         type="file"
                         accept="image/*"
-                        style={{ display: 'none' }}
+                        className="profile-upload-input-hidden"
                         onChange={async (e) => {
                           if (e.target.files && e.target.files[0]) {
                             try {
@@ -378,16 +378,16 @@ export default function Profile() {
                       />
                       <FaCamera />
                     </label>
-                    <div style={{ marginTop: 8 }}>
-                      <label style={{ fontWeight: 500, fontSize: 13 }}>Avatar Image URL:</label>
+                    <div className="profile-upload-url-block">
+                      <label className="profile-upload-url-label">Avatar Image URL:</label>
                       <input
                         type="text"
                         placeholder="Paste image URL (e.g. from Cloudinary)"
                         value={avatarPreview ?? profile.avatar ?? ''}
                         onChange={e => setAvatarPreview(e.target.value)}
-                        style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 14, marginTop: 2 }}
+                        className="profile-upload-url-input"
                       />
-                      <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Paste a direct image URL or use the camera icon to upload.</div>
+                      <div className="profile-upload-url-desc">Paste a direct image URL or use the camera icon to upload.</div>
                     </div>
                   </>
                 )}
@@ -413,15 +413,14 @@ export default function Profile() {
                         onChange={(e) => setEditedUsername(e.target.value)}
                         placeholder="Enter your username"
                       />
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div className="profile-email-row-flex">
                         <input
                           type="email"
-                          className="profile-email-input"
+                          className="profile-email-input profile-email-input-disabled"
                           value={profile.email}
                           disabled
-                          style={{ background: '#f5f5f5', color: '#888' }}
                         />
-                        <button type="button" className="profile-edit-btn" style={{ padding: '4px 10px', fontSize: 13 }} onClick={() => {
+                        <button type="button" className="profile-edit-btn profile-edit-btn-small" onClick={() => {
                           setShowEmailChangeModal(true);
                           setNewEmail('');
                           setEmailPassword('');
@@ -433,46 +432,41 @@ export default function Profile() {
                             {showEmailChangeModal && (
                               <div className="profile-modal-overlay" onClick={() => setShowEmailChangeModal(false)}>
                                 <div
-                                  className="profile-modal"
+                                  className="profile-modal profile-modal-custom"
                                   onClick={e => e.stopPropagation()}
-                                  style={{ maxWidth: 400, padding: 28, borderRadius: 18, background: '#fff', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}
                                 >
-                                  <div className="profile-modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-                                    <h3 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Change Email</h3>
-                                    <button className="profile-modal-close" style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer' }} onClick={() => setShowEmailChangeModal(false)}><FaTimes /></button>
+                                  <div className="profile-modal-header profile-modal-header-flex">
+                                    <h3 className="profile-modal-title-custom">Change Email</h3>
+                                    <button className="profile-modal-close profile-modal-close-custom" onClick={() => setShowEmailChangeModal(false)}><FaTimes /></button>
                                   </div>
-                                  <div className="profile-modal-content" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                                    <label style={{ fontWeight: 500, marginBottom: 2 }}>New Email</label>
+                                  <div className="profile-modal-content profile-modal-content-flex">
+                                    <label className="profile-modal-label">New Email</label>
                                     <input
                                       type="email"
                                       value={newEmail}
                                       onChange={e => setNewEmail(e.target.value)}
-                                      className="profile-email-input"
+                                      className="profile-email-input profile-modal-input"
                                       placeholder="Enter new email"
-                                      style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 15, marginBottom: 6 }}
                                     />
-                                    <label style={{ fontWeight: 500, marginBottom: 2 }}>Password</label>
+                                    <label className="profile-modal-label">Password</label>
                                     <input
                                       type="password"
                                       value={emailPassword}
                                       onChange={e => setEmailPassword(e.target.value)}
-                                      className="profile-email-input"
+                                      className="profile-email-input profile-modal-input"
                                       placeholder="Enter your password"
-                                      style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 15, marginBottom: 6 }}
                                     />
-                                    {emailChangeError && <p className="profile-save-error" style={{ color: '#fc8181', fontWeight: 500, margin: '6px 0 0 0' }}>{emailChangeError}</p>}
-                                    {emailChangeSuccess && <p style={{ color: 'green', fontWeight: 500, margin: '6px 0 0 0' }}>{emailChangeSuccess}</p>}
-                                    <div style={{ display: 'flex', gap: 12, marginTop: 18, justifyContent: 'flex-end' }}>
+                                    {emailChangeError && <p className="profile-save-error profile-save-error-custom">{emailChangeError}</p>}
+                                    {emailChangeSuccess && <p className="profile-save-success">{emailChangeSuccess}</p>}
+                                    <div className="profile-modal-btn-row">
                                       <button
-                                        className="profile-edit-btn"
-                                        style={{ background: 'linear-gradient(90deg, #6b73ff 0%, #000dff 100%)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontWeight: 600, fontSize: 15, boxShadow: '0 2px 8px rgba(107,115,255,0.08)' }}
+                                        className="profile-edit-btn profile-edit-btn-gradient"
                                         onClick={handleEmailChange}
                                       >
                                         Change Email
                                       </button>
                                       <button
-                                        className="profile-cancel-btn"
-                                        style={{ background: '#f3f4f6', color: '#333', border: 'none', borderRadius: 8, padding: '8px 20px', fontWeight: 500, fontSize: 15 }}
+                                        className="profile-cancel-btn profile-cancel-btn-light"
                                         onClick={() => setShowEmailChangeModal(false)}
                                       >
                                         Cancel
@@ -499,7 +493,7 @@ export default function Profile() {
                     </>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <div className="profile-header-btn-row">
                   <button className="profile-edit-btn" onClick={() => {
                     if (editMode) {
                       handleSaveBio();
@@ -514,16 +508,8 @@ export default function Profile() {
                     {editMode ? 'Save' : 'Edit Profile'}
                   </button>
                   <button 
-                    className="profile-edit-btn" 
+                    className="profile-edit-btn profile-logout-btn"
                     onClick={handleLogout}
-                    style={{ 
-                      backgroundColor: '#dc3545', 
-                      color: 'white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '10px 16px'
-                    }}
                     title="Sign out"
                   >
                     <FaSignOutAlt />

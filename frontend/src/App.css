@@ -1,3 +1,313 @@
+.dashboard-wallet-eye svg {
+  font-size: 0.8em !important;
+  width: 1em;
+  height: 1em;
+}
+/* Signup password toggle button margin */
+.sign-up-toggle-password-margin {
+  margin-left: 4px;
+}
+/* Signup error custom (moved from inline) */
+.sign-up-error-custom {
+  margin: 12px 0;
+  color: #fc8181;
+  font-weight: 500;
+}
+/* Profile email row flex */
+.profile-email-row-flex {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Profile email input disabled */
+.profile-email-input-disabled {
+  background: #f5f5f5 !important;
+  color: #888 !important;
+}
+/* Profile edit btn small */
+.profile-edit-btn-small {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+/* Profile modal custom */
+.profile-modal-custom {
+  max-width: 400px;
+  padding: 28px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+/* Profile modal header flex */
+.profile-modal-header-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+/* Profile modal title custom */
+.profile-modal-title-custom {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+}
+/* Profile modal close custom */
+.profile-modal-close-custom {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+}
+/* Profile modal content flex */
+.profile-modal-content-flex {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+/* Profile modal label */
+.profile-modal-label {
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+/* Profile modal input */
+.profile-modal-input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+/* Profile save error custom */
+.profile-save-error-custom {
+  color: #fc8181;
+  font-weight: 500;
+  margin: 6px 0 0 0;
+}
+/* Profile save success */
+.profile-save-success {
+  color: green;
+  font-weight: 500;
+  margin: 6px 0 0 0;
+}
+/* Profile modal btn row */
+.profile-modal-btn-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+  justify-content: flex-end;
+}
+/* Profile edit btn gradient */
+.profile-edit-btn-gradient {
+  background: linear-gradient(90deg, #6b73ff 0%, #000dff 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 2px 8px rgba(107,115,255,0.08);
+}
+/* Profile cancel btn light */
+.profile-cancel-btn-light {
+  background: #f3f4f6;
+  color: #333;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-weight: 500;
+  font-size: 15px;
+}
+/* Profile header btn row */
+.profile-header-btn-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+/* Profile logout btn */
+.profile-logout-btn {
+  background-color: #dc3545;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+}
+/* Shared legend swatch for Spending Breakdown (moved from inline except color) */
+.shared-legend-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+/* Reset Password Success Styles */
+.sign-in-label-success {
+  color: #22c55e;
+  margin-bottom: 16px;
+}
+.sign-in-subtitle-reset-success {
+  margin-top: 0;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+/* Sign In Error Custom (moved from inline) */
+.sign-in-error-custom {
+  margin: 12px 0;
+  color: #fc8181;
+  font-weight: 500;
+}
+/* Personal Page Inline Styles Refactored */
+.personal-legend-swatch-color {
+  /* Only color is set inline for template color logic */
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+/* ProtectedRoute Loading Spinner */
+.protected-route-loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+/* Profile Inline Styles Refactored */
+.profile-cover-relative {
+  position: relative;
+}
+.profile-cover-upload-absolute {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.95);
+  color: #667eea;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  font-size: 18px;
+}
+.profile-upload-input-hidden {
+  display: none;
+}
+.profile-upload-url-block {
+  margin-top: 8px;
+}
+.profile-upload-url-label {
+  font-weight: 500;
+  font-size: 13px;
+}
+.profile-upload-url-input {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+  margin-top: 2px;
+}
+.profile-upload-url-desc {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+.profile-avatar-large-relative {
+  position: relative;
+}
+.profile-avatar-upload-btn-absolute {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.95);
+  color: #667eea;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  font-size: 18px;
+}
+/* Dashboard Skeleton Custom Lines */
+.dashboard-skeleton-line-60-16-12 {
+  width: 60%;
+  height: 16px;
+  margin-bottom: 12px;
+}
+.dashboard-skeleton-line-80-32-8 {
+  width: 80%;
+  height: 32px;
+  margin-bottom: 8px;
+}
+.dashboard-skeleton-line-50-16 {
+  width: 50%;
+  height: 16px;
+}
+.dashboard-skeleton-line-70-20-12 {
+  width: 70%;
+  height: 20px;
+  margin-bottom: 12px;
+}
+.dashboard-skeleton-line-60-28-8 {
+  width: 60%;
+  height: 28px;
+  margin-bottom: 8px;
+}
+.dashboard-skeleton-line-100-24 {
+  width: 100%;
+  height: 24px;
+}
+
+/* Dashboard Wallet Info Row for horizontal alignment */
+
+.dashboard-wallet-info-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.dashboard-wallet-info-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 48px;
+}
+.dashboard-wallet-info-icon-outer {
+  display: flex;
+  align-items: center;
+  height: auto;
+  margin-left: 20px;
+}
+.dashboard-wallet-info-icon-inner {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  font-size: 2.1rem;
+}
+
+.dashboard-wallet-eye {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0 0 8px;
+  font-size: 10px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  z-index: 2;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  height: 100%;
+}
+
 /* APP ROOT */
 
 #app-root {
@@ -3721,6 +4031,21 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   cursor: pointer;
+}
+
+.dashboard-wallet-eye {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0 0 8px;
+  font-size: 1.1rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  z-index: 2;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  height: 100%;
   flex-shrink: 0;
 }
 
@@ -3749,9 +4074,11 @@
   border: none;
   cursor: pointer;
   padding: 4px;
-  font-size: 16px;
+  font-size: 1.6rem;
   opacity: 0.7;
   transition: opacity 0.2s ease;
+  z-index: 2;
+  position: relative;
 }
 
 .dashboard-wallet-eye:hover {

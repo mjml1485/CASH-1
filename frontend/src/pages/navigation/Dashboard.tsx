@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaWallet, FaMoneyBill, FaEye } from 'react-icons/fa';
+import { FaWallet, FaMoneyBill, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { formatAmount, CURRENCY_SYMBOLS, DEFAULT_TEXT_COLOR } from '../../utils/shared';
 import Navbar from '../components/Navbar';
 import * as walletService from '../../services/walletService';
@@ -153,14 +153,14 @@ export default function Dashboard() {
             <h2 className="dashboard-section-title">Wallets</h2>
             <div className="dashboard-cards-wrapper">
               <div className="dashboard-wallet-card dashboard-skeleton-card">
-                <div className="dashboard-skeleton-line" style={{ width: '60%', height: '16px', marginBottom: '12px' }}></div>
-                <div className="dashboard-skeleton-line" style={{ width: '80%', height: '32px', marginBottom: '8px' }}></div>
-                <div className="dashboard-skeleton-line" style={{ width: '50%', height: '16px' }}></div>
+                <div className="dashboard-skeleton-line dashboard-skeleton-line-60-16-12"></div>
+                <div className="dashboard-skeleton-line dashboard-skeleton-line-80-32-8"></div>
+                <div className="dashboard-skeleton-line dashboard-skeleton-line-50-16"></div>
               </div>
               <div className="dashboard-wallet-card dashboard-skeleton-card">
-                <div className="dashboard-skeleton-line" style={{ width: '60%', height: '16px', marginBottom: '12px' }}></div>
-                <div className="dashboard-skeleton-line" style={{ width: '80%', height: '32px', marginBottom: '8px' }}></div>
-                <div className="dashboard-skeleton-line" style={{ width: '50%', height: '16px' }}></div>
+                <div className="dashboard-skeleton-line dashboard-skeleton-line-60-16-12"></div>
+                <div className="dashboard-skeleton-line dashboard-skeleton-line-80-32-8"></div>
+                <div className="dashboard-skeleton-line dashboard-skeleton-line-50-16"></div>
               </div>
             </div>
           </section>
@@ -168,14 +168,14 @@ export default function Dashboard() {
             <h2 className="dashboard-section-title">Budgets</h2>
             <div className="dashboard-cards-wrapper">
               <div className="dashboard-budget-card dashboard-skeleton-card">
-                <div className="dashboard-skeleton-line" style={{ width: '70%', height: '20px', marginBottom: '12px' }}></div>
-                <div className="dashboard-skeleton-line" style={{ width: '60%', height: '28px', marginBottom: '8px' }}></div>
-                <div className="dashboard-skeleton-line" style={{ width: '100%', height: '24px' }}></div>
+                <div className="dashboard-skeleton-line dashboard-skeleton-line-70-20-12"></div>
+                <div className="dashboard-skeleton-line dashboard-skeleton-line-60-28-8"></div>
+                <div className="dashboard-skeleton-line dashboard-skeleton-line-100-24"></div>
               </div>
               <div className="dashboard-budget-card dashboard-skeleton-card">
-                <div className="dashboard-skeleton-line" style={{ width: '70%', height: '20px', marginBottom: '12px' }}></div>
-                <div className="dashboard-skeleton-line" style={{ width: '60%', height: '28px', marginBottom: '8px' }}></div>
-                <div className="dashboard-skeleton-line" style={{ width: '100%', height: '24px' }}></div>
+                <div className="dashboard-skeleton-line dashboard-skeleton-line-70-20-12"></div>
+                <div className="dashboard-skeleton-line dashboard-skeleton-line-60-28-8"></div>
+                <div className="dashboard-skeleton-line dashboard-skeleton-line-100-24"></div>
               </div>
             </div>
           </section>
@@ -225,8 +225,9 @@ export default function Dashboard() {
                               return newSet;
                             });
                           }}
+                          aria-label={hiddenWallets.has(wallet.id) ? 'Show balance' : 'Hide balance'}
                         >
-                          <FaEye />
+                          {hiddenWallets.has(wallet.id) ? <FaEyeSlash /> : <FaEye />}
                         </button>
                       </div>
                       <div className="dashboard-wallet-balance">
@@ -235,10 +236,16 @@ export default function Dashboard() {
                           : `${CURRENCY_SYMBOLS[currency]} ${formatAmount(wallet.balance)}`
                         }
                       </div>
-                      <div className="dashboard-wallet-name">{wallet.name}</div>
-                      <div className="dashboard-wallet-type">{wallet.plan} Wallet</div>
-                      <div className="dashboard-wallet-icon">
-                        <FaWallet />
+                      <div className="dashboard-wallet-info-row">
+                        <div className="dashboard-wallet-info-group">
+                          <span className="dashboard-wallet-name dashboard-wallet-name-no-margin">{wallet.name}</span>
+                          <span className="dashboard-wallet-type">{wallet.plan} Wallet</span>
+                        </div>
+                        <div className="dashboard-wallet-info-icon-outer">
+                          <div className="dashboard-wallet-info-icon-inner">
+                            <FaWallet />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}

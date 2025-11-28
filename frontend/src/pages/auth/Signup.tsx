@@ -127,9 +127,17 @@ export default function Signup() {
                 placeholder={password || !hasInteracted.password ? 'Enter your password' : ''}
                 value={password}
                 onChange={(e) => {
-                  setPassword(e.target.value);
+                  const value = e.target.value;
+                  setPassword(value);
                   setHasInteracted(prev => ({ ...prev, password: true }));
                   e.target.setCustomValidity('');
+
+                  // Validate password strength
+                  const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{6,}$/;
+                  if (!passwordRegex.test(value)) {
+                    e.target.setCustomValidity('Password must be at least 6 characters, include at least one uppercase letter, and one number.');
+                  }
+
                   if (authError) setAuthError(null);
                 }}
                 onFocus={() => setHasInteracted(prev => ({ ...prev, password: true }))}
@@ -152,10 +160,9 @@ export default function Signup() {
                 onClick={() => setShowPassword((prev) => !prev)}
                 aria-pressed={showPassword}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="sign-up-toggle-password"
+                className="sign-up-toggle-password sign-up-toggle-password-margin"
                 disabled={submitting}
                 tabIndex={-1}
-                style={{ marginLeft: 4 }}
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
@@ -194,17 +201,16 @@ export default function Signup() {
                 onClick={() => setShowConfirmPassword((prev) => !prev)}
                 aria-pressed={showConfirmPassword}
                 aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                className="sign-up-toggle-password"
+                className="sign-up-toggle-password sign-up-toggle-password-margin"
                 disabled={submitting}
                 tabIndex={-1}
-                style={{ marginLeft: 4 }}
               >
                 {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
 
             {authError && (
-              <div className="sign-up-error" style={{ margin: '12px 0', color: '#fc8181', fontWeight: 500 }}>
+              <div className="sign-up-error sign-up-error-custom">
                 {authError}
               </div>
             )}
