@@ -4,10 +4,908 @@ import Navbar from '../components/Navbar';
 import { CURRENCY_SYMBOLS, formatAmount, CHART_COLORS, DEFAULT_TEXT_COLOR } from '../../utils/shared';
 import type { Collaborator } from '../../utils/shared';
 import { FaPlus, FaPen, FaUsers, FaHistory, FaRegCommentDots } from 'react-icons/fa';
-import AddTransaction, { type Transaction as AddTransactionType } from '../components/AddTransaction';
-import ActivityLogPanel from '../components/ActivityLogPanel';
-import CollaboratorChat from '../components/CollaboratorChat';
-import CollaboratorModal from '../components/CollaboratorModal';
+// Inlined AddTransaction component from AddTransaction.tsx
+import { useEffect as useEffectAddTx, useMemo as useMemoAddTx, useState as useStateAddTx } from 'react';
+import { triggerSelectDropdown as triggerSelectDropdownAddTx } from '../../utils/shared';
+import { FaTimes as FaTimesAddTx, FaTrash as FaTrashAddTx, FaChevronDown as FaChevronDownAddTx } from 'react-icons/fa';
+import * as walletServiceAddTx from '../../services/walletService';
+import * as budgetServiceAddTx from '../../services/budgetService';
+import * as transactionServiceAddTx from '../../services/transactionService';
+import * as customCategoryServiceAddTx from '../../services/customCategoryService';
+
+export type AddTransactionType = {
+  id: string;
+  type: 'Income' | 'Expense' | 'Transfer';
+  amount: string;
+  dateISO: string;
+  category: string;
+  walletFrom: string;
+  walletTo?: string;
+  description?: string;
+  createdById?: string;
+  createdByName?: string;
+  createdAtISO?: string;
+  updatedById?: string;
+  updatedByName?: string;
+  updatedAtISO?: string;
+};
+
+interface AddTransactionWallet { name: string; plan: 'Personal' | 'Shared'; balance: string; }
+interface AddTransactionBudget { id: string; category: string; amount: string; left?: string; plan?: 'Personal' | 'Shared'; wallet?: string; }
+
+interface AddTransactionProps {
+  isOpen: boolean;
+  onClose: () => void;
+  defaultWallet?: string;
+  editTx?: AddTransactionType | null;
+  onDeleted?: (tx: AddTransactionType) => void;
+  onSaved?: (tx: AddTransactionType) => void;
+}
+
+const TRANSACTION_BASE_CATEGORIES = ['Food','Shopping','Bills','Car','Custom'] as const;
+
+function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onSaved }: AddTransactionProps) {
+  const { currentUser } = useAppState();
+  const [type, setType] = useStateAddTx<'Income' | 'Expense' | 'Transfer'>('Expense');
+  const [amount, setAmount] = useStateAddTx<string>('');
+  const [dateISO, setDateISO] = useStateAddTx<string>('');
+  const [category, setCategory] = useStateAddTx<string>('');
+  const [customCategory, setCustomCategory] = useStateAddTx<string>('');
+  const [walletFrom, setWalletFrom] = useStateAddTx<string>(defaultWallet || '');
+  const [walletTo, setWalletTo] = useStateAddTx<string>('');
+  const [description, setDescription] = useStateAddTx<string>('');
+  const [errors, setErrors] = useStateAddTx<Record<string, string>>({});
+  const [wallets, setWallets] = useStateAddTx<AddTransactionWallet[]>([]);
+  const [budgets, setBudgets] = useStateAddTx<AddTransactionBudget[]>([]);
+  const activeWallet = useMemoAddTx(() => wallets.find(w => w.name === walletFrom), [walletFrom, wallets]);
+  const isSharedWallet = activeWallet?.plan === 'Shared';
+  const formatAuditStamp = (iso?: string) => {
+    if (!iso) return 'Not recorded';
+    try {
+      return new Intl.DateTimeFormat(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      }).format(new Date(iso));
+    } catch {
+      return iso;
+    }
+  };
+  useEffectAddTx(() => {
+    if (isOpen) {
+      const loadData = async () => {
+        try {
+          const [walletsData, budgetsData] = await Promise.all([
+            walletServiceAddTx.getWallets().catch(() => []),
+            budgetServiceAddTx.getBudgets().catch(() => [])
+          ]);
+          setWallets(walletsData.map(w => ({
+            name: w.name,
+            plan: w.plan,
+            balance: w.balance
+          })));
+          setBudgets(budgetsData.map(b => ({
+            id: String(b.id || b._id || ''),
+            category: b.category,
+            amount: b.amount,
+            left: b.left,
+            plan: b.plan,
+            wallet: b.wallet
+          })));
+        } catch (err) {
+          console.error('Failed to load data:', err);
+          setWallets([]);
+          setBudgets([]);
+        }
+      };
+      loadData();
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const v = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      if (!editTx) {
+        setType('Expense');
+        setAmount('');
+        setDateISO(v);
+        setCategory('');
+        setCustomCategory('');
+        setDescription('');
+        setWalletTo('');
+        setErrors({});
+        if (defaultWallet) setWalletFrom(defaultWallet); else setWalletFrom('');
+      }
+      if (editTx) {
+        setType(editTx.type);
+        setAmount(editTx.amount);
+        try { setDateISO(new Date(editTx.dateISO).toISOString().slice(0,16)); } catch { setDateISO(v); }
+        setCategory(editTx.category || '');
+        setWalletFrom(editTx.walletFrom);
+        setWalletTo(editTx.walletTo || '');
+        setDescription(editTx.description || '');
+      }
+    } else {
+      setErrors({});
+      setCustomCategory('');
+    }
+  }, [isOpen, defaultWallet, editTx]);
+  const handleDropdownClick = (e: React.MouseEvent<HTMLButtonElement>, selectId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (category === 'Custom' && selectId === 'category') {
+      setCategory('');
+      setCustomCategory('');
+      setTimeout(() => {
+        const parent = e.currentTarget.parentElement;
+        if (!parent) return;
+        const select = parent.querySelector('select') as HTMLSelectElement | null;
+        if (select) triggerSelectDropdownAddTx(select);
+      }, 50);
+      return;
+    }
+    const parent = e.currentTarget.parentElement;
+    if (!parent) return;
+    const select = parent.querySelector('select') as HTMLSelectElement | null;
+    if (select) triggerSelectDropdownAddTx(select);
+  };
+  const allWallets = useMemoAddTx(() => wallets, [wallets]);
+  const [mergedCategories, setMergedCategories] = useStateAddTx<string[]>([]);
+  useEffectAddTx(() => {
+    const loadCategories = async () => {
+      const extrasFromBudgets: string[] = [];
+      budgets.forEach(b => {
+        const c = b.category;
+        if (c && c.toLowerCase() !== 'income' && !extrasFromBudgets.includes(c)) extrasFromBudgets.push(c);
+      });
+      let customExtras: string[] = [];
+      try {
+        customExtras = await customCategoryServiceAddTx.getCustomCategories();
+      } catch (err) {
+        console.error('Failed to load custom categories:', err);
+      }
+      customExtras = customExtras.filter(c => c.toLowerCase() !== 'income');
+      const baseNoCustom = TRANSACTION_BASE_CATEGORIES.filter(c => c !== 'Custom');
+      const orderedUnique = [...new Set([...baseNoCustom, ...extrasFromBudgets, ...customExtras])];
+      setMergedCategories(orderedUnique);
+    };
+    loadCategories();
+  }, [budgets]);
+  const validate = () => {
+    const errs: Record<string, string> = {};
+    if (!type) errs.type = 'Select a type.';
+    const amt = parseFloat(amount || '0') || 0;
+    if (amt <= 0) errs.amount = 'Enter a valid amount.';
+    if (!dateISO) errs.date = 'Select a date.';
+    if (!walletFrom) errs.walletFrom = 'Select a wallet.';
+    if (type === 'Transfer' && !walletTo) errs.walletTo = 'Select destination wallet.';
+    if (type === 'Expense' && !(category || customCategory)) errs.category = 'Select a category.';
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+  const revertOriginalIfEditing = async (original: AddTransactionType) => {
+    const amt = parseFloat(original.amount || '0') || 0;
+    try {
+      const walletsData = await walletServiceAddTx.getWallets();
+      const budgetsData = await budgetServiceAddTx.getBudgets();
+      if (original.type === 'Income') {
+        const wallet = walletsData.find(w => w.name === original.walletFrom);
+        if (wallet) {
+          const newBalance = (parseFloat(wallet.balance) - amt).toFixed(2);
+          await walletServiceAddTx.updateWallet(wallet.id || wallet._id || '', { balance: newBalance });
+        }
+      } else if (original.type === 'Expense') {
+        const wallet = walletsData.find(w => w.name === original.walletFrom);
+        if (wallet) {
+          const newBalance = (parseFloat(wallet.balance) + amt).toFixed(2);
+          await walletServiceAddTx.updateWallet(wallet.id || wallet._id || '', { balance: newBalance });
+        }
+        for (const b of budgetsData) {
+          const isMatch = String(b.category).toLowerCase() === String(original.category).toLowerCase();
+          const isPersonal = (b.plan || 'Personal') === 'Personal';
+          const isSharedMatch = b.plan === 'Shared' && b.wallet === original.walletFrom;
+          if (isMatch && (isPersonal || isSharedMatch)) {
+            const leftNum = parseFloat(b.left ?? b.amount ?? '0') || 0;
+            const newLeft = (leftNum + amt).toFixed(2);
+            await budgetServiceAddTx.updateBudget(b.id || b._id || '', { left: newLeft });
+          }
+        }
+      } else if (original.type === 'Transfer') {
+        const walletFrom = walletsData.find(w => w.name === original.walletFrom);
+        if (walletFrom) {
+          const newBalance = (parseFloat(walletFrom.balance) + amt).toFixed(2);
+          await walletServiceAddTx.updateWallet(walletFrom.id || walletFrom._id || '', { balance: newBalance });
+        }
+        if (original.walletTo) {
+          const walletTo = walletsData.find(w => w.name === original.walletTo);
+          if (walletTo) {
+            const newBalance = (parseFloat(walletTo.balance) - amt).toFixed(2);
+            await walletServiceAddTx.updateWallet(walletTo.id || walletTo._id || '', { balance: newBalance });
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to revert transaction:', err);
+    }
+  };
+  const handleSave = async () => {
+    if (!validate()) return;
+    const amt = parseFloat(amount);
+    if (editTx && editTx.id) {
+      await revertOriginalIfEditing(editTx);
+      try {
+        await transactionServiceAddTx.deleteTransaction(editTx.id);
+      } catch (err) {
+        console.error('Failed to delete old transaction:', err);
+      }
+    }
+    const chosenCategory = customCategory || category;
+    try {
+      const walletsData = await walletServiceAddTx.getWallets();
+      const budgetsData = await budgetServiceAddTx.getBudgets();
+      if (type === 'Income') {
+        const wallet = walletsData.find(w => w.name === walletFrom);
+        if (wallet) {
+          const newBalance = (parseFloat(wallet.balance) + amt).toFixed(2);
+          await walletServiceAddTx.updateWallet(wallet.id || wallet._id || '', { balance: newBalance });
+        }
+      } else if (type === 'Expense') {
+        const wallet = walletsData.find(w => w.name === walletFrom);
+        if (wallet) {
+          const newBalance = (parseFloat(wallet.balance) - amt).toFixed(2);
+          await walletServiceAddTx.updateWallet(wallet.id || wallet._id || '', { balance: newBalance });
+        }
+        for (const b of budgetsData) {
+          const isMatch = String(b.category).toLowerCase() === chosenCategory.toLowerCase();
+          const isPersonal = (b.plan || 'Personal') === 'Personal';
+          const isSharedMatch = b.plan === 'Shared' && b.wallet === walletFrom;
+          if (isMatch && (isPersonal || isSharedMatch)) {
+            const leftNum = parseFloat(b.left ?? b.amount ?? '0') || 0;
+            const nextLeft = Math.max(leftNum - amt, 0).toFixed(2);
+            await budgetServiceAddTx.updateBudget(b.id || b._id || '', { left: nextLeft });
+          }
+        }
+      } else if (type === 'Transfer') {
+        const walletFromData = walletsData.find(w => w.name === walletFrom);
+        if (walletFromData) {
+          const newBalance = (parseFloat(walletFromData.balance) - amt).toFixed(2);
+          await walletServiceAddTx.updateWallet(walletFromData.id || walletFromData._id || '', { balance: newBalance });
+        }
+        if (walletTo) {
+          const walletToData = walletsData.find(w => w.name === walletTo);
+          if (walletToData) {
+            const newBalance = (parseFloat(walletToData.balance) + amt).toFixed(2);
+            await walletServiceAddTx.updateWallet(walletToData.id || walletToData._id || '', { balance: newBalance });
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update wallets/budgets:', err);
+    }
+    if (customCategory && !mergedCategories.includes(customCategory)) {
+      try {
+        await customCategoryServiceAddTx.createCustomCategory(customCategory);
+      } catch (err) {
+        console.error('Failed to save custom category:', err);
+      }
+    }
+    const nowIso = new Date().toISOString();
+    const actorId = currentUser.id;
+    const actorName = currentUser.name;
+    const txData = {
+      type,
+      amount: amt.toFixed(2),
+      dateISO: new Date(dateISO).toISOString(),
+      category: chosenCategory,
+      walletFrom,
+      walletTo: type === 'Transfer' ? walletTo : undefined,
+      description,
+      createdById: editTx?.createdById || actorId,
+      createdByName: editTx?.createdByName || actorName,
+      createdAtISO: editTx?.createdAtISO || editTx?.dateISO || nowIso,
+      updatedById: actorId,
+      updatedByName: actorName,
+      updatedAtISO: nowIso
+    };
+    try {
+      let savedTx;
+      if (editTx && editTx.id) {
+        savedTx = await transactionServiceAddTx.updateTransaction(editTx.id, txData);
+      } else {
+        savedTx = await transactionServiceAddTx.createTransaction(txData);
+      }
+      try { window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'transaction-save' } })); } catch {}
+      if (onSaved) onSaved({
+        ...savedTx,
+        id: String(savedTx.id || savedTx._id || ''),
+        dateISO: typeof savedTx.dateISO === 'string' ? savedTx.dateISO : savedTx.dateISO?.toISOString?.() || '',
+        createdAtISO: typeof savedTx.createdAtISO === 'string' ? savedTx.createdAtISO : savedTx.createdAtISO?.toISOString?.() || '',
+        updatedAtISO: typeof savedTx.updatedAtISO === 'string' ? savedTx.updatedAtISO : savedTx.updatedAtISO?.toISOString?.() || '',
+      });
+      onClose();
+    } catch (err) {
+      console.error('Failed to save transaction:', err);
+      alert('Failed to save transaction. Please try again.');
+    }
+  };
+  const handleDelete = async () => {
+    if (!editTx || !editTx.id) return;
+    try {
+      await revertOriginalIfEditing(editTx);
+      await transactionServiceAddTx.deleteTransaction(editTx.id);
+      try { window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'transaction-delete' } })); } catch {}
+      onClose();
+      if (onDeleted) onDeleted({ ...editTx, id: String(editTx.id || '') });
+    } catch (err) {
+      console.error('Failed to delete transaction:', err);
+      alert('Failed to delete transaction. Please try again.');
+    }
+  };
+  if (!isOpen) return null;
+  return (
+    <div className="tx-modal-overlay" role="dialog" aria-modal="true">
+      <div className="tx-modal">
+        <div className="tx-modal-header">
+          <h3>{editTx ? 'Edit Transaction' : 'Add Transaction'}</h3>
+          <button className="tx-close" type="button" onClick={onClose} aria-label="Close">
+            <FaTimesAddTx />
+          </button>
+        </div>
+        <div className="tx-modal-body">
+          {isSharedWallet && editTx && (
+            <div className="tx-audit">
+              <div className="tx-audit-row">
+                <span className="tx-audit-label">Created by</span>
+                <span className="tx-audit-value">{editTx.createdByName || 'Not recorded'}  b7 {formatAuditStamp(editTx.createdAtISO || editTx.dateISO)}</span>
+              </div>
+              <div className="tx-audit-row">
+                <span className="tx-audit-label">Last updated by</span>
+                <span className="tx-audit-value">{editTx.updatedByName || editTx.createdByName || 'Not recorded'}  b7 {formatAuditStamp(editTx.updatedAtISO || editTx.dateISO)}</span>
+              </div>
+            </div>
+          )}
+          <div className="tx-field">
+            <label>Type</label>
+            <div className="tx-select">
+              <div className={`tx-select-display ${errors.type ? 'input-error' : ''}`} onClick={(e) => e.preventDefault()}>
+                <span>{type}</span>
+              </div>
+              <select value={type} onChange={(e) => setType(e.target.value as 'Income' | 'Expense' | 'Transfer')} className="tx-hidden-select">
+                <option value="Expense">Expense</option>
+                <option value="Income">Income</option>
+                <option value="Transfer">Transfer</option>
+              </select>
+              <button type="button" className="tx-select-arrow" onClick={(e) => handleDropdownClick(e, 'type')} aria-label="Change type">
+                <FaChevronDownAddTx />
+              </button>
+            </div>
+            {errors.type && <div className="error-text">{errors.type}</div>}
+          </div>
+          <div className="tx-field">
+            <label>Amount</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={amount}
+              onChange={(e) => {
+                let v = e.target.value.replace(/[^0-9.]/g, '');
+                const parts = v.split('.');
+                if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+                if (parts[1] && parts[1].length > 2) v = parts[0] + '.' + parts[1].substring(0, 2);
+                setAmount(v);
+              }}
+            />
+            {errors.amount && <div className="error-text">{errors.amount}</div>}
+          </div>
+          <div className="tx-field">
+            <label>Date</label>
+            <input type="datetime-local" value={dateISO} onChange={(e) => setDateISO(e.target.value)} />
+            {errors.date && <div className="error-text">{errors.date}</div>}
+          </div>
+          <div className="tx-field">
+            <label>Category</label>
+            <div className="tx-select">
+              {category === 'Custom' ? (
+                <>
+                  <input
+                    type="text"
+                    className={`tx-select-input ${errors.category ? 'input-error' : ''}`}
+                    placeholder="Custom"
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                  />
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="tx-hidden-select"
+                  >
+                    <option value="Custom">Custom</option>
+                    {mergedCategories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </>
+              ) : (
+                <>
+                  <div
+                    className={`tx-select-display ${errors.category ? 'input-error' : ''}`}
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    <span className={category ? '' : 'placeholder-text'}>
+                      {category || 'Select category'}
+                    </span>
+                  </div>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="tx-hidden-select"
+                  >
+                    <option value="" disabled hidden>Select category</option>
+                    {mergedCategories.filter(c => c !== 'Custom').map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                    <option value="Custom">Custom</option>
+                  </select>
+                </>
+              )}
+              <button
+                type="button"
+                className="tx-select-arrow"
+                onClick={(e) => handleDropdownClick(e, 'category')}
+                aria-label="Change category"
+              >
+                <FaChevronDownAddTx />
+              </button>
+            </div>
+            {errors.category && <div className="error-text">{errors.category}</div>}
+          </div>
+          <div className="tx-field">
+            <label>Wallet</label>
+            <div className="tx-select">
+              <div className={`tx-select-display ${errors.walletFrom ? 'input-error' : ''}`} onClick={(e) => e.preventDefault()}>
+                <span className={walletFrom ? '' : 'placeholder-text'}>
+                  {walletFrom || 'Select wallet'}
+                </span>
+              </div>
+                <select value={walletFrom} onChange={(e) => setWalletFrom(e.target.value)} className="tx-hidden-select">
+                <option value="" disabled hidden>Select wallet</option>
+                {allWallets.map((w) => (
+                  <option key={w.name} value={w.name}>{w.name}</option>
+                ))}
+              </select>
+              <button type="button" className="tx-select-arrow" onClick={(e) => handleDropdownClick(e, 'walletFrom')} aria-label="Change wallet">
+                <FaChevronDownAddTx />
+              </button>
+            </div>
+            {errors.walletFrom && <div className="error-text">{errors.walletFrom}</div>}
+          </div>
+          {type === 'Transfer' && (
+            <div className="tx-field">
+              <label>Destination Wallet</label>
+              <div className="tx-select">
+                <div className="tx-select-display" onClick={(e) => e.preventDefault()}>
+                  <span className={walletTo ? '' : 'placeholder-text'}>
+                    {walletTo || 'Select destination'}
+                  </span>
+                </div>
+                <select value={walletTo} onChange={(e) => setWalletTo(e.target.value)} className="tx-hidden-select">
+                  <option value="" disabled hidden>Select destination</option>
+                  {allWallets.filter(w => w.name !== walletFrom).map((w) => (
+                    <option key={w.name} value={w.name}>{w.name}</option>
+                  ))}
+                </select>
+                <button type="button" className="tx-select-arrow" onClick={(e) => handleDropdownClick(e, 'walletTo')} aria-label="Change destination">
+                  <FaChevronDownAddTx />
+                </button>
+              </div>
+              {errors.walletTo && <div className="error-text">{errors.walletTo}</div>}
+            </div>
+          )}
+          <div className="tx-field">
+            <label>Description</label>
+            <input type="text" placeholder="Optional" value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
+        </div>
+        <div className="tx-modal-footer">
+          {editTx && (
+            <button type="button" className="tx-btn tx-btn-danger" onClick={handleDelete} title="Delete transaction">
+              <FaTrashAddTx />
+            </button>
+          )}
+          <button type="button" className="tx-btn" onClick={handleSave}>{editTx ? 'Update' : 'Save'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Inlined ActivityLogPanel component from ActivityLogPanel.tsx
+import { useMemo as useMemoActivity, useState as useStateActivity } from 'react';
+import { useActivityLog } from '../../state/AppStateContext';
+
+type FilterName = 'all' | import('../../state/AppStateContext').EntityType;
+const filterDefinitions: Array<{ label: string; value: FilterName }> = [
+  { label: 'All', value: 'all' },
+  { label: 'Budgets', value: 'budget' },
+  { label: 'Collaborators', value: 'member' },
+  { label: 'Group Chat', value: 'comment' }
+];
+const formatTimestamp = (iso: string) => {
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
+};
+function ActivityLogPanel({ walletId, walletName, showHeader = true }: { walletId?: string; walletName?: string; showHeader?: boolean }) {
+  const [selectedFilter, setSelectedFilter] = useStateActivity<FilterName>('all');
+  const entries = useActivityLog(walletId, selectedFilter === 'all' ? undefined : selectedFilter);
+  const groupedEntries = useMemoActivity(() => {
+    return entries.reduce<Record<string, import('../../state/AppStateContext').ActivityEntry[]>>((acc, entry) => {
+      const day = entry.createdAt.slice(0, 10);
+      acc[day] = acc[day] ? [...acc[day], entry] : [entry];
+      return acc;
+    }, {});
+  }, [entries]);
+  const orderedKeys = useMemoActivity(() => Object.keys(groupedEntries).sort((a, b) => (a < b ? 1 : -1)), [groupedEntries]);
+  return (
+    <div className="shared-activity-panel">
+      {showHeader && (
+        <div className="shared-activity-header">
+          <div>
+            <h3 className="shared-box-title">Activity Log</h3>
+            <p className="shared-activity-subheading">Tracking budget changes, collaborator updates, and group messages for {walletName ?? 'this wallet'}</p>
+          </div>
+        </div>
+      )}
+      <div className="shared-activity-filters">
+        {filterDefinitions.map((item) => (
+          <button
+            key={item.value}
+            className={`shared-filter ${selectedFilter === item.value ? 'active' : ''}`}
+            onClick={() => setSelectedFilter(item.value)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      {!walletId ? (
+        <div className="shared-activity-empty">
+          <p>Select a shared wallet to view recent activity.</p>
+        </div>
+      ) : entries.length === 0 ? (
+        <div className="shared-list-empty">No activity recorded yet.</div>
+      ) : (
+        <div className="shared-activity-list">
+          {orderedKeys.map((day) => (
+            <div key={day} className="shared-activity-group">
+              <div className="shared-activity-date">{formatTimestamp(`${day}T00:00:00Z`).split(',')[0]}</div>
+              <ul className="shared-activity-items">
+                {groupedEntries[day]
+                  .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+                  .map((entry) => (
+                    <li key={entry.id} className="shared-activity-item">
+                      <div className="shared-activity-message">{entry.message}</div>
+                      <div className="shared-activity-meta">
+                        <span>{entry.actorName}</span>
+                        <span>•</span>
+                        <span>{formatTimestamp(entry.createdAt)}</span>
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Inlined CollaboratorChat component from CollaboratorChat.tsx
+import { useMemo as useMemoChat, useState as useStateChat } from 'react';
+import { useComments } from '../../state/AppStateContext';
+function CollaboratorChat({ walletId, walletName, showHeader = true }: { walletId?: string; walletName?: string; showHeader?: boolean }) {
+  const { addComment, currentUser } = useAppState();
+  const [message, setMessage] = useStateChat('');
+  const chatEntries = useComments(walletId, walletId);
+  const sortedMessages = useMemoChat(
+    () => chatEntries.slice().sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1)),
+    [chatEntries]
+  );
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!walletId) return;
+    const trimmed = message.trim();
+    if (!trimmed) return;
+    addComment({ walletId, entityId: walletId, message: trimmed });
+    setMessage('');
+  };
+  if (!walletId) {
+    return (
+      <div className="shared-chat-empty">
+        <p>Select a shared wallet to chat with the group.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="shared-chat-panel">
+      {showHeader && (
+        <div className="shared-chat-header">
+          <h3 className="shared-box-title">Group Chat</h3>
+          <p className="shared-chat-subheading">Coordinate with everyone on {walletName}</p>
+        </div>
+      )}
+      {!walletId ? (
+        <div className="shared-chat-empty">
+          <p>Select a shared wallet to chat with the group.</p>
+        </div>
+      ) : (
+        <>
+          <div className="shared-chat-list" role="log" aria-live="polite">
+            {sortedMessages.length === 0 ? (
+              <div className="shared-list-empty">Start the conversation with your group.</div>
+            ) : (
+              sortedMessages.map((comment) => (
+                <div key={comment.id} className="shared-chat-item">
+                  <div className="shared-chat-avatar" aria-hidden="true">
+                    {comment.authorName
+                      .split(' ')
+                      .map((part) => part.charAt(0).toUpperCase())
+                      .slice(0, 2)
+                      .join('')}
+                  </div>
+                  <div className="shared-chat-body">
+                    <div className="shared-chat-meta">
+                      <span>{comment.authorName}</span>
+                      <span>•</span>
+                      <span>{formatTimestamp(comment.createdAt)}</span>
+                    </div>
+                    <p className="shared-chat-message">{comment.message}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <form className="shared-chat-form" onSubmit={handleSubmit}>
+            <label htmlFor="collab-message" className="sr-only">Message</label>
+            <textarea
+              id="collab-message"
+              className="shared-chat-input"
+              placeholder={`Send a message as ${currentUser.name}`}
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              rows={3}
+            />
+            <button type="submit" className="shared-chat-submit" disabled={!message.trim()}>
+              Send
+            </button>
+          </form>
+        </>
+      )}
+    </div>
+  );
+}
+// Inlined CollaboratorModal from CollaboratorModal.tsx
+import { FaChevronDown as FaChevronDownCollab } from 'react-icons/fa';
+import type { Collaborator as CollaboratorType } from '../../utils/shared';
+
+interface CollaboratorModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  collaborators: CollaboratorType[];
+  onAddCollaborator: (input: string) => void;
+  onRemoveCollaborator: (id: string) => void;
+  onRoleChange: (id: string, role: string) => void;
+  ownerName?: string;
+  ownerEmail?: string;
+  variant?: 'wallet' | 'budget';
+}
+
+function CollaboratorModal({
+  isOpen,
+  onClose,
+  title,
+  collaborators,
+  onAddCollaborator,
+  onRemoveCollaborator,
+  onRoleChange,
+  ownerName = 'FirstName LastName',
+  ownerEmail = 'useroneeeeeeeee@gmail.com',
+  variant = 'wallet'
+}: CollaboratorModalProps) {
+  const [collaboratorInput, setCollaboratorInput] = useState('');
+
+  const handleAddClick = () => {
+    if (collaboratorInput.trim()) {
+      onAddCollaborator(collaboratorInput.trim());
+      setCollaboratorInput('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleAddClick();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  if (variant === 'wallet') {
+    return (
+      <div className="wallet-modal-overlay">
+        <div className="wallet-modal" onClick={(e) => e.stopPropagation()}>
+          <h2 className="wallet-modal-title">Share '{title}'</h2>
+          <div className="wallet-modal-input-wrapper">
+            <input
+              type="text"
+              className="wallet-modal-input"
+              placeholder="Add collaborators (email or username)"
+              value={collaboratorInput}
+              onChange={(e) => setCollaboratorInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+            />
+            {collaboratorInput.trim() && (
+              <button
+                type="button"
+                className="wallet-modal-add-btn"
+                onClick={handleAddClick}
+              >
+                Add
+              </button>
+            )}
+          </div>
+          <div className="wallet-modal-section">
+            <h3 className="wallet-modal-section-title">People with access</h3>
+            <div className="wallet-modal-person">
+              <div className="wallet-modal-person-avatar">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="16" cy="16" r="16" fill="#e2e8f0"/>
+                  <path d="M16 10C17.1046 10 18 10.8954 18 12C18 13.1046 17.1046 14 16 14C14.8954 14 14 13.1046 14 12C14 10.8954 14.8954 10 16 10Z" fill="#4a5568"/>
+                  <path d="M16 16C18.2091 16 20 14.2091 20 12C20 9.79086 18.2091 8 16 8C13.7909 8 12 9.79086 12 12C12 14.2091 13.7909 16 16 16Z" fill="#4a5568"/>
+                  <path d="M22 22C22 19.7909 20.2091 18 18 18H14C11.7909 18 10 19.7909 10 22V24H22V22Z" fill="#4a5568"/>
+                </svg>
+              </div>
+              <div className="wallet-modal-person-info">
+                <div className="wallet-modal-person-name">{ownerName}</div>
+                <div className="wallet-modal-person-email">{ownerEmail}</div>
+              </div>
+              <div className="wallet-modal-person-role">Owner</div>
+            </div>
+            {collaborators.map((collaborator) => (
+              <div key={collaborator.id} className="wallet-modal-person">
+                <div className="wallet-modal-person-avatar">
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="16" cy="16" r="16" fill="#e2e8f0"/>
+                    <path d="M16 10C17.1046 10 18 10.8954 18 12C18 13.1046 17.1046 14 16 14C14.8954 14 14 13.1046 14 12C14 10.8954 14.8954 10 16 10Z" fill="#4a5568"/>
+                    <path d="M16 16C18.2091 16 20 14.2091 20 12C20 9.79086 18.2091 8 16 8C13.7909 8 12 9.79086 12 12C12 14.2091 13.7909 16 16 16Z" fill="#4a5568"/>
+                    <path d="M22 22C22 19.7909 20.2091 18 18 18H14C11.7909 18 10 19.7909 10 22V24H22V22Z" fill="#4a5568"/>
+                  </svg>
+                </div>
+                <div className="wallet-modal-person-info">
+                  <div className="wallet-modal-person-name">{collaborator.name}</div>
+                  <div className="wallet-modal-person-email">{collaborator.email}</div>
+                </div>
+                <div className="wallet-modal-person-role-select">
+                  <select
+                    value={collaborator.role}
+                    onChange={(e) => onRoleChange(collaborator.id, e.target.value)}
+                    className="wallet-modal-role-dropdown"
+                  >
+                    <option value="Viewer">Viewer</option>
+                    <option value="Editor">Editor</option>
+                  </select>
+                  <FaChevronDownCollab className="wallet-modal-role-arrow" />
+                </div>
+                <button
+                  className="wallet-modal-remove"
+                  type="button"
+                  onClick={() => onRemoveCollaborator(collaborator.id)}
+                  title="Remove"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="wallet-modal-footer">
+            <button className="wallet-modal-done" type="button" onClick={onClose}>
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="budget-modal-overlay">
+      <div className="budget-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="budget-modal-header">
+          <h2>Manage Collaborators</h2>
+          <button 
+            type="button" 
+            className="budget-modal-close"
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </div>
+        <div className="budget-modal-content">
+          <p className="budget-modal-subtitle">
+            Add people to share this budget with. Changes will reflect in both wallet and budget.
+          </p>
+          <div className="budget-collaborator-input-wrapper">
+            <input
+              type="text"
+              placeholder="Enter name or email"
+              value={collaboratorInput}
+              onChange={(e) => setCollaboratorInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="budget-collaborator-input"
+            />
+            <button
+              type="button"
+              onClick={handleAddClick}
+              className="budget-add-collaborator-btn"
+              disabled={!collaboratorInput.trim()}
+            >
+              Add
+            </button>
+          </div>
+          <div className="budget-collaborators-list-modal">
+            <div className="budget-collaborator-item-modal owner">
+              <div className="budget-collaborator-info-modal">
+                <span className="budget-collaborator-name-modal">You (Owner)</span>
+                <span className="budget-collaborator-email-modal">Current User</span>
+              </div>
+              <span className="budget-collaborator-role-modal">Owner</span>
+            </div>
+            {collaborators.map((collaborator: CollaboratorType) => (
+              <div key={collaborator.id} className="budget-collaborator-item-modal">
+                <div className="budget-collaborator-info-modal">
+                  <span className="budget-collaborator-name-modal">{collaborator.name}</span>
+                  <span className="budget-collaborator-email-modal">{collaborator.email}</span>
+                </div>
+                <div className="budget-collaborator-actions">
+                  <select
+                    value={collaborator.role}
+                    onChange={(e) => onRoleChange(collaborator.id, e.target.value)}
+                    className="budget-role-select"
+                  >
+                    <option value="Editor">Editor</option>
+                    <option value="Viewer">Viewer</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => onRemoveCollaborator(collaborator.id)}
+                    className="budget-remove-btn"
+                    title="Remove collaborator"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="budget-modal-done-btn"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 import { useAppState } from '../../state/AppStateContext';
 import * as walletService from '../../services/walletService';
 import * as budgetService from '../../services/budgetService';

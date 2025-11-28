@@ -92,16 +92,18 @@ export default function Profile() {
         const backendProfile = await fetchProfileBackend();
         if (backendProfile) {
           setProfile({
-            uid: backendProfile.uid || currentUser.uid || '',
+            // uid removed to match UserProfile type
+            id: backendProfile.id || 'current-user',
             name: backendProfile.name || currentUser.name || '',
-            email: backendProfile.email || currentUser.email || '',
             username: backendProfile.username || currentUser.email?.split('@')[0] || '',
+            email: backendProfile.email || currentUser.email || '',
             bio: backendProfile.bio || '',
+            joinedDate: backendProfile.joinedDate || 'November 2025',
             showEmail: typeof backendProfile.showEmail === 'boolean' ? backendProfile.showEmail : false,
             avatar: backendProfile.avatar || '',
             coverPhoto: backendProfile.header || '',
-            createdAt: backendProfile.createdAt,
-            updatedAt: backendProfile.updatedAt
+            // createdAt removed to match UserProfile type
+            // updatedAt removed to match UserProfile type
           });
         } else {
           // If no profile exists, create one with default values
@@ -115,16 +117,18 @@ export default function Profile() {
             const newProfile = await fetchProfileBackend();
             if (newProfile) {
               setProfile({
-                uid: newProfile.uid || currentUser.uid || '',
+                // uid removed to match UserProfile type
+                id: newProfile.id || 'current-user',
                 name: newProfile.name || currentUser.name || '',
-                email: newProfile.email || currentUser.email || '',
                 username: newProfile.username || defaultUsername,
+                email: newProfile.email || currentUser.email || '',
                 bio: newProfile.bio || '',
+                joinedDate: newProfile.joinedDate || 'November 2025',
                 showEmail: typeof newProfile.showEmail === 'boolean' ? newProfile.showEmail : false,
                 avatar: newProfile.avatar || '',
                 coverPhoto: newProfile.header || '',
-                createdAt: newProfile.createdAt,
-                updatedAt: newProfile.updatedAt
+                // createdAt removed to match UserProfile type
+                // updatedAt removed to match UserProfile type
               });
             }
           } catch (createErr) {

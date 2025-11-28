@@ -6,8 +6,6 @@ import Navbar from '../components/Navbar';
 import * as walletService from '../../services/walletService';
 import * as budgetService from '../../services/budgetService';
 import { useCurrency } from '../../hooks/useCurrency';
-import WalletSummaryModal from '../components/WalletSummaryModal';
-import BudgetSummaryModal from '../components/BudgetSummaryModal';
 
 interface Wallet {
   id: string;
@@ -43,10 +41,32 @@ export default function Dashboard() {
 
   const [isLoading, setIsLoading] = useState(false);
   const isInitialLoad = useRef(true);
-  const [showWalletSummaryModal, setShowWalletSummaryModal] = useState(false);
-  const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
-  const [showBudgetSummaryModal, setShowBudgetSummaryModal] = useState(false);
-  const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
+  // Removed WalletSummaryModal and BudgetSummaryModal state
+  // New: handle wallet click to redirect to personal/shared page with wallet selected
+  const handleWalletClick = (wallet: Wallet) => {
+    if (wallet.plan === 'Personal') {
+      navigate('/personal', { state: { selectedWalletName: wallet.name } });
+    } else if (wallet.plan === 'Shared') {
+      navigate('/shared', { state: { selectedWalletName: wallet.name } });
+    }
+  };
+
+  // New: handle budget click to redirect to personal/shared page with wallet and budget selected
+  const handleBudgetClick = (budget: Budget) => {
+    // Find the wallet for this budget
+    const wallet = wallets.find(w => w.name === budget.wallet);
+    if (wallet && wallet.plan === 'Personal') {
+      // For personal budgets, show first personal wallet and the budget
+      const personalWallets = wallets.filter(w => w.plan === 'Personal');
+      const firstPersonalWallet = personalWallets[0];
+      navigate('/personal', { state: { selectedWalletName: firstPersonalWallet ? firstPersonalWallet.name : '', selectedBudgetId: budget.id } });
+    } else if (wallet && wallet.plan === 'Shared') {
+      navigate('/shared', { state: { selectedWalletName: wallet.name, selectedBudgetId: budget.id } });
+    } else {
+      // Fallback: if wallet not found, just go to personal
+      navigate('/personal', { state: { selectedBudgetId: budget.id } });
+    }
+  };
 
   const loadData = async (showLoading = false) => {
     // Don't show loading spinner on subsequent loads to prevent glitching
@@ -187,10 +207,7 @@ export default function Dashboard() {
                         background: `linear-gradient(135deg, ${wallet.color1} 0%, ${wallet.color2} 100%)`,
                         color: wallet.textColor || DEFAULT_TEXT_COLOR
                       }}
-                      onClick={() => {
-                        setSelectedWallet(wallet);
-                        setShowWalletSummaryModal(true);
-                      }}
+                      onClick={() => handleWalletClick(wallet)}
                     >
                       <div className="dashboard-wallet-header">
                         <span className="dashboard-wallet-label">Balance</span>
@@ -261,10 +278,7 @@ export default function Dashboard() {
                       <div
                         key={budget.id}
                         className="dashboard-budget-card"
-                        onClick={() => {
-                          setSelectedBudget(budget);
-                          setShowBudgetSummaryModal(true);
-                        }}
+                        onClick={() => handleBudgetClick(budget)}
                       >
                         <div className="dashboard-budget-category">{budget.category}</div>
                         <div className="dashboard-budget-amount">
@@ -318,20 +332,8 @@ export default function Dashboard() {
             </section>
           </div>
         </div>
+
       )}
-
-      <WalletSummaryModal
-        isOpen={showWalletSummaryModal}
-        onClose={() => setShowWalletSummaryModal(false)}
-        wallet={selectedWallet}
-      />
-
-      <BudgetSummaryModal
-        isOpen={showBudgetSummaryModal}
-        onClose={() => setShowBudgetSummaryModal(false)}
-        budget={selectedBudget}
-      />
-
     </div>
   );
 }
