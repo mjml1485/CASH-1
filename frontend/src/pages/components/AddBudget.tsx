@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaChevronLeft, FaChevronDown, FaUsers, FaInfoCircle, FaCalendarAlt } from 'react-icons/fa';
+import { FiTrash2 } from 'react-icons/fi';
 import type { Collaborator, Wallet } from '../../utils/shared';
 import {
   getDaysInMonth,
@@ -8,6 +9,7 @@ import {
   formatDate,
   triggerSelectDropdown,
   formatAmount,
+  validateAndFormatAmount,
   CURRENCY_SYMBOLS
 } from '../../utils/shared';
 import { useAppState } from '../../state/AppStateContext';
@@ -312,7 +314,9 @@ export default function AddBudget() {
     description: false 
   });
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [showCalendar, setShowCalendar] = useState<boolean>(false);
+  const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
   const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
   const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
@@ -327,10 +331,30 @@ export default function AddBudget() {
 
   const isSharedBudget = (selectedWalletData?.plan || budgetPlan) === 'Shared';
 
-  const dateRange = customStartDate && customEndDate 
-    ? { startDate: customStartDate, endDate: customEndDate }
-    : calculateDateRange(period);
-  const { startDate, endDate } = dateRange;
+  // Compute date range: start is either customStartDate or first day of current month; end is computed from start + period
+  const computeEndFromStart = (periodType: string, start: Date): Date => {
+    const end = new Date(start);
+    switch (periodType) {
+      case 'Weekly':
+        end.setDate(start.getDate() + 6);
+        return end;
+      case 'Monthly':
+        // Add one month then subtract one day so the range covers roughly one month from start
+        end.setMonth(start.getMonth() + 1);
+        end.setDate(end.getDate() - 1);
+        return end;
+      case 'One-time':
+        return new Date(start);
+      default:
+        // Fallback to period-based calculateDateRange for unknown types
+        return calculateDateRange(periodType, start).endDate;
+    }
+  };
+
+  const today = new Date();
+  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const startDate = customStartDate || firstOfMonth;
+  const endDate = customEndDate || computeEndFromStart(period, startDate);
   const validateBudget = () => {
     const missing: string[] = [];
     const nextErrors: Record<string, string> = {};
@@ -365,13 +389,24 @@ export default function AddBudget() {
           if (wallet.collaborators) setCollaborators(wallet.collaborators);
         }
       } else {
-        if (!allWallets.some(w => w.plan === 'Shared') && personalWalletsExist) {
+        // Dashboard: if opened from dashboard and there are shared wallets,
+        // default to the first shared wallet so created shared budgets are linked
+        if (returnTo === '/dashboard' && sharedWallets.length > 0) {
+          const wallet = sharedWallets[0];
+          setSelectedWallet(wallet.name);
+          setSelectedWalletData(wallet);
+          if (wallet.collaborators) setCollaborators(wallet.collaborators);
+        } else if (allWallets.length === 1 && allWallets[0].plan === 'Personal') {
+          // If there are only personal wallets and no shared wallets, default to Personal Wallets
+          setSelectedWallet('Personal Wallets');
+          setSelectedWalletData({ plan: 'Personal' } as Wallet);
+        } else if (!allWallets.some(w => w.plan === 'Shared') && personalWalletsExist) {
           setSelectedWallet('Personal Wallets');
           setSelectedWalletData({ plan: 'Personal' } as Wallet);
         }
       }
     }
-  }, []);
+  }, [allWallets, editMode, budgetPlan, lockWalletName, sharedWallets.length, personalWalletsExist]);
 
   useEffect(() => {
     if (editMode && existingBudget) {
@@ -407,18 +442,8 @@ export default function AddBudget() {
   }, [editMode, existingBudget]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/[^0-9.]/g, '');
-    const parts = value.split('.');
-    
-    if (parts.length > 2) {
-      value = parts[0] + '.' + parts.slice(1).join('');
-    }
-    
-    if (parts[1] && parts[1].length > 2) {
-      value = parts[0] + '.' + parts[1].substring(0, 2);
-    }
-    
-    setBudgetAmount(value);
+    const cleaned = validateAndFormatAmount(e.target.value);
+    setBudgetAmount(cleaned);
     setHasInteracted(prev => ({ ...prev, amount: true }));
   };
 
@@ -515,13 +540,15 @@ export default function AddBudget() {
     if (returnTo === '/dashboard' || returnTo === '/personal' || returnTo === '/shared') {
       try {
         let savedBudget;
+        console.log('Creating budget payload:', budgetData);
         if (editMode && existingBudget?.id) {
           savedBudget = await budgetService.updateBudget(existingBudget.id, budgetData);
         } else {
           savedBudget = await budgetService.createBudget(budgetData);
-      }
-      
-      try { window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'budget-save' } })); } catch {}
+        }
+        console.log('Budget save response:', savedBudget);
+
+        try { window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'budget-save' } })); } catch {}
 
         if (budgetData.plan === 'Shared') {
           const walletIdForLog = selectedWalletData?.id || budgetData.wallet || 'shared-wallet';
@@ -579,6 +606,19 @@ export default function AddBudget() {
           budgetIndex: editMode ? budgetIndex : undefined
         } 
       });
+    }
+  };
+
+  const handleDeleteBudget = async () => {
+    if (!existingBudget) return;
+    try {
+      await budgetService.deleteBudget(existingBudget.id || existingBudget._id || existingBudget._id);
+      setShowDeleteModal(false);
+      navigate(returnTo);
+      try { window.dispatchEvent(new CustomEvent('data-updated', { detail: { source: 'budget-delete' } })); } catch {}
+    } catch (err) {
+      console.error('Failed to delete budget:', err);
+      alert('Failed to delete budget. Please try again.');
     }
   };
 
@@ -698,6 +738,17 @@ export default function AddBudget() {
             <FaChevronLeft />
           </button>
           <h1 className="budget-title">{editMode ? 'Edit Budget' : 'Add Budget'}</h1>
+          {editMode && (returnTo === '/personal' || returnTo === '/shared') && (
+            <button
+              className="wallet-delete-btn"
+              type="button"
+              onClick={() => setShowDeleteModal(true)}
+              title="Delete budget"
+              aria-label="Delete budget"
+            >
+              <FiTrash2 />
+            </button>
+          )}
         </div>
 
         <div className="budget-content">
@@ -826,7 +877,7 @@ export default function AddBudget() {
                 type="text"
                 inputMode="decimal"
                 placeholder={budgetAmount || !hasInteracted.amount ? '0.00' : ''}
-                value={budgetAmount}
+                value={budgetAmount ? formatAmount(budgetAmount) : budgetAmount}
                 onChange={(e) => { setErrors(prev => ({...prev, amount: ''})); handleAmountChange(e); }}
                 onFocus={() => setHasInteracted(prev => ({ ...prev, amount: true }))}
                 onBlur={() => {
@@ -868,7 +919,22 @@ export default function AddBudget() {
                   <>
                     <div 
                       className={`budget-select-display ${errors.category ? 'input-error' : ''}`}
-                      onClick={(e) => e.preventDefault()}
+                      onClick={(e) => {
+                        // Prevent re-opening when click originates from inside native select
+                        const rawTarget = e.target as HTMLElement | null;
+                        if (rawTarget && rawTarget.closest && rawTarget.closest('select')) return;
+
+                          const parent = (e.currentTarget as HTMLElement).parentElement;
+                          if (!parent) return;
+                          // If Custom is selected, focus the input so the user can type
+                          if (category === 'Custom') {
+                            const input = parent.querySelector('input.budget-select-input') as HTMLInputElement | null;
+                            if (input) input.focus();
+                            return;
+                          }
+                          const select = parent.querySelector('select') as HTMLSelectElement | null;
+                          if (select) triggerSelectDropdown(select);
+                      }}
                     >
                       <span className={category ? '' : 'placeholder-text'}>
                         {category || 'Select category'}
@@ -905,13 +971,30 @@ export default function AddBudget() {
               <div className="budget-select">
                 <div 
                   className="budget-select-display"
-                  onClick={(e) => e.preventDefault()}
+                  onClick={(e) => {
+                    const rawTarget = e.target as HTMLElement | null;
+                    if (rawTarget && rawTarget.closest && rawTarget.closest('select')) return;
+                    const parent = e.currentTarget.parentElement;
+                    if (!parent) return;
+                    const select = parent.querySelector('select') as HTMLSelectElement | null;
+                    if (select) triggerSelectDropdown(select);
+                  }}
                 >
                   <span>{period}</span>
                 </div>
                 <select
                   value={period}
-                  onChange={(e) => setPeriod(e.target.value)}
+                  onChange={(e) => {
+                    const newPeriod = e.target.value;
+                    setPeriod(newPeriod);
+                    // Recompute end date based on current start (custom or first of month)
+                    const baseStart = customStartDate || firstOfMonth;
+                    const newEnd = computeEndFromStart(newPeriod, baseStart);
+                    setCustomEndDate(newEnd);
+                    // Keep calendar focused on the start month
+                    setCalendarMonth(baseStart.getMonth());
+                    setCalendarYear(baseStart.getFullYear());
+                  }}
                   className="budget-select-hidden"
                 >
                   {BUDGET_PERIODS.map((p) => (
@@ -938,21 +1021,24 @@ export default function AddBudget() {
                 <button 
                   type="button" 
                   className="budget-info-icon"
-                  title="Date range is calculated based on selected period"
+                  onClick={() => setShowInfoModal(true)}
+                  aria-label="Date range information"
                 >
                   <FaInfoCircle />
                 </button>
               </div>
               <div className="budget-date-range-content">
-                <p className="budget-date-text">Budget Start: {formatDate(startDate)}</p>
-                <p className="budget-date-text">Budget End: {formatDate(endDate)}</p>
-                <button 
-                  type="button" 
-                  className="budget-calendar-link"
-                  onClick={() => setShowCalendar(!showCalendar)}
-                >
-                  <FaCalendarAlt /> {showCalendar ? 'Hide Calendar' : 'Show Calendar'}
-                </button>
+                <div className="budget-date-card">
+                  <p className="budget-date-text"><span className="budget-date-label">Budget Start:</span> {formatDate(startDate)}</p>
+                  <p className="budget-date-text"><span className="budget-date-label">Budget End:</span> {formatDate(endDate)}</p>
+                  <button 
+                    type="button" 
+                    className="budget-calendar-link"
+                    onClick={() => setShowCalendar(!showCalendar)}
+                  >
+                    <FaCalendarAlt /> {showCalendar ? 'Hide Calendar' : 'Show Calendar'}
+                  </button>
+                </div>
               </div>
 
               {/* Calendar Picker */}
@@ -1049,6 +1135,55 @@ export default function AddBudget() {
         onRoleChange={handleRoleChange}
         variant="budget"
       />
+
+      {showInfoModal && (
+        <div className="budget-modal-overlay" onClick={() => setShowInfoModal(false)}>
+          <div className="budget-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="budget-modal-header">
+              <h2>Monthly Period</h2>
+              <button type="button" className="budget-modal-close" onClick={() => setShowInfoModal(false)}>×</button>
+            </div>
+            <div className="budget-modal-content">
+              <p>
+                Monthly budgets always begin on the 1st day of the month and end on the last day of that month.
+                We show the current month range so you can see which dates are included in this cutoff window.
+              </p>
+              <p>
+                When you select a different period (Weekly or One-time), the end date will automatically update
+                based on the start date shown above.
+              </p>
+              <h4>Example</h4>
+              <ul className="budget-info-list">
+                <li>Today is January 2, 2025.</li>
+                <li>The current monthly range is January 1, 2025 – January 31, 2025.</li>
+                <li>Since January 2 falls inside that range, it is part of the current budget period.</li>
+              </ul>
+              <p>
+                Tip: If you want a different start date, open the calendar and choose a custom start — the end
+                date will adjust automatically to match the selected period.
+              </p>
+            </div>
+            <div className="budget-modal-footer">
+              <button type="button" className="budget-modal-done-btn" onClick={() => setShowInfoModal(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+        {showDeleteModal && (
+          <div className="wallet-modal-overlay" role="dialog" aria-modal="true">
+            <div className="wallet-modal">
+              <h3 className="wallet-modal-title">Delete Budget</h3>
+              <p className="wallet-confirm-text">
+                Are you sure you want to delete the budget "{existingBudget?.category || ''}"? This action cannot be undone.
+              </p>
+              <div className="wallet-confirm-actions">
+                <button type="button" className="wallet-modal-btn secondary" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+                <button type="button" className="wallet-modal-btn" onClick={handleDeleteBudget}>Delete</button>
+              </div>
+            </div>
+          </div>
+        )}
 
       {showWalletChangeModal && (
         <div className="wallet-modal-overlay">

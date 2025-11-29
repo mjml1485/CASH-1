@@ -1,185 +1,4 @@
-/* --- Profile Modal Password Input (Match Auth Pages) --- */
-.profile-password-input-wrapper {
-  position: relative;
-  width: 100%;
-}
-.profile-password-toggle-btn {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  color: #718096;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  transition: color 0.2s ease;
-  z-index: 1;
-  line-height: 0;
-  width: 24px;
-  height: 24px;
-}
-.profile-password-toggle-btn svg {
-  width: 18px;
-  height: 18px;
-  display: block;
-}
-.profile-password-toggle-btn:hover {
-  color: #2d3748;
-}
-.profile-password-toggle-btn:focus {
-  outline: none;
-  color: #87ceeb;
-}
-.profile-password-toggle-btn:active {
-  transform: translateY(-50%) scale(0.9);
-}
-.profile-modal-input.profile-input-error {
-  border-color: #fc8181 !important;
-  background: #fff5f5;
-}
-.profile-modal-input.profile-input-error:focus {
-  border-color: #f56565 !important;
-  box-shadow:
-    0 0 0 4px rgba(245, 101, 101, 0.15),
-    0 4px 6px rgba(245, 101, 101, 0.1) !important;
-}
-.profile-input-tooltip {
-  font-size: 13px;
-  color: #c53030;
-  margin-top: 2px;
-  margin-bottom: 2px;
-  padding-left: 2px;
-}
-.profile-modal-btn-row .profile-edit-btn.profile-edit-btn-gradient {
-  background: linear-gradient(135deg, #87ceeb 0%, #6bb6d6 100%);
-  color: #1a1a1a;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 15px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
-  box-shadow:
-    0 4px 6px rgba(135, 206, 235, 0.3),
-    0 2px 4px rgba(135, 206, 235, 0.2);
-  position: relative;
-  overflow: hidden;
-  letter-spacing: 0.3px;
-}
-.profile-modal-btn-row .profile-edit-btn.profile-edit-btn-gradient:disabled {
-  background: #e2e8f0;
-  color: #a0aec0;
-  cursor: not-allowed;
-}
-.profile-modal-btn-row .profile-cancel-btn.profile-cancel-btn-light {
-  background: #eef8fc;
-  color: #000000;
-  border: 1px solid #d1eaf4;
-  border-radius: 10px;
-  padding: 12px 24px;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-.profile-modal-btn-row .profile-cancel-btn.profile-cancel-btn-light:hover {
-  background: #dff2f9;
-  color: #000000;
-}
 
-/* Ensure cancel always appears enabled inside modal */
-.profile-modal .profile-modal-btn-row .profile-cancel-btn,
-.profile-modal .sign-in-button-row .profile-cancel-btn {
-  color: #0b1723 !important;
-  font-weight: 700 !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  text-shadow: none !important;
-}
-
-/* Strong override placed at end to ensure modal cancel matches primary button text */
-.profile-modal .sign-in-button-row .profile-cancel-btn.profile-cancel-btn-light,
-.profile-modal .profile-modal-btn-row .profile-cancel-btn.profile-cancel-btn-light {
-  color: #1a1a1a !important;
-  font-weight: 600 !important;
-}
-/* Filter Button Group Styles */
-.filter-btn-group {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 18px;
-}
-
-.filter-btn {
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-  font-size: 1rem;
-  font-weight: 500;
-  color: #222;
-  background: #fff;
-  border: 1.5px solid #e3e8ef;
-  border-radius: 10px;
-  padding: 6px 22px;
-  transition: all 0.18s cubic-bezier(.4,0,.2,1);
-  box-shadow: 0 1px 2px rgba(16,30,54,0.03);
-  cursor: pointer;
-  outline: none;
-}
-
-.filter-btn.active, .filter-btn:focus {
-  border-color: #b6e0fe;
-  background: #f0faff;
-  color: #0078d4;
-  box-shadow: 0 2px 8px rgba(0,120,212,0.08);
-}
-
-.filter-btn:hover:not(.active) {
-  border-color: #b6e0fe;
-  background: #f5fbff;
-  color: #0078d4;
-}
-
-.filter-btn:active {
-  background: #e3e8ef;
-  color: #005fa3;
-}
-
-.filter-btn.add-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  padding: 6px 16px;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
-  background: #fff;
-  color: #222;
-  border: 1.5px solid #e3e8ef;
-  box-shadow: 0 1px 2px rgba(16,30,54,0.03);
-  transition: all 0.18s cubic-bezier(.4,0,.2,1);
-}
-
-.filter-btn.add-btn:hover, .filter-btn.add-btn:focus {
-  background: #f0faff;
-  color: #0078d4;
-  border-color: #b6e0fe;
-  box-shadow: 0 2px 8px rgba(0,120,212,0.08);
-}
-
-.filter-btn.add-btn:active {
-  background: #e3e8ef;
-  color: #005fa3;
-}
 .dashboard-wallet-eye svg {
   font-size: 0.8em !important;
   width: 1em;
@@ -203,6 +22,12 @@
 }
 /* Profile email input disabled */
 .profile-email-input-disabled {
+  background: #f5f5f5 !important;
+  color: #888 !important;
+}
+
+/* Disabled username input styling (match email disabled look) */
+.profile-username-input-disabled {
   background: #f5f5f5 !important;
   color: #888 !important;
 }
@@ -232,13 +57,6 @@
   font-weight: 700;
   margin: 0;
 }
-/* Profile modal close custom */
-.profile-modal-close-custom {
-  background: none;
-  border: none;
-  font-size: 22px;
-  cursor: pointer;
-}
 /* Profile modal content flex */
 .profile-modal-content-flex {
   display: flex;
@@ -250,70 +68,11 @@
   font-weight: 500;
   margin-bottom: 2px;
 }
-/* Profile modal input */
-.profile-modal-input {
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  font-size: 15px;
-  margin-bottom: 6px;
-}
-/* Profile save error custom */
-.profile-save-error-custom {
-  color: #fc8181;
-  font-weight: 500;
-  margin: 6px 0 0 0;
-}
 /* Profile save success */
 .profile-save-success {
   color: green;
   font-weight: 500;
   margin: 6px 0 0 0;
-}
-/* Profile modal btn row */
-.profile-modal-btn-row {
-  display: flex;
-  gap: 12px;
-  margin-top: 18px;
-  justify-content: flex-end;
-}
-
-/* Modal action layout: Cancel left, primary right, equal height */
-.profile-modal .profile-modal-btn-row,
-.profile-modal .sign-in-button-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-}
-.profile-modal .profile-modal-btn-row .profile-cancel-btn,
-.profile-modal .sign-in-button-row .profile-cancel-btn,
-.profile-modal .profile-modal-btn-row .sign-in-button-primary,
-.profile-modal .sign-in-button-row .sign-in-button-primary {
-  min-height: 44px;
-  height: 44px;
-  padding: 10px 20px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.profile-modal .profile-modal-btn-row .profile-cancel-btn {
-  margin-right: auto;
-}
-.profile-modal .profile-modal-btn-row .sign-in-button-primary {
-  margin-left: auto;
-}
-/* Profile edit btn gradient */
-.profile-edit-btn-gradient {
-  background: linear-gradient(90deg, #6b73ff 0%, #000dff 100%);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 20px;
-  font-weight: 600;
-  font-size: 15px;
-  box-shadow: 0 2px 8px rgba(107,115,255,0.08);
 }
 /* Profile cancel btn light */
 .profile-cancel-btn-light {
@@ -531,6 +290,22 @@
   min-height: 100vh;
 }
 
+/* Unified app background for main app pages (not auth) */
+#app-root>main {
+  background: linear-gradient(180deg, #fbfdff 0%, #eef9ff 100%);
+}
+
+/* Make main app pages inherit unified background */
+.achievements-page,
+.dashboard-page,
+.personal-page,
+.shared-page,
+.profile-page,
+.wallet-page,
+.budget-page {
+  background: transparent !important;
+}
+
 /* Removed animation for standard navigation */
 
 /* Keyframe Animations */
@@ -556,7 +331,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 48px;
+  padding: 20px 56px;
   background: #ffffff;
   border-bottom: 2px solid #e2e8f0;
   position: sticky;
@@ -566,11 +341,11 @@
 }
 
 .navbar-brand {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 900;
   color: #1a1a1a;
   letter-spacing: 2px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .navbar-menu {
@@ -579,43 +354,6 @@
   gap: 48px;
   flex: 1;
   justify-content: center;
-}
-
-.navbar-link {
-  background: transparent;
-  border: none;
-  font-size: 16px;
-  font-weight: 500;
-  color: #4a5568;
-  cursor: pointer;
-  padding: 8px 4px;
-  transition: all 0.2s ease;
-  position: relative;
-  font-family: inherit;
-}
-
-.navbar-link::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 3px;
-  background: #1a1a1a;
-  transition: width 0.3s ease;
-}
-
-.navbar-link:hover {
-  color: #1a1a1a;
-}
-
-.navbar-link.active {
-  color: #1a1a1a;
-  font-weight: 700;
-}
-
-.navbar-link.active::after {
-  width: 100%;
 }
 
 .navbar-actions {
@@ -633,7 +371,7 @@
   align-items: center;
   justify-content: center;
   color: #1a1a1a;
-  font-size: 20px;
+  font-size: 22px;
   transition: all 0.2s ease;
   border-radius: 50%;
   position: relative;
@@ -658,6 +396,43 @@
   align-items: center;
   justify-content: center;
   border: 2px solid #ffffff;
+}
+
+/* Navbar link buttons (unstyled native button reset + active state) */
+.navbar-link {
+  background: transparent;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  color: #0f172a;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.08s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 17.5px;
+}
+
+.navbar-link:hover {
+  background: rgba(135,206,235,0.14);
+}
+
+.navbar-link:active {
+  transform: translateY(1px);
+}
+
+.navbar-link:focus-visible {
+  outline: 3px solid rgba(135,206,235,0.28);
+  outline-offset: 2px;
+}
+
+.navbar-link.active {
+  background: linear-gradient(135deg, #87ceeb22 0%, #6bb6d622 100%);
+  color: #06283d;
+  box-shadow: 0 6px 18px rgba(103,179,212,0.06);
 }
 
 /* SIGN UP */
@@ -737,7 +512,7 @@
   color: #1a1a1a;
   letter-spacing: 5px;
   line-height: 1.1;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   white-space: nowrap;
   overflow: hidden;
@@ -785,7 +560,7 @@
   font-size: 15px;
   margin-bottom: 0;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
@@ -837,34 +612,6 @@
   margin-bottom: 0;
 }
 
-.sign-up-link-forgot {
-  font-size: 13px;
-  color: #4299e1;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  text-decoration: none;
-  position: relative;
-}
-
-.sign-up-link-forgot::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background: #4299e1;
-  transition: width 0.3s ease;
-}
-
-.sign-up-link-forgot:hover {
-  color: #3182ce;
-}
-
-.sign-up-link-forgot:hover::after {
-  width: 100%;
-}
-
 .sign-up-wrapper-password {
   position: relative;
 }
@@ -909,17 +656,6 @@
   transform: translateY(-50%) scale(0.9);
 }
 
-/* Password hint (avoids overlap with input) */
-.sign-up-password-hint {
-  font-size: 12px;
-  color: #4a5568;
-  margin-top: 6px;
-  margin-bottom: 8px;
-  padding-left: 4px;
-  line-height: 1.4;
-  display: block;
-}
-
 .sign-up-error {
   color: #c53030;
   margin-top: 12px;
@@ -948,7 +684,7 @@
   font-size: 15px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   box-shadow:
     0 4px 6px rgba(135, 206, 235, 0.3),
     0 2px 4px rgba(135, 206, 235, 0.2);
@@ -1108,7 +844,7 @@
   color: #1a1a1a;
   letter-spacing: 5px;
   line-height: 1.1;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   white-space: nowrap;
   overflow: hidden;
@@ -1128,6 +864,22 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+}
+
+/* Font overrides: titles use Segoe UI; auth/onboarding/navigation text uses Poppins */
+.sign-in-title,
+.sign-up-title,
+.onboarding-title,
+.onboarding-title-normal {
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.sign-in-page *,
+.sign-up-page *,
+.onboarding-page *,
+.navbar,
+.navbar * {
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .sign-in-label {
@@ -1156,7 +908,7 @@
   font-size: 15px;
   margin-bottom: 0;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
@@ -1293,7 +1045,7 @@
   font-size: 15px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   box-shadow:
     0 4px 6px rgba(135, 206, 235, 0.3),
     0 2px 4px rgba(135, 206, 235, 0.2);
@@ -1396,17 +1148,6 @@
   text-align-last: center;
 }
 
-/* Password hint (avoids overlap with input) */
-.sign-in-password-hint {
-  font-size: 12px;
-  color: #4a5568;
-  margin-top: 6px;
-  margin-bottom: 8px;
-  padding-left: 4px;
-  line-height: 1.4;
-  display: block;
-}
-
 /* ONBOARDING */
 .onboarding-page {
   display: flex;
@@ -1480,7 +1221,7 @@
   color: #1a1a1a;
   letter-spacing: 5px;
   line-height: 1.1;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   white-space: nowrap;
   overflow: hidden;
@@ -1495,7 +1236,7 @@
   color: #1a1a1a;
   letter-spacing: 0;
   line-height: 1.2;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   white-space: normal;
 }
@@ -1540,7 +1281,7 @@
   font-size: 15px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   box-shadow:
     0 4px 6px rgba(135, 206, 235, 0.3),
     0 2px 4px rgba(135, 206, 235, 0.2);
@@ -1609,7 +1350,7 @@
   font-size: 15px;
   font-weight: 600;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   appearance: none;
   cursor: pointer;
@@ -1660,7 +1401,7 @@
   font-size: 15px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   box-shadow:
     0 4px 6px rgba(135, 206, 235, 0.3),
     0 2px 4px rgba(135, 206, 235, 0.2);
@@ -1718,7 +1459,7 @@
   color: #1a1a1a;
   letter-spacing: 3px;
   line-height: 1.2;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   white-space: normal;
 }
@@ -1906,103 +1647,6 @@
   color: #2d3748;
 }
 
-.onboarding-budget-created-card {
-  width: 200px;
-  height: 200px;
-  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-  border: 2px solid #e2e8f0;
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  box-shadow:
-    0 4px 6px rgba(0, 0, 0, 0.1),
-    0 2px 4px rgba(0, 0, 0, 0.06);
-  gap: 8px;
-  position: relative;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.onboarding-budget-created-card:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 8px 12px rgba(0, 0, 0, 0.15),
-    0 4px 6px rgba(0, 0, 0, 0.1);
-  border-color: #48bb78;
-}
-
-.onboarding-budget-created-card:active {
-  transform: translateY(-2px);
-}
-
-.onboarding-budget-delete-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #e53e3e;
-  transition: all 0.2s ease;
-  font-size: 14px;
-  padding: 0;
-  z-index: 1;
-}
-
-.onboarding-budget-delete-btn:hover {
-  background: #ffffff;
-  color: #c53030;
-  transform: scale(1.1);
-}
-
-.onboarding-budget-delete-btn:active {
-  transform: scale(0.95);
-}
-
-.onboarding-budget-created-category {
-  font-size: 16px;
-  font-weight: 700;
-  color: #ffffff;
-  text-align: center;
-  word-break: break-word;
-  max-width: 100%;
-}
-
-.onboarding-budget-created-amount {
-  font-size: 22px;
-  font-weight: 800;
-  color: #ffffff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.onboarding-budget-created-period {
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
-  text-transform: capitalize;
-  letter-spacing: 0.3px;
-}
-
-.onboarding-budget-created-wallet {
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: rgba(255, 255, 255, 0.25);
-  padding: 4px 10px;
-  border-radius: 12px;
-}
-
 .onboarding-delete-modal-overlay {
   position: fixed;
   top: 0;
@@ -2085,73 +1729,6 @@
   transform: scale(0.98);
 }
 
-.onboarding-title-budget {
-  font-size: 32px;
-  margin: 0 0 12px 0;
-  font-weight: 700;
-  color: #1a1a1a;
-  letter-spacing: 3px;
-  line-height: 1.2;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-  white-space: normal;
-}
-
-.onboarding-budget-card-wrapper {
-  margin-top: 32px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-}
-
-.onboarding-budget-card {
-  width: 200px;
-  height: 200px;
-  background: #f1f5f9;
-  border: 2px solid #e2e8f0;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.05),
-    0 1px 2px rgba(0, 0, 0, 0.03);
-  padding: 0;
-  margin: 0;
-}
-
-.onboarding-budget-card:hover {
-  background: #e2e8f0;
-  border-color: #cbd5e0;
-  transform: translateY(-2px);
-  box-shadow:
-    0 4px 6px rgba(0, 0, 0, 0.08),
-    0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.onboarding-budget-card:active {
-  transform: translateY(0);
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.05),
-    0 1px 2px rgba(0, 0, 0, 0.03);
-}
-
-.onboarding-budget-plus {
-  font-size: 64px;
-  font-weight: 300;
-  color: #4a5568;
-  line-height: 1;
-  display: block;
-}
-
-.onboarding-budget-card:hover .onboarding-budget-plus {
-  color: #2d3748;
-}
-
 /* ADD WALLET */
 
 .wallet-page {
@@ -2163,6 +1740,7 @@
   padding: 24px 20px;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
   position: relative;
+  /* Prevent page scrolling on wallet page */
   overflow: hidden;
 }
 
@@ -2188,13 +1766,14 @@
   position: relative;
   z-index: 1;
   height: calc(100vh - 48px);
+  /* keep container fixed and avoid page scroll */
   overflow: hidden;
 }
 
 .wallet-header {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   margin-bottom: 20px;
   flex-shrink: 0;
 }
@@ -2230,14 +1809,52 @@
   height: 18px;
 }
 
+/* Align the icon and title baseline inside the header */
+.wallet-header {
+  align-items: center;
+}
+
 .wallet-title {
-  font-size: 32px;
-  font-weight: 800;
-  color: #1a1a1a;
+  font-size: 34px;
+  font-weight: 900;
+  color: #0b1723;
   margin: 0;
-  letter-spacing: 1px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  letter-spacing: -0.5px;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1;
+}
+
+.wallet-delete-btn svg {
+  width: 30px;
+  height: 30px;
+}
+
+/* Apply system San Francisco-like font to common headings for iOS feel */
+h1, h2, h3, h4, h5, h6,
+.wallet-title,
+.budget-title,
+.dashboard-section-title,
+.sign-up-title,
+.sign-in-title,
+.shared-box-title {
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Stronger, header-scoped rule to ensure wallet header uses iOS-like rendering */
+.wallet-header .wallet-title {
+  /* header-scoped strong rule: use Inter-like rendering and align height with the back button */
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 900 !important;
+  font-size: 30px !important;
+  letter-spacing: -0.6px !important;
+  line-height: 30px !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .wallet-content {
@@ -2259,9 +1876,9 @@
 
 .wallet-preview {
   width: 100%;
-  height: 180px;
+  height: 200px;
   border-radius: 16px;
-  padding: 24px;
+  padding: 28px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -2297,10 +1914,13 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 6px;
-  display: flex;
+  padding: 0;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* make the toggle the same height as the large balance text so they align */
+  width: 44px;
+  height: 44px;
   opacity: 0.7;
   transition: all 0.2s ease;
   border-radius: 6px;
@@ -2317,24 +1937,26 @@
 }
 
 .wallet-balance {
-  font-size: 36px;
+  font-size: 44px;
   font-weight: 800;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  /* keep a tight line-height to match the visibility toggle */
+  line-height: 44px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   letter-spacing: -0.5px;
 }
 
 .wallet-name {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   letter-spacing: 0.2px;
 }
 
 .wallet-plan {
-  font-size: 12px;
-  font-weight: 500;
-  opacity: 0.75;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
   letter-spacing: 0.3px;
 }
 
@@ -2342,8 +1964,17 @@
   position: absolute;
   bottom: 20px;
   right: 20px;
-  font-size: 28px;
-  opacity: 0.9;
+  font-size: 30px;
+  opacity: 0.95;
+  margin: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(148,163,184,0.08);
+  color: #06283d;
 }
 
 .wallet-form {
@@ -2363,7 +1994,8 @@
   animation: fadeInUp 0.5s ease-out;
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  /* Keep the wallet form from scrolling; layout should fit inside the container */
+  overflow: visible;
 }
 
 .wallet-form::-webkit-scrollbar {
@@ -2372,6 +2004,185 @@
 
 .wallet-form::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* Budget date range card and info modal styles */
+
+.budget-date-range {
+  margin: 12px auto;
+  max-width: 640px;
+  background: linear-gradient(180deg, rgba(14,165,164,0.04) 0%, rgba(135,206,235,0.03) 100%);
+  padding: 12px 14px;
+  border-radius: 10px;
+  box-shadow: 0 6px 14px rgba(2,6,23,0.04);
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  position: relative;
+  text-align: center;
+}
+
+.budget-date-range-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.budget-date-range-header h3 {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.budget-date-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 2px;
+}
+
+.budget-date-text {
+  margin: 0;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+.budget-date-label {
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.budget-calendar-link {
+  background: transparent;
+  border: none;
+  color: #0b72c7;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.budget-info-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: background 0.12s ease, transform 0.08s ease;
+  position: absolute;
+  right: 14px;
+  top: 14px;
+}
+
+.budget-info-icon:hover {
+  background: rgba(15,23,34,0.05);
+  transform: translateY(-1px);
+}
+
+.budget-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  backdrop-filter: blur(4px);
+  padding: 20px;
+}
+
+.budget-modal {
+  background: var(--modal-bg, #ffffff);
+  border-radius: 14px;
+  padding: 20px 22px;
+  max-width: 820px;
+  width: 96%;
+  box-shadow: 0 28px 46px rgba(2,6,23,0.16);
+}
+
+.budget-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.budget-modal-header h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.budget-modal-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 6px;
+}
+
+.budget-modal-content {
+  color: #334155;
+  margin-top: 10px;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+.budget-modal-content h4 {
+  margin-top: 12px;
+  margin-bottom: 8px;
+  font-weight: 800;
+}
+
+/* Improve list formatting inside the budget info modal */
+.budget-modal-content .budget-info-list {
+  padding-left: 22px;
+  margin: 8px 0 6px 0;
+}
+
+.budget-modal-content .budget-info-list li {
+  margin-bottom: 8px;
+  line-height: 1.55;
+}
+
+.budget-modal-content p {
+  margin-bottom: 12px;
+}
+
+/* Justify paragraphs in the budget info modal for better readability */
+.budget-modal-content p,
+.budget-modal-content .budget-info-list {
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;
+}
+
+.budget-modal-footer {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.budget-modal-done-btn {
+  background: linear-gradient(135deg, #87ceeb 0%, #6bb6d6 100%);
+  color: #0b1723;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .wallet-form::-webkit-scrollbar-thumb {
@@ -2392,8 +2203,8 @@
 }
 
 .wallet-field label {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: #2d3748;
   letter-spacing: 0.2px;
   margin-bottom: 0;
@@ -2410,17 +2221,17 @@
   margin-bottom: 0;
 }
 
-.wallet-field input,
-.wallet-field select {
+.wallet-form .wallet-field input,
+.wallet-form .wallet-field select {
   width: 100%;
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-radius: 10px;
   border: 2px solid #e2e8f0;
   background: #ffffff;
   box-sizing: border-box;
   color: #1a1a1a;
-  font-size: 15px;
-  font-family: inherit;
+  font-size: 14px;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
@@ -2428,40 +2239,6 @@
 .wallet-field select option:disabled {
   color: #a0aec0;
   font-style: italic;
-}
-
-.wallet-field-input {
-  width: 100%;
-  padding: 14px 16px;
-  border-radius: 10px;
-  border: 2px solid #e2e8f0;
-  background: #ffffff;
-  box-sizing: border-box;
-  color: #1a1a1a;
-  caret-color: #87ceeb;
-  font-size: 15px;
-  font-family: inherit;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.wallet-field-input::placeholder {
-  color: #a0aec0;
-  font-weight: 400;
-}
-
-.wallet-field-input:hover:not(:focus) {
-  border-color: #cbd5e0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-}
-
-.wallet-field-input:focus {
-  outline: none;
-  border-color: #87ceeb;
-  box-shadow:
-    0 0 0 4px rgba(135, 206, 235, 0.15),
-    0 4px 6px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
 }
 
 .wallet-field input {
@@ -2500,79 +2277,6 @@
   cursor: pointer;
 }
 
-.wallet-select-display {
-  width: 100%;
-  padding: 14px 40px 14px 16px;
-  border-radius: 10px;
-  border: 2px solid #e2e8f0;
-  background: #ffffff;
-  box-sizing: border-box;
-  color: #1a1a1a;
-  font-size: 15px;
-  font-family: inherit;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: relative;
-}
-
-.wallet-select-display:hover {
-  border-color: #cbd5e0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-}
-
-.wallet-select-display span {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.wallet-select-display span.placeholder-text {
-  color: #a0aec0;
-  font-weight: 400;
-}
-
-.wallet-select-input {
-  width: 100%;
-  padding: 14px 16px;
-  padding-right: 40px;
-  border-radius: 10px;
-  border: 2px solid #e2e8f0;
-  background: #ffffff;
-  box-sizing: border-box;
-  color: #1a1a1a;
-  caret-color: #87ceeb;
-  font-size: 15px;
-  font-family: inherit;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  position: relative;
-  z-index: 2;
-}
-
-.wallet-select-input::placeholder {
-  color: #a0aec0;
-  font-weight: 400;
-}
-
-.wallet-select-input:hover:not(:focus) {
-  border-color: #cbd5e0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-}
-
-.wallet-select-input:focus {
-  outline: none;
-  border-color: #87ceeb;
-  box-shadow:
-    0 0 0 4px rgba(135, 206, 235, 0.15),
-    0 4px 6px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
-}
-
 .wallet-select-hidden {
   position: absolute;
   top: 0;
@@ -2588,8 +2292,62 @@
   border-radius: 10px;
   background: #ffffff;
   font-size: 15px;
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   padding: 14px 16px;
+}
+
+/* Styled visible select/display used as custom dropdown UI */
+.wallet-select-display,
+.wallet-select-input {
+  width: 100%;
+  padding: 14px 48px 14px 16px;
+  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+  background: #ffffff;
+  box-sizing: border-box;
+  font-size: 15px;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* Make the visible select used for Wallet Plan feel clickable like other selects */
+.wallet-select-display {
+  cursor: pointer;
+}
+
+.wallet-select-display:hover {
+  border-color: #cbd5e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.wallet-select-display .placeholder-text,
+.wallet-select-input::placeholder {
+  color: #94a3b8;
+}
+
+.wallet-select-display.input-error,
+.wallet-select-input.input-error {
+  border-color: #fc8181 !important;
+  background: #fff5f5;
+}
+
+.wallet-select-display:focus,
+.wallet-select-input:focus {
+  outline: none;
+  border-color: #87ceeb;
+  box-shadow: 0 0 0 4px rgba(135,206,235,0.12);
+}
+
+/* ensure space for the arrow button */
+.wallet-select-display,
+.wallet-select-input {
+  padding-right: 48px;
 }
 
 .wallet-arrow-button {
@@ -2604,7 +2362,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
+  z-index: 1001;
   pointer-events: auto;
 }
 
@@ -2625,6 +2383,19 @@
   width: 14px;
   height: 14px;
   transition: color 0.2s ease;
+}
+
+/* Keep dropdown arrow clearly visible and on top when the field is focused or active */
+.wallet-select .wallet-arrow {
+  opacity: 1 !important;
+}
+.wallet-select:focus-within .wallet-arrow,
+.wallet-select:hover .wallet-arrow {
+  color: #87ceeb;
+}
+.wallet-arrow-button:active .wallet-arrow {
+  transform: none;
+  opacity: 1;
 }
 
 .wallet-share-icon {
@@ -2653,44 +2424,28 @@
 
 .wallet-templates {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  /* allow more columns on wide screens and shrink responsively so rows don't grow */
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
   width: 100%;
   flex-shrink: 0;
+  align-items: start;
+  grid-auto-rows: minmax(60px, auto);
+  /* don't force a scroll in this panel; let grid reflow horizontally */
+  overflow: visible;
 }
 
-.wallet-template {
-  padding: 30px 12px;
-  border-radius: 10px;
-  border: 2px solid #e2e8f0;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
-  text-align: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  position: relative;
-  overflow: hidden;
-}
-
-.wallet-template:hover {
-  border-color: #cbd5e0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
-}
-
-.wallet-template.selected {
-  border-color: #87ceeb;
-  box-shadow:
-    0 0 0 3px rgba(135, 206, 235, 0.15),
-    0 2px 4px rgba(0, 0, 0, 0.08);
+.wallet-templates .wallet-template {
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .wallet-colors {
   display: grid;
+  /* place Background Color and Text Color side-by-side to save vertical space */
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  align-items: center;
+  gap: 12px 20px;
   width: 100%;
 }
 
@@ -2735,10 +2490,22 @@
 }
 
 .wallet-color span {
-  font-size: 14px;
+  font-size: 15px;
   color: #4a5568;
   font-weight: 500;
   letter-spacing: 0.2px;
+}
+
+/* Wallet preview icon sizing */
+.wallet-icon-svg {
+  width: 24px;
+  height: 24px;
+  color: inherit;
+}
+
+/* Slightly adjust wallet icon placement to better center vs name+plan */
+.wallet-icon {
+  bottom: 22px;
 }
 
 .wallet-footer {
@@ -2759,7 +2526,7 @@
   font-size: 15px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   box-shadow:
     0 4px 6px rgba(135, 206, 235, 0.3),
     0 2px 4px rgba(135, 206, 235, 0.2);
@@ -2803,6 +2570,48 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* Wallet template buttons */
+.wallet-template {
+  width: 100%;
+  padding: 14px 12px;
+  /* slightly smaller default min-height so grid doesn't force extra rows */
+  min-height: 60px;
+  max-height: 86px;
+  border-radius: 14px;
+  border: 2px solid rgba(0,0,0,0.06);
+  font-weight: 700;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+  box-shadow: 0 6px 18px rgba(14,30,37,0.06);
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.2px;
+  font-size: 15px;
+  line-height: 1.2;
+  text-transform: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wallet-template:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px rgba(14,30,37,0.10);
+}
+
+.wallet-template.selected {
+  border-color: rgba(6,40,61,0.22);
+  box-shadow: 0 18px 36px rgba(103,179,212,0.12);
+}
+
+@media (min-width: 1200px) {
+  .wallet-template { min-height: 68px; font-size: 15px; }
 }
 
 /* COLLABORATOR */
@@ -2860,7 +2669,7 @@
   box-sizing: border-box;
   color: #1a1a1a;
   font-size: 15px;
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow:
     0 0 0 4px rgba(135, 206, 235, 0.15),
@@ -2894,7 +2703,7 @@
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .wallet-modal-add-btn:hover {
@@ -2963,11 +2772,6 @@
   justify-content: flex-end;
 }
 
-.input-error {
-  border-color: #e53e3e !important;
-  box-shadow: 0 0 0 4px rgba(229, 62, 62, 0.15), 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-}
-
 .error-text {
   margin-top: 8px;
   font-size: 12px;
@@ -2984,7 +2788,7 @@
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .wallet-modal-btn:hover {
@@ -3057,27 +2861,6 @@
   height: 10px;
 }
 
-.wallet-modal-person-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #718096;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.wallet-modal-person-actions:hover {
-  background: #f1f5f9;
-  color: #2d3748;
-}
-
-.wallet-modal-person-actions svg {
-  width: 14px;
-  height: 14px;
-}
-
 .wallet-modal-remove {
   background: transparent;
   border: none;
@@ -3125,7 +2908,7 @@
   font-size: 15px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   box-shadow:
     0 4px 6px rgba(135, 206, 235, 0.3),
     0 2px 4px rgba(135, 206, 235, 0.2);
@@ -3246,7 +3029,7 @@
   color: #1a1a1a;
   margin: 0;
   letter-spacing: 1px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
@@ -3316,11 +3099,6 @@
   background: rgba(0, 0, 0, 0.05);
 }
 
-.budget-field-icon {
-  font-size: 14px;
-  color: #4a5568;
-}
-
 .budget-field input {
   width: 100%;
   padding: 14px 16px;
@@ -3331,7 +3109,7 @@
   color: #1a1a1a;
   caret-color: #87ceeb;
   font-size: 15px;
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
@@ -3368,7 +3146,7 @@
   box-sizing: border-box;
   color: #1a1a1a;
   font-size: 15px;
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   cursor: pointer;
@@ -3439,7 +3217,7 @@
   border: none;
   background: transparent;
   font-size: 15px;
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
@@ -3448,39 +3226,6 @@
 
 .budget-select-hidden option {
   color: #1a1a1a;
-}
-
-.budget-select-input {
-  width: 100%;
-  padding: 14px 40px 14px 16px;
-  border-radius: 10px;
-  border: 2px solid #e2e8f0;
-  background: #ffffff;
-  box-sizing: border-box;
-  color: #1a1a1a;
-  caret-color: #87ceeb;
-  font-size: 15px;
-  font-family: inherit;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.budget-select-input::placeholder {
-  color: #a0aec0;
-  font-weight: 400;
-}
-
-.budget-select-input:hover:not(:focus) {
-  border-color: #cbd5e0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-}
-
-.budget-select-input:focus {
-  outline: none;
-  border-color: #87ceeb;
-  box-shadow:
-    0 0 0 3px rgba(135, 206, 235, 0.15),
-    0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .budget-wallet-display {
@@ -3492,7 +3237,7 @@
   box-sizing: border-box;
   color: #1a1a1a;
   font-size: 15px;
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
@@ -3574,64 +3319,6 @@
   height: 14px;
 }
 
-.budget-collaborators-display {
-  background: #f8fafc;
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-}
-
-.budget-collaborators-display h3 {
-  font-size: 14px;
-  font-weight: 600;
-  color: #2d3748;
-  margin: 0 0 12px 0;
-  letter-spacing: 0.2px;
-}
-
-.budget-collaborators-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.budget-collaborator-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px;
-  background: #ffffff;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-}
-
-.budget-collaborator-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-}
-
-.budget-collaborator-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-.budget-collaborator-email {
-  font-size: 12px;
-  color: #718096;
-}
-
-.budget-collaborator-role {
-  font-size: 12px;
-  font-weight: 600;
-  color: #4a5568;
-  padding: 4px 12px;
-  background: #e2e8f0;
-  border-radius: 6px;
-}
-
 .budget-save-wrapper {
   display: flex;
   justify-content: flex-end;
@@ -3648,7 +3335,7 @@
   font-size: 15px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   box-shadow:
     0 4px 6px rgba(135, 206, 235, 0.3),
     0 2px 4px rgba(0, 0, 0, 0.1);
@@ -3693,10 +3380,10 @@
 }
 
 .budget-calendar {
-  margin-top: 16px;
+  margin-top: 12px;
   background: #ffffff;
-  padding: 16px;
-  border-radius: 10px;
+  padding: 12px;
+  border-radius: 8px;
   border: 1px solid #cbd5e0;
 }
 
@@ -3770,46 +3457,6 @@
   transform: scale(0.98);
 }
 
-.calendar-instructions {
-  background: #e6f4f9;
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  border-left: 3px solid #87ceeb;
-}
-
-.calendar-instructions p {
-  margin: 0;
-  font-size: 13px;
-  color: #2d3748;
-  line-height: 1.5;
-}
-
-.calendar-instructions strong {
-  color: #1a1a1a;
-  font-weight: 700;
-}
-
-.calendar-selected-info {
-  margin-top: 12px;
-  padding: 10px;
-  background: #f8fafc;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.calendar-selected-info span {
-  font-size: 13px;
-  font-weight: 600;
-  color: #2d3748;
-}
-
-.calendar-instruction {
-  font-size: 12px;
-  color: #3182ce;
-  font-weight: 600;
-}
-
 .calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -3819,24 +3466,23 @@
 
 .calendar-weekdays div {
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #4a5568;
-  padding: 8px 0;
+  padding: 6px 0;
 }
 
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 3px;
 }
 
 .calendar-day {
-  aspect-ratio: 1;
   border: none;
   background: #f8fafc;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px;
   font-weight: 500;
   color: #2d3748;
   cursor: pointer;
@@ -3844,6 +3490,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 6px;
+  min-height: 34px;
 }
 
 .calendar-day.empty {
@@ -3975,7 +3623,7 @@
   color: #1a1a1a;
   caret-color: #87ceeb;
   font-size: 14px;
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -4012,51 +3660,6 @@
   cursor: not-allowed;
 }
 
-.budget-collaborators-list-modal {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.budget-collaborator-item-modal {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
-}
-
-.budget-collaborator-item-modal.owner {
-  background: linear-gradient(135deg, #e6f4f9 0%, #d4e9f5 100%);
-  border-color: #87ceeb;
-}
-
-.budget-collaborator-item-modal:hover:not(.owner) {
-  background: #f1f5f9;
-}
-
-.budget-collaborator-info-modal {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.budget-collaborator-name-modal {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-.budget-collaborator-email-modal {
-  font-size: 13px;
-  color: #718096;
-}
-
 .budget-collaborator-actions {
   display: flex;
   align-items: center;
@@ -4073,7 +3676,7 @@
   color: #2d3748;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .budget-role-select:focus {
@@ -4100,15 +3703,6 @@
   color: #c53030;
 }
 
-.budget-collaborator-role-modal {
-  font-size: 13px;
-  font-weight: 600;
-  color: #4a5568;
-  padding: 6px 16px;
-  background: #e2e8f0;
-  border-radius: 8px;
-}
-
 .budget-modal-done-btn {
   width: 100%;
   background: linear-gradient(135deg, #87ceeb 0%, #6bb6d6 100%);
@@ -4120,7 +3714,7 @@
   font-size: 15px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .budget-modal-done-btn:hover {
@@ -4220,7 +3814,7 @@
   cursor: pointer;
   text-decoration: underline;
   transition: color 0.2s ease;
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   padding: 0;
 }
 
@@ -4229,16 +3823,16 @@
 }
 
 .dashboard-wallet-card {
-  min-width: 250px;
-  width: 250px;
-  height: 180px;
-  border-radius: 16px;
-  padding: 20px;
+  min-width: 260px;
+  width: 260px;
+  height: 200px;
+  border-radius: 14px;
+  padding: 22px;
   display: flex;
   flex-direction: column;
   position: relative;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  box-shadow: 0 8px 18px rgba(14,30,37,0.06);
+  transition: all 0.28s ease;
   cursor: pointer;
 }
 
@@ -4259,8 +3853,8 @@
 }
 
 .dashboard-wallet-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(14,30,37,0.12);
 }
 
 .dashboard-wallet-header {
@@ -4295,7 +3889,7 @@
 }
 
 .dashboard-wallet-balance {
-  font-size: 28px;
+  font-size: 34px;
   font-weight: 800;
   margin-bottom: 12px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -4303,7 +3897,7 @@
 }
 
 .dashboard-wallet-name {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   margin-bottom: 4px;
 }
@@ -4315,28 +3909,20 @@
   text-transform: capitalize;
 }
 
-.dashboard-wallet-icon {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  font-size: 24px;
-  opacity: 0.8;
-}
-
 .dashboard-budget-card {
-  min-width: 250px;
-  width: 250px;
-  height: 180px;
-  background: #d4e9f5;
-  border-radius: 16px;
-  padding: 20px;
+  min-width: 260px;
+  width: 260px;
+  height: 200px;
+  background: rgba(235, 249, 255, 0.75);
+  border-radius: 14px;
+  padding: 22px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
+  box-shadow: 0 6px 16px rgba(14,30,37,0.06);
+  transition: all 0.28s ease;
   cursor: pointer;
-  border: 2px solid transparent;
+  border: 1px solid rgba(15,23,42,0.03);
   flex-shrink: 0;
 }
 
@@ -4372,23 +3958,13 @@
   position: relative;
   width: 100%;
   height: 32px;
-  background: #ffffff;
+  background: #f3f6f9; /* subtle track color */
   border-radius: 16px;
   overflow: hidden;
   display: flex;
   align-items: center;
-  padding: 0 16px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.dashboard-progress-remaining {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  background: rgba(45, 125, 153, 0.55);
-  border-radius: 16px;
-  transition: width 0.3s ease;
+  padding: 0; /* label will add its own padding */
+  border: 1px solid rgba(15, 23, 42, 0.06);
 }
 
 .dashboard-progress-label {
@@ -4397,91 +3973,87 @@
   font-size: 16px;
   font-weight: 700;
   color: #053247;
+  padding: 0 14px;
+  z-index: 2; /* ensure label is readable above the fill */
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
 }
 
-.dashboard-progress-remaining.progress-w-0 {
+/* Progress remaining bar (fill) */
+.dashboard-progress-remaining {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  height: 100%;
   width: 0%;
+  border-radius: 16px; /* always round ends for a capsule look */
+  background: linear-gradient(90deg, #87ceeb 0%, #6b46c1 100%);
+  transition: width 0.36s ease, transform 0.36s ease;
 }
 
-.dashboard-progress-remaining.progress-w-5 {
-  width: 5%;
+/* Utility width classes (steps of 5%) used by budget rows */
+.progress-w-0{ width:0%; }
+.progress-w-5{ width:5%; }
+.progress-w-10{ width:10%; }
+.progress-w-15{ width:15%; }
+.progress-w-20{ width:20%; }
+.progress-w-25{ width:25%; }
+.progress-w-30{ width:30%; }
+.progress-w-35{ width:35%; }
+.progress-w-40{ width:40%; }
+.progress-w-45{ width:45%; }
+.progress-w-50{ width:50%; }
+.progress-w-55{ width:55%; }
+.progress-w-60{ width:60%; }
+.progress-w-65{ width:65%; }
+.progress-w-70{ width:70%; }
+.progress-w-75{ width:75%; }
+.progress-w-80{ width:80%; }
+.progress-w-85{ width:85%; }
+.progress-w-90{ width:90%; }
+.progress-w-95{ width:95%; }
+.progress-w-100{ width:100%; }
+
+/* Transaction list / item styles (personal & shared) */
+.personal-tx-item,
+.shared-tx-item {
+  background: rgba(255,255,255,0.98);
+  border: 1px solid rgba(148,163,184,0.18);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(15,23,42,0.06);
 }
 
-.dashboard-progress-remaining.progress-w-10 {
-  width: 10%;
+.personal-tx-top,
+.shared-tx-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: #0f172a;
 }
 
-.dashboard-progress-remaining.progress-w-15 {
-  width: 15%;
+.personal-tx-bottom,
+.shared-tx-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #64748b;
+  font-size: 13px;
 }
 
-.dashboard-progress-remaining.progress-w-20 {
-  width: 20%;
-}
+.type-expense .personal-tx-amount,
+.type-expense .shared-tx-amount { color: #e53e3e; }
+.type-income .personal-tx-amount,
+.type-income .shared-tx-amount { color: #16a34a; }
 
-.dashboard-progress-remaining.progress-w-25 {
-  width: 25%;
-}
-
-.dashboard-progress-remaining.progress-w-30 {
-  width: 30%;
-}
-
-.dashboard-progress-remaining.progress-w-35 {
-  width: 35%;
-}
-
-.dashboard-progress-remaining.progress-w-40 {
-  width: 40%;
-}
-
-.dashboard-progress-remaining.progress-w-45 {
-  width: 45%;
-}
-
-.dashboard-progress-remaining.progress-w-50 {
-  width: 50%;
-}
-
-.dashboard-progress-remaining.progress-w-55 {
-  width: 55%;
-}
-
-.dashboard-progress-remaining.progress-w-60 {
-  width: 60%;
-}
-
-.dashboard-progress-remaining.progress-w-65 {
-  width: 65%;
-}
-
-.dashboard-progress-remaining.progress-w-70 {
-  width: 70%;
-}
-
-.dashboard-progress-remaining.progress-w-75 {
-  width: 75%;
-}
-
-.dashboard-progress-remaining.progress-w-80 {
-  width: 80%;
-}
-
-.dashboard-progress-remaining.progress-w-85 {
-  width: 85%;
-}
-
-.dashboard-progress-remaining.progress-w-90 {
-  width: 90%;
-}
-
-.dashboard-progress-remaining.progress-w-95 {
-  width: 95%;
-}
-
-.dashboard-progress-remaining.progress-w-100 {
-  width: 100%;
-}
 
 /* PERSONAL PLAN PAGE */
 
@@ -4565,6 +4137,17 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+}
+
+.personal-wallet-card--clickable,
+.shared-wallet-card--clickable {
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+.personal-wallet-card--clickable:hover,
+.shared-wallet-card--clickable:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
 }
 
 .personal-wallet-balance-label,
@@ -4707,45 +4290,6 @@
   white-space: nowrap;
 }
 
-.personal-filter,
-.shared-filter {
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-  font-size: 1rem;
-  font-weight: 500;
-  color: #222;
-  background: #fff;
-  border: 1.5px solid #e3e8ef;
-  border-radius: 10px;
-  padding: 6px 22px;
-  transition: all 0.18s cubic-bezier(.4,0,.2,1);
-  box-shadow: 0 1px 2px rgba(16,30,54,0.03);
-  cursor: pointer;
-  outline: none;
-}
-
-.personal-filter.active,
-.shared-filter.active,
-.personal-filter:focus,
-.shared-filter:focus {
-  border-color: #b6e0fe;
-  background: #f0faff;
-  color: #0078d4;
-  box-shadow: 0 2px 8px rgba(0,120,212,0.08);
-}
-
-.personal-filter:hover:not(.active),
-.shared-filter:hover:not(.active) {
-  border-color: #b6e0fe;
-  background: #f5fbff;
-  color: #0078d4;
-}
-
-.personal-filter:active,
-.shared-filter:active {
-  background: #e3e8ef;
-  color: #005fa3;
-}
-
 .personal-box-title,
 .shared-box-title {
   font-size: 18px;
@@ -4886,7 +4430,7 @@
   letter-spacing: 0.3px;
   box-shadow: 0 4px 6px rgba(135, 206, 235, 0.3);
   transition: all 0.25s ease;
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .personal-create-btn:hover,
@@ -4913,18 +4457,18 @@
 
 .personal-add-tx,
 .shared-add-tx {
-  border: 1px solid #cbd5e0;
+  border: 1px solid rgba(99,102,241,0.08);
   background: #ffffff;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
+  box-shadow: 0 6px 18px rgba(79, 102, 255, 0.06);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
 
 .personal-add-tx:hover,
@@ -4938,6 +4482,88 @@
   transform: translateY(0);
 }
 
+/* Transaction filter buttons (All / Expense / Income) */
+.personal-filters .personal-filter,
+.shared-filters .shared-filter {
+  -webkit-font-smoothing: antialiased;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  margin-right: 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid rgba(15,23,42,0.06);
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(12,18,52,0.04);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.personal-filters .personal-filter:hover,
+.shared-filters .shared-filter:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(12,18,52,0.06);
+}
+
+.personal-filters .personal-filter:active,
+.shared-filters .shared-filter:active {
+  transform: translateY(0);
+}
+
+/* Active state */
+.personal-filters .personal-filter.active,
+.shared-filters .shared-filter.active {
+  background: linear-gradient(135deg, #6b46c1 0%, #4f9fff 100%);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 18px 40px rgba(79,159,255,0.12);
+}
+
+/* Plus / Add transaction button (small rounded square) */
+.personal-add-tx,
+.shared-add-tx {
+  -webkit-font-smoothing: antialiased;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(99,102,241,0.08);
+  color: #0f172a;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(79, 102, 255, 0.06);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.personal-add-tx:hover,
+.shared-add-tx:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(79, 102, 255, 0.08);
+}
+
+.personal-add-tx:active,
+.shared-add-tx:active {
+  transform: translateY(0);
+}
+
+/* Focus visible for accessibility */
+.personal-filters .personal-filter:focus-visible,
+.shared-filters .shared-filter:focus-visible,
+.personal-add-tx:focus-visible,
+.shared-add-tx:focus-visible {
+  outline: 3px solid rgba(79,159,255,0.16);
+  outline-offset: 2px;
+}
+
 
 .personal-tx-list,
 .shared-tx-list {
@@ -4946,101 +4572,6 @@
   gap: 16px;
   margin: 0;
   padding: 0;
-}
-
-.personal-tx-item,
-.shared-tx-item {
-  background: #f1f5f9;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-  padding: 18px 20px 16px 20px;
-  cursor: pointer;
-  transition: background 0.18s, box-shadow 0.18s, transform 0.18s;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.personal-tx-item .personal-tx-top,
-.shared-tx-item .shared-tx-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 700;
-  font-size: 16px;
-  color: #1a1a1a;
-  margin-bottom: 2px;
-}
-
-.personal-tx-item .personal-tx-bottom,
-.shared-tx-item .shared-tx-bottom {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  color: #64748b;
-  margin-top: 6px;
-}
-
-.personal-tx-item.type-expense,
-.shared-tx-item.type-expense {
-  border-left: 5px solid #e53e3e;
-  background: linear-gradient(90deg, #fff 80%, #fee2e2 100%);
-}
-.personal-tx-item.type-income,
-.shared-tx-item.type-income {
-  border-left: 5px solid #38a169;
-  background: linear-gradient(90deg, #fff 80%, #d1fae5 100%);
-}
-.personal-tx-item.type-transfer,
-.shared-tx-item.type-transfer {
-  border-left: 5px solid #3182ce;
-  background: linear-gradient(90deg, #fff 80%, #dbeafe 100%);
-}
-
-.personal-tx-item:hover,
-.personal-tx-item:focus-visible,
-.shared-tx-item:hover,
-.shared-tx-item:focus-visible {
-  background: linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.13);
-  transform: translateY(-2px);
-}
-
-.personal-tx-item:active,
-.shared-tx-item:active {
-  transform: translateY(0);
-  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.10);
-}
-
-.personal-tx-item.type-expense,
-.shared-tx-item.type-expense {
-  border-left: 4px solid #e53e3e;
-}
-
-.personal-tx-item.type-income,
-.shared-tx-item.type-income {
-  border-left: 4px solid #38a169;
-}
-
-.personal-tx-item.type-transfer,
-.shared-tx-item.type-transfer {
-  border-left: 4px solid #3182ce;
-}
-
-.personal-tx-item:hover,
-.personal-tx-item:focus-visible,
-.shared-tx-item:hover,
-.shared-tx-item:focus-visible {
-  background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12);
-  transform: translateY(-2px);
-}
-
-.personal-tx-item:active,
-.shared-tx-item:active {
-  transform: translateY(0);
-  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.10);
 }
 
 .shared-activity-panel {
@@ -5216,7 +4747,7 @@
   border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: 14px;
   padding: 14px;
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 14px;
   resize: vertical;
   min-height: 110px;
@@ -5288,100 +4819,92 @@
   gap: 32px;
 }
 
-.achievements-header {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.achievements-title {
-  font-size: 20px;
-  font-weight: 800;
-  margin: 0;
-  letter-spacing: 0.3px;
-}
-
-.achievements-subtitle {
-  margin: 0;
-  font-size: 14px;
-  color: var(--text-muted);
-}
-
 .achievements-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 24px;
 }
 
-.achievement-card {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 18px 18px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 10px;
-  min-height: 180px;
-  transition: background 0.25s ease, box-shadow 0.25s ease;
-}
-
-.achievement-card.achieved {
-  background: #e6f4fb;
-  border-color: #c3dce8;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
-}
-
 .achievement-icon {
-  width: 44px;
-  height: 44px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 26px;
-  background: rgba(148, 163, 184, 0.25);
-  color: #0f172a;
-}
-
-.achievement-card.achieved .achievement-icon {
-  background: linear-gradient(135deg, #2d7d99 0%, #87ceeb 100%);
-  color: #ffffff;
-  box-shadow: 0 6px 14px rgba(45, 125, 153, 0.35);
+  font-size: 28px;
+  background: rgba(148, 163, 184, 0.12);
+  color: #475569;
 }
 
 .achievement-title {
-  font-size: 14px;
-  font-weight: 700;
-  margin: 0;
-  letter-spacing: 0.4px;
-  color: #1a1a1a;
+  font-size: 16px;
+  font-weight: 800;
+  margin: 12px 0 4px 0;
+  letter-spacing: 0.2px;
+  color: #0f172a;
+  text-align: center;
 }
 
 .achievement-desc {
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.4;
-  color: #475569;
-  margin: 0;
+  color: #64748b;
+  margin: 0 0 8px 0;
+  text-align: center;
 }
 
 .achievement-earned {
-  font-size: 11px;
+  font-size: 12px;
   margin: 0;
-  font-weight: 600;
-  color: #1a1a1a;
-  letter-spacing: 0.3px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: 0.2px;
+  text-align: center;
 }
 
-.achievement-card:not(.achieved) .achievement-title,
-.achievement-card:not(.achieved) .achievement-desc {
-  color: #64748b;
+/* Achievement card base styles */
+.achievement-card {
+  background: rgba(235, 249, 255, 0.7);
+  border-radius: 14px;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 8px 20px rgba(14,30,37,0.06);
+  border: 1px solid rgba(15,23,42,0.03);
+  min-height: 140px;
+  text-align: center;
+}
+
+.achievement-card .achievement-icon {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+}
+
+.achievement-card.achieved {
+  background: linear-gradient(180deg, rgba(135,206,235,0.18), rgba(135,206,235,0.08));
+  border: 1px solid rgba(135,206,235,0.35);
+  box-shadow: 0 10px 28px rgba(103,179,212,0.12);
+}
+
+.achievement-card.achieved .achievement-icon {
+  background: #dff6ff;
+  color: #06283d;
 }
 
 .achievement-card:not(.achieved) .achievement-icon {
-  background: rgba(148, 163, 184, 0.18);
+  background: rgba(148,163,184,0.08);
   color: #64748b;
+}
+
+@media (max-width: 800px) {
+  .achievements-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -5543,10 +5066,59 @@
 }
 
 .profile-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 1fr 220px;
   gap: 16px;
+  align-items: start;
+  padding-right: 24px;
+}
+
+.profile-header-btn-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.profile-change-buttons-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.profile-change-buttons-col .profile-edit-btn {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.profile-change-buttons-col .profile-edit-btn {
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Make username/email inputs match the change button height so they align */
+.profile-name-email-section input.profile-username-input,
+.profile-name-email-section input.profile-email-input {
+  height: 44px;
+  box-sizing: border-box;
+  padding: 10px 14px;
+}
+
+/* Ensure Save/Logout buttons in header row also visually align with inputs */
+.profile-header-btn-row .profile-edit-btn,
+.profile-header-btn-row .profile-logout-btn {
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-name-email-section input.profile-username-input,
+.profile-name-email-section input.profile-email-input {
+  width: 100%;
 }
 
 .profile-name {
@@ -5665,7 +5237,7 @@
   border-radius: 12px;
   font-size: 15px;
   color: #0f172a;
-  font-family: inherit;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   resize: vertical;
   min-height: 90px;
   line-height: 1.6;
@@ -5842,6 +5414,38 @@
 .profile-modal-back:hover {
   background: #f1f5f9;
   color: #0f172a;
+}
+
+/* Ensure modal action buttons in profile modals match in height, padding, and font-size */
+.profile-modal .sign-in-button-primary,
+.profile-modal .profile-cancel-btn,
+.profile-modal .profile-cancel-btn-light {
+  padding: 10px 20px;
+  height: 44px;
+  min-width: 120px;
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-modal .sign-in-button-primary {
+  width: auto; /* avoid full-width behavior inside modal */
+}
+
+/* Place modal action buttons on opposite sides: cancel left, primary right */
+.profile-modal .sign-in-button-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 18px;
+  gap: 12px;
+}
+
+/* Ensure cancel stays left and primary stays right even when buttons have fixed min-width */
+.profile-modal .profile-cancel-btn,
+.profile-modal .profile-cancel-btn-light {
+  margin-right: auto;
 }
 
 .profile-search-box {
@@ -6041,8 +5645,9 @@
   }
 
   .profile-header-row {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     align-items: flex-start;
+    padding-right: 20px;
   }
 
   .profile-edit-btn {
@@ -6165,26 +5770,27 @@
 }
 
 /* ADD TRANSACTION */
+
 .tx-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(12, 18, 52, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
 }
 
 .tx-modal {
-  width: min(520px, 92%);
-  background: #ffffff;
+  width: min(820px, 96%);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 20px 32px -6px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(79,102,255,0.08);
+  box-shadow: 0 20px 40px rgba(31, 41, 55, 0.08), inset 0 1px 0 rgba(255,255,255,0.6);
   overflow: hidden;
-  animation: fadeInUp 0.35s ease-out;
+  animation: fadeInUp 0.28s cubic-bezier(.2,.9,.2,1);
 }
 
 .tx-modal-header {
@@ -6192,43 +5798,74 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  border-bottom: 1px solid #edf2f7;
+  border-bottom: 1px solid rgba(15,23,42,0.04);
 }
 
 .tx-modal-header h2 {
   margin: 0;
   font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  color: #1a1a1a;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: #0f172a;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .tx-close {
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 20px;
-  color: #4a5568;
-  width: 36px;
-  height: 36px;
+  font-size: 18px;
+  color: #475569;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s ease;
+  border-radius: 10px;
+  transition: all 0.18s ease;
 }
 
 .tx-close:hover {
-  background: #f7fafc;
-  color: #1a1a1a;
+  background: rgba(79,102,255,0.06);
+  color: #0f172a;
 }
 
 .tx-modal-body {
-  padding: 20px 24px;
+  padding: 20px 22px 16px 22px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+  align-items: start;
+}
+
+.tx-audit {
+  grid-column: 1 / span 2;
+  background: linear-gradient(180deg, rgba(79,102,255,0.04), rgba(79,102,255,0.02));
+  border: 1px solid rgba(79,102,255,0.08);
+  border-radius: 12px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
 }
+
+.tx-audit-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.tx-audit-label {
+  font-weight: 700;
+  color: rgba(15,23,42,0.8);
+  min-width: 120px;
+}
+
+.tx-audit-value {
+  color: rgba(15,23,42,0.7);
+  font-size: 13px;
+}
+
 
 .tx-field {
   margin: 0;
@@ -6245,21 +5882,43 @@
   color: #2d3748;
 }
 
+
 .tx-field input[type="text"],
 .tx-field input[type="number"],
 .tx-field input[type="datetime-local"],
 .tx-field select,
 .tx-field textarea {
   width: 100%;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 14px 16px;
+  border: 1.5px solid rgba(15,23,42,0.06);
+  border-radius: 12px;
+  padding: 12px 14px;
   font-size: 15px;
-  font-family: inherit;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease, transform 0.08s ease;
   background: #ffffff;
-  color: #1a1a1a;
+  color: #0f172a;
 }
+
+/* Tighter, stylized appearance for the date/time input. The native popup remains OS/browser-controlled; this adjusts the field shell. */
+.tx-field input[type="datetime-local"].tx-datetime {
+  padding-right: 44px; /* space for native indicator */
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+/* Make the native calendar/time indicator a bit more visible on supporting browsers */
+.tx-field input[type="datetime-local"].tx-datetime::-webkit-calendar-picker-indicator {
+  opacity: 0.95;
+  filter: grayscale(0.2) contrast(0.9);
+  cursor: pointer;
+}
+
+/* For Firefox, ensure the input looks consistent (limited control over indicator) */
+.tx-field input[type="datetime-local"].tx-datetime:-moz-focusring {
+  outline: none;
+}
+
 
 .tx-field input[type="text"]:focus,
 .tx-field input[type="number"]:focus,
@@ -6267,8 +5926,9 @@
 .tx-field select:focus,
 .tx-field textarea:focus {
   outline: none;
-  border-color: #87ceeb;
-  box-shadow: 0 0 0 3px rgba(135, 206, 235, 0.25);
+  border-color: rgba(79,102,255,0.5);
+  box-shadow: 0 6px 18px rgba(79,102,255,0.08);
+  transform: translateY(-1px);
 }
 
 .tx-field textarea {
@@ -6280,17 +5940,18 @@
   position: relative;
 }
 
+
 .tx-select-display {
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 14px 16px;
+  border: 1.5px solid rgba(15,23,42,0.06);
+  border-radius: 12px;
+  padding: 12px 14px;
   background: #ffffff;
   cursor: default;
   user-select: none;
   font-size: 15px;
-  color: #1a1a1a;
-  font-family: inherit;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  color: #0f172a;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
 }
 
 .tx-select-display:hover {
@@ -6313,91 +5974,113 @@
   box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.25);
 }
 
-.tx-select-input {
-  width: 100%;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 14px 16px;
-  font-size: 15px;
-  font-family: inherit;
-}
 
 .tx-select-arrow {
   position: absolute;
-  right: 14px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   border: none;
   background: transparent;
   cursor: pointer;
-  color: #718096;
-  font-size: 12px;
+  color: rgba(71,85,105,0.9);
+  font-size: 14px;
   padding: 0;
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+  border-radius: 6px;
+  transition: all 0.14s ease;
   pointer-events: none;
 }
 
 .tx-select:hover .tx-select-arrow {
-  color: #4a5568;
+  color: #0f172a;
 }
 
-.tx-select-display .placeholder-text {
-  color: #a0aec0;
-}
 
 .tx-modal-footer {
-  padding: 20px 24px;
+  padding: 16px 20px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 12px;
-  border-top: 1px solid #edf2f7;
+  border-top: 1px solid rgba(15,23,42,0.04);
+}
+
+.tx-footer-left {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .tx-btn {
-  background: linear-gradient(135deg, #87ceeb 0%, #6bb6d6 100%);
+  background: linear-gradient(135deg, #6b46c1 0%, #4f9fff 100%);
   border: none;
-  color: #1a1a1a;
-  padding: 14px 24px;
+  color: #ffffff;
+  padding: 10px 18px;
   border-radius: 10px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  font-size: 15px;
-  letter-spacing: 0.3px;
-  box-shadow: 0 4px 6px rgba(135, 206, 235, 0.3);
-  transition: all 0.25s ease;
-  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+  box-shadow: 0 12px 30px rgba(79,159,255,0.12);
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .tx-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 12px rgba(135, 206, 235, 0.35);
+  transform: translateY(-3px);
+  box-shadow: 0 20px 40px rgba(79,159,255,0.14);
 }
 
 .tx-btn:active {
   transform: translateY(0);
-  box-shadow: 0 3px 5px rgba(135, 206, 235, 0.3);
+  box-shadow: 0 8px 16px rgba(79,159,255,0.12);
 }
 
 .tx-btn-danger {
-  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: #fff;
-  margin-right: auto;
-  box-shadow: 0 4px 6px rgba(229, 62, 62, 0.4);
+  margin-right: 8px;
+  box-shadow: 0 8px 20px rgba(239,68,68,0.12);
 }
 
 .tx-btn-danger:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 12px rgba(229, 62, 62, 0.45);
+  box-shadow: 0 16px 32px rgba(239,68,68,0.16);
+}
+
+/* Responsive: stack into single column on narrow screens */
+@media (max-width: 640px) {
+  .tx-modal { width: min(560px, 96%); }
+  .tx-modal-body { grid-template-columns: 1fr; padding: 16px; }
 }
 
 .tx-btn-danger:active {
   transform: translateY(0);
+}
+
+/* Ghost / secondary button used for Cancel */
+.tx-btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(15,23,42,0.06);
+  color: #1f2937;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: none;
+}
+.tx-btn-ghost:hover {
+  background: rgba(15,23,42,0.02);
+  transform: translateY(-1px);
+}
+
+.tx-footer-right {
+  display: flex;
+  align-items: center;
 }
 
 .budget-modal-overlay {
@@ -6658,95 +6341,6 @@
   font-size: 14px;
 }
 
-.dashboard-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeInUp 0.3s ease-out;
-}
-
-.dashboard-modal {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 40px;
-  width: 90%;
-  max-width: 420px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  position: relative;
-  animation: fadeInUp 0.3s ease-out;
-}
-
-.dashboard-modal-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  color: #4a5568;
-  font-size: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.dashboard-modal-close:hover {
-  background: #f7fafc;
-  color: #1a1a1a;
-}
-
-.dashboard-modal-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1a1a1a;
-  text-align: center;
-  margin: 0 0 32px 0;
-  letter-spacing: 0.3px;
-}
-
-.dashboard-modal-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.dashboard-modal-button {
-  width: 100%;
-  background: #d4e9f5;
-  border: none;
-  padding: 20px;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1a1a1a;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: inherit;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.dashboard-modal-button:hover {
-  background: #b8daea;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.dashboard-modal-button:active {
-  transform: translateY(0);
-}
-
 /* MEDIA QUERIES */
 @media (max-width: 1024px) {
   .navbar {
@@ -6936,6 +6530,10 @@
 
   .wallet-title {
     font-size: 28px;
+    font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 800 !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   .wallet-content {
@@ -7140,6 +6738,10 @@
 
   .wallet-title {
     font-size: 24px;
+    font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 800 !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   .wallet-content {
@@ -7276,297 +6878,37 @@
     background-position: -200% 0;
   }
 }
-
-/* MODALS */
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 1.5px 6px rgba(135,206,235,0.08);
-  padding: 32px 32px 24px 32px;
-  border: 1.5px solid #e2e8f0;
-  min-width: 380px;
-  max-width: 98vw;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  position: relative;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  border-bottom: 1.5px solid #e2e8f0;
-  padding-bottom: 12px;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 700;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-  letter-spacing: 1px;
-  color: #1a1a1a;
-}
-
-.modal-header-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.modal-delete {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  color: #dc3545;
-  padding: 4px;
-  border-radius: 4px;
-  transition: background 0.2s;
-}
-
-.modal-delete:hover {
-  background: rgba(220, 53, 69, 0.1);
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #4a5568;
-  border-radius: 50%;
-  transition: background 0.2s, color 0.2s;
-  padding: 4px;
-}
-.modal-close:hover {
-  background: #f1f5f9;
-  color: #1a1a1a;
-}
 /* Modern wallet delete button for AddWallet */
 .wallet-delete-btn {
-  background: none;
+  background: transparent;
   border: none;
-  color: #e53e3e;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
+  color: #ff3b30; /* iOS destructive red */
+  width: auto;
+  height: auto;
+  padding: 6px 8px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 20px;
-  margin-left: 8px;
-  transition: background 0.18s, color 0.18s, transform 0.18s;
-  box-shadow: 0 1px 2px rgba(229,62,62,0.04);
+  font-size: 18px;
+  line-height: 1;
+  margin: 0;
+  transition: background 0.12s, color 0.12s, transform 0.12s, opacity 0.12s;
 }
 .wallet-delete-btn:hover {
-  background: #fff5f5;
-  color: #c53030;
-  transform: scale(1.08);
+  background: rgba(255,59,48,0.06);
+  color: #d32f2f;
+  transform: translateY(-1px);
+  opacity: 0.98;
+}
+.wallet-delete-btn:active {
+  transform: translateY(0);
+  opacity: 0.9;
 }
 .wallet-delete-btn:active {
   background: #fed7d7;
   color: #9b2c2c;
   transform: scale(0.96);
-}
-
-.modal-body {
-  margin-bottom: 20px;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.btn-primary {
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.btn-secondary {
-  background: #6c757d;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.btn-danger {
-  background: #dc3545;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 4px;
-  font-weight: 500;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-/* RECEIPT STYLE */
-
-.receipt-container {
-  font-family: 'Courier New', monospace;
-  background: #f8f9fa;
-  border: 2px solid #333;
-  border-radius: 8px;
-  padding: 20px;
-  max-width: 400px;
-  margin: 0 auto;
-}
-
-.receipt-header {
-  text-align: center;
-  border-bottom: 1px dashed #333;
-  padding-bottom: 10px;
-  margin-bottom: 15px;
-}
-
-.receipt-logo {
-  font-size: 32px;
-  margin-bottom: 8px;
-}
-
-.receipt-title h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: bold;
-  font-family: inherit; /* Use app font for title */
-  color: #1a1a1a;
-}
-
-.receipt-title p {
-  margin: 5px 0 0 0;
-  font-size: 12px;
-  font-family: inherit;
-  color: #666;
-}
-
-.receipt-body {
-  margin-bottom: 15px;
-}
-
-.receipt-section {
-  margin-bottom: 15px;
-}
-
-.receipt-section-title {
-  font-weight: bold;
-  margin-bottom: 8px;
-  text-decoration: underline;
-  font-family: inherit;
-  color: #1a1a1a;
-}
-
-.receipt-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 4px;
-  font-size: 14px;
-  font-family: 'Courier New', monospace;
-  color: #333;
-}
-
-.receipt-balance {
-  font-weight: bold;
-  color: #28a745;
-}
-
-.receipt-transactions {
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.receipt-transaction {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 0;
-  border-bottom: 1px dotted #ccc;
-}
-
-.transaction-info {
-  flex: 1;
-}
-
-.transaction-category {
-  font-weight: bold;
-  font-size: 12px;
-  font-family: 'Courier New', monospace;
-}
-
-.transaction-date {
-  font-size: 10px;
-  color: #666;
-  font-family: 'Courier New', monospace;
-}
-
-.transaction-amount {
-  text-align: right;
-  font-family: 'Courier New', monospace;
-}
-
-.amount-Income {
-  color: #28a745;
-}
-
-.amount-Expense {
-  color: #dc3545;
-}
-
-.amount-Transfer {
-  color: #007bff;
-}
-
-.receipt-footer {
-  text-align: center;
-  border-top: 1px dashed #333;
-  padding-top: 10px;
-  font-size: 12px;
-  color: #666;
-  font-family: inherit;
 }
 
 /* WALLET CARDS EDIT BUTTON */
@@ -7578,24 +6920,29 @@
   align-items: center;
 }
 
-.personal-wallet-edit,
-.shared-wallet-edit {
-  background: rgba(255, 255, 255, 0.8);
-  border: none;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
+/* Ensure the budget date range card is centered and its info icon positioned
+   Use a more specific selector so this wins over earlier duplicate rules. */
+.budget-container .budget-date-range {
+  margin: 0 auto 8px;
+  max-width: 760px;
+  width: min(76%, 760px);
+  text-align: center;
+  position: relative;
+}
+
+.budget-container .budget-date-range .budget-date-range-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  font-size: 12px;
-  color: #1a1a1a;
-  transition: background 0.2s;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
-.personal-wallet-edit:hover,
-.shared-wallet-edit:hover {
-  background: rgba(255, 255, 255, 1);
-  transform: scale(1.1);
+.budget-container .budget-date-range .budget-info-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border-radius: 50%;
+  padding: 6px;
 }

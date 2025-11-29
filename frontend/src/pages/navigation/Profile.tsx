@@ -52,7 +52,7 @@ const ALL_USERS: Connection[] = [
 export default function Profile() {
   const navigate = useNavigate();
   const { signOut, currentUser } = useAuth();
-  const [activePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements'>('Dashboard');
+  const [activePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements' | 'Profile'>('Profile');
   const [profile, setProfile] = useState<UserProfile>({
     id: 'current-user',
     name: '',
@@ -536,25 +536,14 @@ export default function Profile() {
                         onChange={(e) => setEditedName(e.target.value)}
                         placeholder="Enter your name"
                       />
-                      <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                        <input
-                          type="text"
-                          className="profile-username-input"
-                          value={editedUsername}
-                          onChange={(e) => setEditedUsername(e.target.value)}
-                          placeholder="Enter your username"
-                        />
-                        <button type="button" className="profile-edit-btn profile-edit-btn-small" onClick={() => {
-                          setShowUsernameChangeModal(true);
-                          setUsernameChangeStep('password');
-                          setNewUsername('');
-                          setUsernamePassword('');
-                          setUsernameChangeError(null);
-                          setUsernameChangeSuccess(null);
-                          setUsernameTouched(false);
-                          setPasswordTouched(false);
-                        }}>Change</button>
-                      </div>
+                      <input
+                        type="text"
+                        className="profile-username-input profile-username-input-disabled"
+                        value={editedUsername}
+                        onChange={(e) => setEditedUsername(e.target.value)}
+                        placeholder="Enter your username"
+                        disabled
+                      />
                       <div className="profile-email-row-flex">
                         <input
                           type="email"
@@ -562,16 +551,6 @@ export default function Profile() {
                           value={profile.email}
                           disabled
                         />
-                        <button type="button" className="profile-edit-btn profile-edit-btn-small" onClick={() => {
-                          setShowEmailChangeModal(true);
-                          setEmailChangeStep('password');
-                          setNewEmail('');
-                          setEmailPassword('');
-                          setEmailChangeError(null);
-                          setEmailChangeSuccess(null);
-                          setPasswordTouched(false);
-                          setEmailTouched(false);
-                        }}>Change</button>
                       </div>
                             {/* Email Change Modal */}
                             {showEmailChangeModal && (
@@ -690,28 +669,56 @@ export default function Profile() {
                     </>
                   )}
                 </div>
-                <div className="profile-header-btn-row">
-                  <button className="profile-edit-btn" onClick={() => {
-                    if (editMode) {
-                      handleSaveBio();
-                    } else {
-                      setEditMode(true);
-                      setEditedBio(profile.bio);
-                      setEditedName(profile.name);
-                      setEditedUsername(profile.username);
-                      setEditedShowEmail(profile.showEmail);
-                    }
-                  }}>
-                    {editMode ? 'Save' : 'Edit Profile'}
-                  </button>
-                  <button 
-                    className="profile-edit-btn profile-logout-btn"
-                    onClick={handleLogout}
-                    title="Sign out"
-                  >
-                    <FaSignOutAlt />
-                    <span>Logout</span>
-                  </button>
+                <div className="profile-header-btn-col">
+                  <div className="profile-header-btn-row">
+                    <button className="profile-edit-btn" onClick={() => {
+                      if (editMode) {
+                        handleSaveBio();
+                      } else {
+                        setEditMode(true);
+                        setEditedBio(profile.bio);
+                        setEditedName(profile.name);
+                        setEditedUsername(profile.username);
+                        setEditedShowEmail(profile.showEmail);
+                      }
+                    }}>
+                      {editMode ? 'Save' : 'Edit Profile'}
+                    </button>
+                    <button 
+                      className="profile-edit-btn profile-logout-btn"
+                      onClick={handleLogout}
+                      title="Sign out"
+                    >
+                      <FaSignOutAlt />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+
+                  {editMode && (
+                    <div className="profile-change-buttons-col">
+                      <button type="button" className="profile-edit-btn profile-edit-btn-small" onClick={() => {
+                        setShowUsernameChangeModal(true);
+                        setUsernameChangeStep('password');
+                        setNewUsername('');
+                        setUsernamePassword('');
+                        setUsernameChangeError(null);
+                        setUsernameChangeSuccess(null);
+                        setUsernameTouched(false);
+                        setPasswordTouched(false);
+                      }}>Change</button>
+
+                      <button type="button" className="profile-edit-btn profile-edit-btn-small" onClick={() => {
+                        setShowEmailChangeModal(true);
+                        setEmailChangeStep('password');
+                        setNewEmail('');
+                        setEmailPassword('');
+                        setEmailChangeError(null);
+                        setEmailChangeSuccess(null);
+                        setPasswordTouched(false);
+                        setEmailTouched(false);
+                      }}>Change</button>
+                    </div>
+                  )}
                 </div>
               </div>
 

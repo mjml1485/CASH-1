@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaChevronLeft, FaChevronDown, FaEye, FaEyeSlash, FaUsers, FaTrash } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronDown, FaEye, FaEyeSlash, FaUsers, FaWallet } from 'react-icons/fa';
+import { FiTrash2 } from 'react-icons/fi';
 import type { Collaborator } from '../../utils/shared';
-import { CURRENCY_SYMBOLS, formatAmount, triggerSelectDropdown } from '../../utils/shared';
+import { CURRENCY_SYMBOLS, formatAmount, formatAmountNoTrailing, triggerSelectDropdown, validateAndFormatAmount } from '../../utils/shared';
 // Inlined CollaboratorModal from CollaboratorModal.tsx
 import { FaChevronDown as FaChevronDownCollab } from 'react-icons/fa';
 import type { Collaborator as CollaboratorType } from '../../utils/shared';
@@ -324,18 +325,9 @@ export default function AddWallet() {
   }, [walletPlan, editMode]);
 
   const handleBalanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/[^0-9.]/g, '');
-    const parts = value.split('.');
-    
-    if (parts.length > 2) {
-      value = parts[0] + '.' + parts.slice(1).join('');
-    }
-    
-    if (parts[1] && parts[1].length > 2) {
-      value = parts[0] + '.' + parts[1].substring(0, 2);
-    }
-    
-    setWalletBalance(value);
+    // normalize input: allow only numbers and a single decimal point, max 2 decimals
+    const cleaned = validateAndFormatAmount(e.target.value);
+    setWalletBalance(cleaned);
     setHasInteracted(prev => ({ ...prev, balance: true }));
   };
 
@@ -539,6 +531,8 @@ export default function AddWallet() {
       setWalletType(value);
       setCustomWalletType('');
     }
+    // ensure native select closes after choosing an option (mirror wallet plan behavior)
+    try { (e.target as HTMLSelectElement).blur(); } catch {}
   };
 
   const handleCustomWalletTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -589,8 +583,9 @@ export default function AddWallet() {
               type="button"
               onClick={() => setShowDeleteModal(true)}
               title="Delete wallet"
+              aria-label="Delete wallet"
             >
-              <FaTrash />
+              <FiTrash2 />
             </button>
           )}
         </div>
@@ -604,10 +599,12 @@ export default function AddWallet() {
                   {showBalance ? <FaEye /> : <FaEyeSlash />}
                 </button>
               </div>
-              <div className="wallet-balance">{showBalance ? `${currencySymbol}${formatAmount(walletBalance || '0.00')}` : `${currencySymbol}••••`}</div>
+              <div className="wallet-balance">{showBalance ? `${currencySymbol}${formatAmountNoTrailing(walletBalance || '0')}` : `${currencySymbol}••••`}</div>
               <div className="wallet-name">{walletName || 'Wallet'}</div>
               <div className="wallet-plan">{walletPlan || 'Plan Mode Budget'}</div>
-              <div className="wallet-icon">💰</div>
+              <div className="wallet-icon" aria-hidden>
+                <FaWallet aria-hidden className="wallet-icon-svg" />
+              </div>
             </div>
 
             <div className="wallet-form">
@@ -632,10 +629,10 @@ export default function AddWallet() {
                 <label>Wallet Balance</label>
                 <input
                   type="text"
-                  inputMode="decimal"
-                  placeholder={walletBalance || !hasInteracted.balance ? '0.00' : ''}
-                  value={walletBalance}
-                  onChange={(e) => { setErrors(prev => ({...prev, balance: ''})); handleBalanceChange(e); }}
+                    inputMode="decimal"
+                    placeholder={walletBalance || !hasInteracted.balance ? '0.00' : ''}
+                    value={walletBalance ? formatAmount(walletBalance) : walletBalance}
+                    onChange={(e) => { setErrors(prev => ({...prev, balance: ''})); handleBalanceChange(e); }}
                   onFocus={() => setHasInteracted(prev => ({ ...prev, balance: true }))}
                   onBlur={() => {
                     if (!walletBalance.trim()) {
@@ -648,7 +645,28 @@ export default function AddWallet() {
               </div>
               <div className="wallet-field">
                 <label>Wallet Type</label>
-                <div className="wallet-select">
+                <div
+                  className="wallet-select"
+                  onClick={(e) => {
+                    // If the click came from inside the native select (option click),
+                    // don't re-trigger the dropdown — that causes the options to stay open.
+                    const rawTarget = e.target as HTMLElement | null;
+                    if (rawTarget && rawTarget.closest && rawTarget.closest('select')) {
+                      return;
+                    }
+
+                    // If custom is selected, focus the visible input so the user can type.
+                    // Otherwise trigger the native select dropdown.
+                    const wrapper = e.currentTarget as HTMLElement;
+                    if (walletType === 'Custom') {
+                      const input = wrapper.querySelector('input.wallet-select-input') as HTMLInputElement | null;
+                      if (input) input.focus();
+                      return;
+                    }
+                    const select = wrapper.querySelector('select') as HTMLSelectElement | null;
+                    if (select) triggerSelectDropdown(select);
+                  }}
+                >
                   {walletType === 'Custom' ? (
                     <>
                       <input
@@ -674,9 +692,8 @@ export default function AddWallet() {
                     </>
                   ) : (
                     <>
-                      <div 
+                      <div
                         className={`wallet-select-display ${errors.walletType ? 'input-error' : ''}`}
-                        onClick={(e) => e.preventDefault()}
                       >
                         <span className={walletType ? '' : 'placeholder-text'}>
                           {walletType || 'Select type'}

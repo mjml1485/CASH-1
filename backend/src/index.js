@@ -6,7 +6,7 @@ import usersRoutes from './routes/users.js';
 import walletsRoutes from './routes/wallets.js';
 import budgetsRoutes from './routes/budgets.js';
 import transactionsRoutes from './routes/transactions.js';
-import activitiesRoutes from './routes/activities.js';
+// activities route removed
 import commentsRoutes from './routes/comments.js';
 import customCategoriesRoutes from './routes/customCategories.js';
 import settingsRoutes from './routes/settings.js';
@@ -39,7 +39,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/wallets', walletsRoutes);
 app.use('/api/budgets', budgetsRoutes);
 app.use('/api/transactions', transactionsRoutes);
-app.use('/api/activities', activitiesRoutes);
+// activities route removed
 app.use('/api/comments', commentsRoutes);
 app.use('/api/custom-categories', customCategoriesRoutes);
 app.use('/api/settings', settingsRoutes);

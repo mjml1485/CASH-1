@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import * as activityService from '../services/activityService';
 import * as commentService from '../services/commentService';
 
 const MAX_ACTIVITY = 100;
@@ -139,15 +138,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (authUser?.uid) {
       const loadData = async () => {
         try {
-          const [activities, comments] = await Promise.all([
-            activityService.getActivities().catch(() => []),
-            commentService.getComments().catch(() => [])
-          ]);
-          
+          const comments = await commentService.getComments().catch(() => []);
           dispatch({
             type: 'LOAD_INITIAL',
             payload: {
-              activity: activities,
+              activity: [],
               comments: comments,
               currentUser: {
                 id: authUser.uid,
@@ -194,24 +189,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         actorName: input.actorName || state.currentUser.name,
         createdAt: input.timestamp || new Date().toISOString()
       };
-      
-      // Save to backend
-      try {
-        const saved = await activityService.createActivity({
-          walletId: entry.walletId,
-          action: entry.action,
-          entityType: entry.entityType,
-          entityId: entry.entityId,
-          message: entry.message,
-          actorId: entry.actorId,
-          actorName: entry.actorName
-        });
-        entry.id = saved.id;
-        entry.createdAt = saved.createdAt;
-      } catch (err) {
-        console.error('Failed to save activity to backend:', err);
-      }
-      
+      // Activity backend removed — keep activity locally only
       dispatch({ type: 'LOG_ACTIVITY', payload: entry });
       return entry;
     },

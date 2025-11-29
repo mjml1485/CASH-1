@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import * as settingsService from '../../services/settingsService';
 import { useNavigate } from 'react-router-dom';
 import { FaWallet, FaMoneyBill, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { formatAmount, CURRENCY_SYMBOLS, DEFAULT_TEXT_COLOR } from '../../utils/shared';
+import { formatAmountNoTrailing, CURRENCY_SYMBOLS, DEFAULT_TEXT_COLOR } from '../../utils/shared';
 import Navbar from '../components/Navbar';
 import * as walletService from '../../services/walletService';
 import * as budgetService from '../../services/budgetService';
@@ -258,7 +258,7 @@ export default function Dashboard() {
                       <div className="dashboard-wallet-balance">
                         {hiddenWallets.has(wallet.id)
                           ? '••••••'
-                          : `${CURRENCY_SYMBOLS[currency]} ${formatAmount(wallet.balance)}`
+                          : `${CURRENCY_SYMBOLS[currency]} ${formatAmountNoTrailing(wallet.balance)}`
                         }
                       </div>
                       <div className="dashboard-wallet-info-row">
@@ -314,7 +314,7 @@ export default function Dashboard() {
                       >
                         <div className="dashboard-budget-category">{budget.category}</div>
                         <div className="dashboard-budget-amount">
-                          {CURRENCY_SYMBOLS[currency]} {formatAmount(budget.left || budget.amount)}
+                          {CURRENCY_SYMBOLS[currency]} {formatAmountNoTrailing(budget.left || budget.amount)}
                         </div>
                         <div className="dashboard-budget-left">left</div>
                         {(() => {

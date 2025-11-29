@@ -2,7 +2,7 @@ import { FaBell, FaUser } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
 interface NavbarProps {
-  activePage: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements';
+  activePage: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements' | 'Profile';
   onPageChange: (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements') => void;
 }
 

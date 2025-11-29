@@ -52,6 +52,11 @@ export const formatAmount = (value: string): string => {
   return integerPart + decimalPart;
 };
 
+export const formatAmountNoTrailing = (value: string): string => {
+  const formatted = formatAmount(value);
+  return formatted.replace(/\.00$/, '');
+};
+
 export const validateAndFormatAmount = (value: string): string => {
   let v = value.replace(/[^0-9.]/g, '');
   const parts = v.split('.');

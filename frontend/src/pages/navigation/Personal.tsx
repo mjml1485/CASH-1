@@ -3,12 +3,13 @@ import { WALLET_TEMPLATES } from '../components/AddWallet';
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { CURRENCY_SYMBOLS, formatAmount, CHART_COLORS } from '../../utils/shared';
+import { CURRENCY_SYMBOLS, formatAmount, formatAmountNoTrailing, CHART_COLORS, validateAndFormatAmount } from '../../utils/shared';
 import { FaPlus, FaPen } from 'react-icons/fa';
 // Inlined AddTransaction component from AddTransaction.tsx
 import { useEffect as useEffectAddTx, useMemo as useMemoAddTx, useState as useStateAddTx } from 'react';
 import { triggerSelectDropdown as triggerSelectDropdownAddTx } from '../../utils/shared';
-import { FaTimes as FaTimesAddTx, FaTrash as FaTrashAddTx, FaChevronDown as FaChevronDownAddTx } from 'react-icons/fa';
+import { FaChevronDown as FaChevronDownAddTx } from 'react-icons/fa';
+import { FiTrash2 as FiTrashAddTx } from 'react-icons/fi';
 import * as walletServiceAddTx from '../../services/walletService';
 import * as budgetServiceAddTx from '../../services/budgetService';
 import * as transactionServiceAddTx from '../../services/transactionService';
@@ -43,7 +44,7 @@ interface AddTransactionProps {
   onSaved?: (tx: AddTransactionType) => void;
 }
 
-const TRANSACTION_BASE_CATEGORIES = ['Food','Shopping','Bills','Car','Custom'] as const;
+const TRANSACTION_BASE_CATEGORIES = ['Income','Expense','Food','Shopping','Bills','Car','Custom'] as const;
 
 function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onSaved }: AddTransactionProps) {
   const { currentUser } = useAppState();
@@ -149,28 +150,54 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
     const select = parent.querySelector('select') as HTMLSelectElement | null;
     if (select) triggerSelectDropdownAddTx(select);
   };
+
+  const handleCategorySelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    // removed: setHasInteractedCategory
+    if (value === 'Custom') {
+      setCategory('Custom');
+      setCustomCategory('');
+    } else {
+      setCategory(value);
+      setCustomCategory('');
+    }
+  };
+
+  const handleCustomCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomCategory(e.target.value);
+    // removed: setHasInteractedCategory
+  };
+
+  const handleCustomCategoryBlur = () => {
+    if (!customCategory.trim()) {
+      // removed: setHasInteractedCategory
+    }
+  };
   const allWallets = useMemoAddTx(() => wallets, [wallets]);
   const [mergedCategories, setMergedCategories] = useStateAddTx<string[]>([]);
   useEffectAddTx(() => {
     const loadCategories = async () => {
       const extrasFromBudgets: string[] = [];
-      budgets.forEach(b => {
-        const c = b.category;
-        if (c && c.toLowerCase() !== 'income' && !extrasFromBudgets.includes(c)) extrasFromBudgets.push(c);
-      });
-      let customExtras: string[] = [];
-      try {
-        customExtras = await customCategoryServiceAddTx.getCustomCategories();
-      } catch (err) {
-        console.error('Failed to load custom categories:', err);
+      if (activeWallet) {
+        if (activeWallet.plan === 'Shared') {
+          budgets.filter(b => b.plan === 'Shared' && b.wallet === activeWallet.name)
+            .forEach(b => { const c = b.category; if (c && !extrasFromBudgets.includes(c)) extrasFromBudgets.push(c); });
+        } else {
+          // Personal wallet: include personal budgets (these are stored with plan 'Personal')
+          budgets.filter(b => (b.plan || 'Personal') === 'Personal')
+            .forEach(b => { const c = b.category; if (c && !extrasFromBudgets.includes(c)) extrasFromBudgets.push(c); });
+        }
+      } else {
+        // Fallback: include all budgets' categories
+        budgets.forEach(b => { const c = b.category; if (c && !extrasFromBudgets.includes(c)) extrasFromBudgets.push(c); });
       }
-      customExtras = customExtras.filter(c => c.toLowerCase() !== 'income');
+
       const baseNoCustom = TRANSACTION_BASE_CATEGORIES.filter(c => c !== 'Custom');
-      const orderedUnique = [...new Set([...baseNoCustom, ...extrasFromBudgets, ...customExtras])];
+      const orderedUnique = [...new Set([...baseNoCustom, ...extrasFromBudgets])];
       setMergedCategories(orderedUnique);
     };
     loadCategories();
-  }, [budgets]);
+  }, [budgets, activeWallet]);
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!type) errs.type = 'Select a type.';
@@ -180,6 +207,28 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
     if (!walletFrom) errs.walletFrom = 'Select a wallet.';
     if (type === 'Transfer' && !walletTo) errs.walletTo = 'Select destination wallet.';
     if (type === 'Expense' && !(category || customCategory)) errs.category = 'Select a category.';
+
+    // Overspending checks
+    if (type === 'Expense' && amt > 0 && walletFrom) {
+      const wallet = wallets.find(w => w.name === walletFrom);
+      if (wallet && amt > parseFloat(wallet.balance)) {
+        errs.amount = 'Amount exceeds wallet balance.';
+      }
+      // Check budget
+      const chosenCategory = customCategory || category;
+      const budget = budgets.find(b => {
+        const isMatch = String(b.category).toLowerCase() === chosenCategory.toLowerCase();
+        const isPersonal = (b.plan || 'Personal') === 'Personal';
+        const isSharedMatch = b.plan === 'Shared' && b.wallet === walletFrom;
+        return isMatch && (isPersonal || isSharedMatch);
+      });
+      if (budget) {
+        const left = parseFloat(budget.left ?? budget.amount ?? '0') || 0;
+        if (amt > left) {
+          errs.amount = 'Amount exceeds budget limit.';
+        }
+      }
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -230,14 +279,10 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
   };
   const handleSave = async () => {
     if (!validate()) return;
+    // No modal block needed
     const amt = parseFloat(amount);
     if (editTx && editTx.id) {
       await revertOriginalIfEditing(editTx);
-      try {
-        await transactionServiceAddTx.deleteTransaction(editTx.id);
-      } catch (err) {
-        console.error('Failed to delete old transaction:', err);
-      }
     }
     const chosenCategory = customCategory || category;
     try {
@@ -343,13 +388,11 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
   };
   if (!isOpen) return null;
   return (
+    <>
     <div className="tx-modal-overlay" role="dialog" aria-modal="true">
       <div className="tx-modal">
         <div className="tx-modal-header">
           <h3>{editTx ? 'Edit Transaction' : 'Add Transaction'}</h3>
-          <button className="tx-close" type="button" onClick={onClose} aria-label="Close">
-            <FaTimesAddTx />
-          </button>
         </div>
         <div className="tx-modal-body">
           {isSharedWallet && editTx && (
@@ -381,56 +424,48 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
             </div>
             {errors.type && <div className="error-text">{errors.type}</div>}
           </div>
-          <div className="tx-field">
-            <label>Amount</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => {
-                let v = e.target.value.replace(/[^0-9.]/g, '');
-                const parts = v.split('.');
-                if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
-                if (parts[1] && parts[1].length > 2) v = parts[0] + '.' + parts[1].substring(0, 2);
-                setAmount(v);
-              }}
-            />
-            {errors.amount && <div className="error-text">{errors.amount}</div>}
-          </div>
-          <div className="tx-field">
-            <label>Date</label>
-            <input type="datetime-local" value={dateISO} onChange={(e) => setDateISO(e.target.value)} />
-            {errors.date && <div className="error-text">{errors.date}</div>}
-          </div>
+
           <div className="tx-field">
             <label>Category</label>
-            <div className="tx-select">
+            <div className="budget-select">
               {category === 'Custom' ? (
                 <>
                   <input
                     type="text"
-                    className={`tx-select-input ${errors.category ? 'input-error' : ''}`}
+                    className={`budget-select-input ${errors.category ? 'input-error' : ''}`}
                     placeholder="Custom"
                     value={customCategory}
-                    onChange={(e) => setCustomCategory(e.target.value)}
+                    onChange={handleCustomCategoryChange}
+                    onBlur={handleCustomCategoryBlur}
                   />
                   <select
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="tx-hidden-select"
+                    onChange={handleCategorySelect}
+                    className="budget-select-hidden"
                   >
-                    <option value="Custom">Custom</option>
                     {mergedCategories.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
+                    <option value="Custom">Custom</option>
                   </select>
                 </>
               ) : (
                 <>
-                  <div
-                    className={`tx-select-display ${errors.category ? 'input-error' : ''}`}
-                    onClick={(e) => e.preventDefault()}
+                  <div 
+                    className={`budget-select-display ${errors.category ? 'input-error' : ''}`}
+                    onClick={(e) => {
+                      const rawTarget = e.target as HTMLElement | null;
+                      if (rawTarget && rawTarget.closest && rawTarget.closest('select')) return;
+                      const parent = (e.currentTarget as HTMLElement).parentElement;
+                      if (!parent) return;
+                      if (category === 'Custom') {
+                        const input = parent.querySelector('input.budget-select-input') as HTMLInputElement | null;
+                        if (input) input.focus();
+                        return;
+                      }
+                      const select = parent.querySelector('select') as HTMLSelectElement | null;
+                      if (select) triggerSelectDropdownAddTx(select);
+                    }}
                   >
                     <span className={category ? '' : 'placeholder-text'}>
                       {category || 'Select category'}
@@ -438,28 +473,50 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
                   </div>
                   <select
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="tx-hidden-select"
+                    onChange={handleCategorySelect}
+                    className="budget-select-hidden"
                   >
                     <option value="" disabled hidden>Select category</option>
-                    {mergedCategories.filter(c => c !== 'Custom').map(cat => (
+                    {mergedCategories.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                     <option value="Custom">Custom</option>
                   </select>
                 </>
               )}
+              {errors.category && <div className="error-text">{errors.category}</div>}
               <button
                 type="button"
-                className="tx-select-arrow"
+                className="budget-select-arrow"
                 onClick={(e) => handleDropdownClick(e, 'category')}
                 aria-label="Change category"
               >
                 <FaChevronDownAddTx />
               </button>
             </div>
-            {errors.category && <div className="error-text">{errors.category}</div>}
           </div>
+
+          <div className="tx-field">
+            <label>Amount</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={amount ? formatAmount(amount) : amount}
+              onChange={(e) => {
+                const cleaned = validateAndFormatAmount(e.target.value);
+                setAmount(cleaned);
+              }}
+            />
+            {errors.amount && <div className="error-text">{errors.amount}</div>}
+          </div>
+
+          <div className="tx-field">
+            <label>Date</label>
+            <input type="datetime-local" className="tx-datetime" value={dateISO} onChange={(e) => setDateISO(e.target.value)} />
+            {errors.date && <div className="error-text">{errors.date}</div>}
+          </div>
+
           <div className="tx-field">
             <label>Wallet</label>
             <div className="tx-select">
@@ -480,6 +537,7 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
             </div>
             {errors.walletFrom && <div className="error-text">{errors.walletFrom}</div>}
           </div>
+
           {type === 'Transfer' && (
             <div className="tx-field">
               <label>Destination Wallet</label>
@@ -502,21 +560,40 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
               {errors.walletTo && <div className="error-text">{errors.walletTo}</div>}
             </div>
           )}
+
           <div className="tx-field">
             <label>Description</label>
             <input type="text" placeholder="Optional" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
         </div>
         <div className="tx-modal-footer">
-          {editTx && (
-            <button type="button" className="tx-btn tx-btn-danger" onClick={handleDelete} title="Delete transaction">
-              <FaTrashAddTx />
+          <div className="tx-footer-left">
+            {editTx && (
+              <button type="button" className="tx-btn tx-btn-danger" onClick={handleDelete} title="Delete transaction" aria-label="Delete transaction">
+                <FiTrashAddTx />
+              </button>
+            )}
+            <button type="button" className="tx-btn tx-btn-ghost" onClick={onClose} aria-label="Cancel">Cancel</button>
+          </div>
+          <div className="tx-footer-right">
+            <button
+              type="button"
+              className="tx-btn"
+              onClick={handleSave}
+              disabled={
+                !amount ||
+                parseFloat(amount) <= 0 ||
+                (!(customCategory || category)) ||
+                (category === 'Custom' && !customCategory)
+              }
+            >
+              {editTx ? 'Update' : 'Save'}
             </button>
-          )}
-          <button type="button" className="tx-btn" onClick={handleSave}>{editTx ? 'Update' : 'Save'}</button>
+          </div>
         </div>
       </div>
     </div>
+    </>
   );
 }
 import * as walletService from '../../services/walletService';
@@ -559,6 +636,7 @@ export default function Personal() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [editTx, setEditTx] = useState<AddTransactionType | null>(null);
   const [showBudgetActionModal, setShowBudgetActionModal] = useState(false);
+  const [showEditWalletConfirm, setShowEditWalletConfirm] = useState(false);
   const [showBudgetSelectModal, setShowBudgetSelectModal] = useState(false);
 
   const isInitialLoad = useRef(true);
@@ -772,31 +850,20 @@ export default function Personal() {
 
                 {selectedWallet && (
                   <div
-                    className="personal-wallet-card"
+                    className="personal-wallet-card personal-wallet-card--clickable"
                     style={{
                       background: `linear-gradient(135deg, ${selectedWallet.color1} 0%, ${selectedWallet.color2} 100%)`,
                       color: selectedWallet.textColor
                     }}
+                    onClick={() => setShowEditWalletConfirm(true)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowEditWalletConfirm(true); }}
                   >
                     <div className="personal-wallet-header">
                       <div className="personal-wallet-balance-label">Balance</div>
-                      <button
-                        className="personal-wallet-edit"
-                        onClick={() => {
-                          navigate('/add-wallet', {
-                            state: {
-                              returnTo: '/personal',
-                              editMode: true,
-                              walletData: selectedWallet
-                            }
-                          });
-                        }}
-                        title="Edit wallet"
-                      >
-                        <FaPen />
-                      </button>
                     </div>
-                    <div className="personal-wallet-balance">{CURRENCY_SYMBOLS[currency]} {formatAmount(selectedWallet.balance || '0')}</div>
+                    <div className="personal-wallet-balance">{CURRENCY_SYMBOLS[currency]} {formatAmountNoTrailing(selectedWallet.balance || '0')}</div>
                     <div className="personal-wallet-name">{selectedWallet.name}</div>
                     <div className="personal-wallet-plan">{selectedWallet.plan} Wallet</div>
                     <div className="personal-wallet-type">{selectedWallet.walletType || selectedWallet.type || ''}</div>
@@ -849,9 +916,9 @@ export default function Personal() {
                   if (b) navigate('/add-budget', { state: { returnTo: '/personal', editMode: true, budgetData: b, budgetPlan: b.plan || 'Personal' } }); 
                 }}>
                   <div>{r.name}</div>
-                  <div>{CURRENCY_SYMBOLS[currency]} {formatAmount(String(r.allocated))}</div>
-                  <div>{CURRENCY_SYMBOLS[currency]} {formatAmount(String(r.spent))}</div>
-                  <div>{CURRENCY_SYMBOLS[currency]} {formatAmount(String(r.remaining))}</div>
+                  <div>{CURRENCY_SYMBOLS[currency]} {formatAmountNoTrailing(String(r.allocated))}</div>
+                  <div>{CURRENCY_SYMBOLS[currency]} {formatAmountNoTrailing(String(r.spent))}</div>
+                  <div>{CURRENCY_SYMBOLS[currency]} {formatAmountNoTrailing(String(r.remaining))}</div>
                   <div>
                     <div className="dashboard-progress-pill">
                       <div className={`dashboard-progress-remaining ${r.widthClass}`} />
@@ -894,7 +961,7 @@ export default function Personal() {
                   <div key={tx.id} className={`personal-tx-item type-${tx.type.toLowerCase()}`} onClick={() => { setEditTx(tx as AddTransactionType); setShowTxModal(true); }}>
                     <div className="personal-tx-top">
                       <span className="personal-tx-type">{tx.type}</span>
-                      <span className="personal-tx-amount">{CURRENCY_SYMBOLS[currency]} {formatAmount(tx.amount)}</span>
+                      <span className="personal-tx-amount">{CURRENCY_SYMBOLS[currency]} {formatAmountNoTrailing(tx.amount)}</span>
                     </div>
                     <div className="personal-tx-bottom">
                       <span className="personal-tx-cat">{tx.category || '—'}</span>
@@ -1018,6 +1085,23 @@ export default function Personal() {
         </div>
       </div>
     )}
+    {showEditWalletConfirm && selectedWallet && (
+      <div className="wallet-modal-overlay" role="dialog" aria-modal="true">
+        <div className="wallet-modal" onClick={(e) => e.stopPropagation()}>
+          <h3 className="wallet-modal-title">Edit wallet?</h3>
+          <p className="wallet-confirm-text">Do you want to edit the wallet <strong>{selectedWallet.name}</strong>?</p>
+          <div className="wallet-confirm-actions">
+            <button className="wallet-modal-btn secondary" onClick={() => setShowEditWalletConfirm(false)}>Cancel</button>
+            <button className="wallet-modal-btn" onClick={() => {
+              setShowEditWalletConfirm(false);
+              navigate('/add-wallet', { state: { returnTo: '/personal', editMode: true, walletData: selectedWallet } });
+            }}>Confirm</button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }
+
+// Confirmation modal placed after main return (placed in file earlier near budget modals)
