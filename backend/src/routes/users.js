@@ -4,6 +4,31 @@ import User from '../models/User.js';
 
 const router = express.Router();
 
+router.get('/search', verifyToken, async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.trim().length < 1) {
+      return res.json({ success: true, users: [] });
+    }
+    const query = q.trim();
+    const users = await User.find({
+      $and: [
+        { firebaseUid: { $ne: req.user.uid } }, // Exclude current user
+        {
+          $or: [
+            { username: { $regex: query, $options: 'i' } },
+            { email: { $regex: query, $options: 'i' } }
+          ]
+        }
+      ]
+    }).select('firebaseUid name username email').limit(10);
+    res.json({ success: true, users });
+  } catch (err) {
+    console.error('Search users error:', err?.message || err);
+    res.status(500).json({ error: 'Internal Server Error', message: 'Failed to search users' });
+  }
+});
+
 router.post('/', verifyToken, async (req, res) => {
   try {
     const { uid, email } = req.user;

@@ -107,6 +107,22 @@ export const changeUsernameBackend = async ({ newUsername, password }: { newUser
   }
 };
 
+export const searchUsers = async (query: string) => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+
+    const res = await axios.get(`${API_URL}/api/users/search`, {
+      params: { q: query },
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.users;
+  } catch (err) {
+    console.warn('searchUsers failed', err);
+    throw err;
+  }
+};
 export const markOnboardingCompleted = async () => {
   try {
     const { getIdToken } = await import('./authService');

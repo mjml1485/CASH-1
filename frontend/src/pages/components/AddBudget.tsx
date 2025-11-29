@@ -24,10 +24,11 @@ interface CollaboratorModalProps {
   title: string;
   collaborators: CollaboratorType[];
   onAddCollaborator: (input: string) => void;
-  onRemoveCollaborator: (id: string) => void;
-  onRoleChange: (id: string, role: string) => void;
+  onRemoveCollaborator: (firebaseUid: string) => void;
+  onRoleChange: (firebaseUid: string, role: string) => void;
   ownerName?: string;
   ownerEmail?: string;
+  ownerUid?: string;
   variant?: 'wallet' | 'budget';
 }
 
@@ -41,9 +42,15 @@ function CollaboratorModal({
   onRoleChange,
   ownerName = 'FirstName LastName',
   ownerEmail = 'useroneeeeeeeee@gmail.com',
-  variant = 'wallet'
-}: CollaboratorModalProps) {
+  ownerUid,
+  variant = 'wallet',
+  searchQuery,
+  searchResults,
+  onSearchChange
+}: CollaboratorModalProps & { searchQuery?: string; searchResults?: any[]; onSearchChange?: (q: string) => void }) {
   const [collaboratorInput, setCollaboratorInput] = useState('');
+  // Accept optional external search props via rest/props (passed from parent)
+  // Note: we don't add them to the interface explicitly here to keep compatible, but will read from props below if provided.
 
   const handleAddClick = () => {
     if (collaboratorInput.trim()) {
@@ -60,33 +67,92 @@ function CollaboratorModal({
 
   if (!isOpen) return null;
 
-  if (variant === 'wallet') {
-    return (
-      <div className="wallet-modal-overlay">
-        <div className="wallet-modal" onClick={(e) => e.stopPropagation()}>
-          <h2 className="wallet-modal-title">Share '{title}'</h2>
-          <div className="wallet-modal-input-wrapper">
+  // Use the same markup and classes for both wallet and budget variants for consistent style
+  return (
+    <div className="wallet-modal-overlay">
+      <div className="wallet-modal" onClick={(e) => e.stopPropagation()}>
+        <h2 className="wallet-modal-title">{variant === 'wallet' ? `Share '${title}'` : 'Manage Collaborators'}</h2>
+        <div className="wallet-modal-input-wrapper">
+          <div className="wallet-modal-input-row">
             <input
               type="text"
               className="wallet-modal-input"
-              placeholder="Add collaborators (email or username)"
-              value={collaboratorInput}
-              onChange={(e) => setCollaboratorInput(e.target.value)}
+              placeholder={variant === 'wallet' ? 'Add collaborators (email or username)' : 'Enter name or email'}
+              value={typeof searchQuery === 'string' ? searchQuery : collaboratorInput}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (onSearchChange) {
+                  onSearchChange(v);
+                } else {
+                  setCollaboratorInput(v);
+                }
+              }}
               onKeyPress={handleKeyPress}
             />
-            {collaboratorInput.trim() && (
+            {(!onSearchChange ? collaboratorInput : (searchQuery || '')).trim() && (
               <button
                 type="button"
                 className="wallet-modal-add-btn"
-                onClick={handleAddClick}
+                onClick={() => {
+                  // prefer adding from external suggestions when provided
+                  if (onSearchChange && searchQuery) {
+                    onAddCollaborator(searchQuery);
+                    onSearchChange('');
+                  } else {
+                    onAddCollaborator(collaboratorInput.trim());
+                  }
+                  setCollaboratorInput('');
+                }}
               >
                 Add
               </button>
             )}
           </div>
-          <div className="wallet-modal-section">
-            <h3 className="wallet-modal-section-title">People with access</h3>
-            <div className="wallet-modal-person">
+
+          {typeof searchQuery === 'string' && searchQuery.trim() && (
+            <>
+              {searchResults && searchResults.length > 0 ? (
+                <div className="search-suggestions">
+                  {searchResults.map((user) => (
+                    <div
+                      key={user.firebaseUid}
+                      className="search-suggestion"
+                      onClick={() => {
+                        onAddCollaborator(user.email);
+                        if (onSearchChange) onSearchChange('');
+                        else setCollaboratorInput('');
+                      }}
+                    >
+                      <div className="suggestion-name">{user.name}</div>
+                      <div className="suggestion-details">{user.username} • {user.email}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="no-results">No users found.</div>
+              )}
+            </>
+          )}
+        </div>
+        <div className="wallet-modal-section">
+          <h3 className="wallet-modal-section-title">People with access</h3>
+          <div className="wallet-modal-person">
+            <div className="wallet-modal-person-avatar">
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="16" fill="#e2e8f0"/>
+                <path d="M16 10C17.1046 10 18 10.8954 18 12C18 13.1046 17.1046 14 16 14C14.8954 14 14 13.1046 14 12C14 10.8954 14.8954 10 16 10Z" fill="#4a5568"/>
+                <path d="M16 16C18.2091 16 20 14.2091 20 12C20 9.79086 18.2091 8 16 8C13.7909 8 12 9.79086 12 12C12 14.2091 13.7909 16 16 16Z" fill="#4a5568"/>
+                <path d="M22 22C22 19.7909 20.2091 18 18 18H14C11.7909 18 10 19.7909 10 22V24H22V22Z" fill="#4a5568"/>
+              </svg>
+            </div>
+            <div className="wallet-modal-person-info">
+              <div className="wallet-modal-person-name">{ownerName}</div>
+              <div className="wallet-modal-person-email">{ownerEmail}</div>
+            </div>
+            <div className="wallet-modal-person-role">Owner</div>
+          </div>
+          {collaborators.filter(c => !ownerUid || c.firebaseUid !== ownerUid).map((collaborator) => (
+            <div key={collaborator.firebaseUid} className="wallet-modal-person">
               <div className="wallet-modal-person-avatar">
                 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <circle cx="16" cy="16" r="16" fill="#e2e8f0"/>
@@ -96,131 +162,33 @@ function CollaboratorModal({
                 </svg>
               </div>
               <div className="wallet-modal-person-info">
-                <div className="wallet-modal-person-name">{ownerName}</div>
-                <div className="wallet-modal-person-email">{ownerEmail}</div>
+                <div className="wallet-modal-person-name">{collaborator.name}</div>
+                <div className="wallet-modal-person-email">{collaborator.email}</div>
               </div>
-              <div className="wallet-modal-person-role">Owner</div>
-            </div>
-            {collaborators.map((collaborator) => (
-              <div key={collaborator.id} className="wallet-modal-person">
-                <div className="wallet-modal-person-avatar">
-                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="16" cy="16" r="16" fill="#e2e8f0"/>
-                    <path d="M16 10C17.1046 10 18 10.8954 18 12C18 13.1046 17.1046 14 16 14C14.8954 14 14 13.1046 14 12C14 10.8954 14.8954 10 16 10Z" fill="#4a5568"/>
-                    <path d="M16 16C18.2091 16 20 14.2091 20 12C20 9.79086 18.2091 8 16 8C13.7909 8 12 9.79086 12 12C12 14.2091 13.7909 16 16 16Z" fill="#4a5568"/>
-                    <path d="M22 22C22 19.7909 20.2091 18 18 18H14C11.7909 18 10 19.7909 10 22V24H22V22Z" fill="#4a5568"/>
-                  </svg>
-                </div>
-                <div className="wallet-modal-person-info">
-                  <div className="wallet-modal-person-name">{collaborator.name}</div>
-                  <div className="wallet-modal-person-email">{collaborator.email}</div>
-                </div>
-                <div className="wallet-modal-person-role-select">
-                  <select
-                    value={collaborator.role}
-                    onChange={(e) => onRoleChange(collaborator.id, e.target.value)}
-                    className="wallet-modal-role-dropdown"
-                  >
-                    <option value="Viewer">Viewer</option>
-                    <option value="Editor">Editor</option>
-                  </select>
-                  <FaChevronDownCollab className="wallet-modal-role-arrow" />
-                </div>
-                <button
-                  className="wallet-modal-remove"
-                  type="button"
-                  onClick={() => onRemoveCollaborator(collaborator.id)}
-                  title="Remove"
+              <div className="wallet-modal-person-role-select">
+                <select
+                  value={collaborator.role}
+                  onChange={(e) => onRoleChange(collaborator.firebaseUid, e.target.value)}
+                  className="wallet-modal-role-dropdown"
                 >
-                  ×
-                </button>
+                  <option value="Viewer">Viewer</option>
+                  <option value="Editor">Editor</option>
+                </select>
+                <FaChevronDownCollab className="wallet-modal-role-arrow" />
               </div>
-            ))}
-          </div>
-          <div className="wallet-modal-footer">
-            <button className="wallet-modal-done" type="button" onClick={onClose}>
-              Done
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="budget-modal-overlay">
-      <div className="budget-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="budget-modal-header">
-          <h2>Manage Collaborators</h2>
-          <button 
-            type="button" 
-            className="budget-modal-close"
-            onClick={onClose}
-          >
-            ×
-          </button>
-        </div>
-        <div className="budget-modal-content">
-          <p className="budget-modal-subtitle">
-            Add people to share this budget with. Changes will reflect in both wallet and budget.
-          </p>
-          <div className="budget-collaborator-input-wrapper">
-            <input
-              type="text"
-              placeholder="Enter name or email"
-              value={collaboratorInput}
-              onChange={(e) => setCollaboratorInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="budget-collaborator-input"
-            />
-            <button
-              type="button"
-              onClick={handleAddClick}
-              className="budget-add-collaborator-btn"
-              disabled={!collaboratorInput.trim()}
-            >
-              Add
-            </button>
-          </div>
-          <div className="budget-collaborators-list-modal">
-            <div className="budget-collaborator-item-modal owner">
-              <div className="budget-collaborator-info-modal">
-                <span className="budget-collaborator-name-modal">You (Owner)</span>
-                <span className="budget-collaborator-email-modal">Current User</span>
-              </div>
-              <span className="budget-collaborator-role-modal">Owner</span>
+              <button
+                className="wallet-modal-remove"
+                type="button"
+                onClick={() => onRemoveCollaborator(collaborator.firebaseUid)}
+                title="Remove"
+              >
+                ×
+              </button>
             </div>
-            {collaborators.map((collaborator: CollaboratorType) => (
-              <div key={collaborator.id} className="budget-collaborator-item-modal">
-                <div className="budget-collaborator-info-modal">
-                  <span className="budget-collaborator-name-modal">{collaborator.name}</span>
-                  <span className="budget-collaborator-email-modal">{collaborator.email}</span>
-                </div>
-                <div className="budget-collaborator-actions">
-                  <select
-                    value={collaborator.role}
-                    onChange={(e) => onRoleChange(collaborator.id, e.target.value)}
-                    className="budget-role-select"
-                  >
-                    <option value="Editor">Editor</option>
-                    <option value="Viewer">Viewer</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => onRemoveCollaborator(collaborator.id)}
-                    className="budget-remove-btn"
-                    title="Remove collaborator"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="budget-modal-done-btn"
-          >
+          ))}
+        </div>
+        <div className="wallet-modal-footer">
+          <button className="wallet-modal-done" type="button" onClick={onClose}>
             Done
           </button>
         </div>
@@ -231,6 +199,7 @@ function CollaboratorModal({
 import * as walletService from '../../services/walletService';
 import * as budgetService from '../../services/budgetService';
 import * as customCategoryService from '../../services/customCategoryService';
+import * as userService from '../../services/userService';
 
 // CONSTANTS
 
@@ -320,6 +289,8 @@ export default function AddBudget() {
   const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
   const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [calendarMonth, setCalendarMonth] = useState<number>(new Date().getMonth());
   const [calendarYear, setCalendarYear] = useState<number>(new Date().getFullYear());
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -330,6 +301,12 @@ export default function AddBudget() {
   const currencySymbol = CURRENCY_SYMBOLS[currency] || '₱';
 
   const isSharedBudget = (selectedWalletData?.plan || budgetPlan) === 'Shared';
+
+  // Determine true owner from collaborators list when available
+  const ownerFromCollaborators = collaborators.find(c => c.role === 'Owner') || null;
+  const ownerNameToShow = ownerFromCollaborators ? ownerFromCollaborators.name : currentUser?.name || '';
+  const ownerEmailToShow = ownerFromCollaborators ? ownerFromCollaborators.email : currentUser?.email || '';
+  const ownerUidToShow = ownerFromCollaborators ? ownerFromCollaborators.firebaseUid : currentUser?.id || '';
 
   // Compute date range: start is either customStartDate or first day of current month; end is computed from start + period
   const computeEndFromStart = (periodType: string, start: Date): Date => {
@@ -623,22 +600,43 @@ export default function AddBudget() {
   };
 
   const handleAddCollaborator = (input: string) => {
+    // Only add real existing users (from search results)
+    const user = searchResults.find((u) => u.email === input || u.username === input) || null;
+    if (!user) return; // no matching user found
+    if (collaborators.some(c => c.firebaseUid === user.firebaseUid)) return; // already added
     const newCollaborator = {
-      id: Date.now().toString(),
-      name: input.includes('@') ? input.split('@')[0] : input,
-      email: input.includes('@') ? input : `${input}@example.com`,
+      firebaseUid: user.firebaseUid,
+      name: user.name,
+      email: user.email,
       role: 'Editor'
-    };
+    } as Collaborator;
     setCollaborators([...collaborators, newCollaborator]);
+    setSearchQuery('');
+    setSearchResults([]);
   };
 
-  const handleRemoveCollaborator = (id: string) => {
-    setCollaborators(collaborators.filter(c => c.id !== id));
+  const handleSearchUsers = async (query: string) => {
+    setSearchQuery(query);
+    if (query.trim().length > 0) {
+      try {
+        const results = await userService.searchUsers(query);
+        setSearchResults(results);
+      } catch (err) {
+        console.error('Failed to search users:', err);
+        setSearchResults([]);
+      }
+    } else {
+      setSearchResults([]);
+    }
   };
 
-  const handleRoleChange = (id: string, newRole: string) => {
+  const handleRemoveCollaborator = (firebaseUid: string) => {
+    setCollaborators(collaborators.filter(c => c.firebaseUid !== firebaseUid));
+  };
+
+  const handleRoleChange = (firebaseUid: string, newRole: string) => {
     setCollaborators(collaborators.map(c => 
-      c.id === id ? { ...c, role: newRole } : c
+      c.firebaseUid === firebaseUid ? { ...c, role: newRole } : c
     ));
   };
 
@@ -1125,6 +1123,7 @@ export default function AddBudget() {
         </div>
       </div>
 
+
       <CollaboratorModal
         isOpen={showShareModal && isSharedBudget}
         onClose={() => setShowShareModal(false)}
@@ -1134,6 +1133,12 @@ export default function AddBudget() {
         onRemoveCollaborator={handleRemoveCollaborator}
         onRoleChange={handleRoleChange}
         variant="budget"
+        ownerName={ownerNameToShow}
+        ownerEmail={ownerEmailToShow}
+        ownerUid={ownerUidToShow}
+        searchQuery={searchQuery}
+        searchResults={searchResults}
+        onSearchChange={handleSearchUsers}
       />
 
       {showInfoModal && (

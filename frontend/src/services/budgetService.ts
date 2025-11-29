@@ -17,7 +17,7 @@ export interface Budget {
   startDate?: string | Date;
   endDate?: string | Date;
   collaborators?: Array<{
-    id: string;
+    firebaseUid: string;
     name: string;
     email: string;
     role: string;

@@ -705,10 +705,11 @@ interface CollaboratorModalProps {
   title: string;
   collaborators: CollaboratorType[];
   onAddCollaborator: (input: string) => void;
-  onRemoveCollaborator: (id: string) => void;
-  onRoleChange: (id: string, role: string) => void;
+  onRemoveCollaborator: (firebaseUid: string) => void;
+  onRoleChange: (firebaseUid: string, role: string) => void;
   ownerName?: string;
   ownerEmail?: string;
+  ownerUid?: string;
   variant?: 'wallet' | 'budget';
 }
 
@@ -722,8 +723,12 @@ function CollaboratorModal({
   onRoleChange,
   ownerName = 'FirstName LastName',
   ownerEmail = 'useroneeeeeeeee@gmail.com',
-  variant = 'wallet'
-}: CollaboratorModalProps) {
+  ownerUid,
+  variant = 'wallet',
+  searchQuery,
+  searchResults,
+  onSearchChange
+}: CollaboratorModalProps & { searchQuery?: string; searchResults?: any[]; onSearchChange?: (q: string) => void }) {
   const [collaboratorInput, setCollaboratorInput] = useState('');
 
   const handleAddClick = () => {
@@ -747,22 +752,63 @@ function CollaboratorModal({
         <div className="wallet-modal" onClick={(e) => e.stopPropagation()}>
           <h2 className="wallet-modal-title">Share '{title}'</h2>
           <div className="wallet-modal-input-wrapper">
-            <input
-              type="text"
-              className="wallet-modal-input"
-              placeholder="Add collaborators (email or username)"
-              value={collaboratorInput}
-              onChange={(e) => setCollaboratorInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-            />
-            {collaboratorInput.trim() && (
-              <button
-                type="button"
-                className="wallet-modal-add-btn"
-                onClick={handleAddClick}
-              >
-                Add
-              </button>
+            <div className="wallet-modal-input-row">
+              <input
+                type="text"
+                className="wallet-modal-input"
+                placeholder="Add collaborators (email or username)"
+                value={typeof searchQuery === 'string' ? searchQuery : collaboratorInput}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (onSearchChange) {
+                    onSearchChange(v);
+                  } else {
+                    setCollaboratorInput(v);
+                  }
+                }}
+                onKeyPress={handleKeyPress}
+              />
+              {(!onSearchChange ? collaboratorInput : (searchQuery || '')).trim() && (
+                <button
+                  type="button"
+                  className="wallet-modal-add-btn"
+                  onClick={() => {
+                    if (onSearchChange && searchQuery) {
+                      onAddCollaborator(searchQuery);
+                      if (onSearchChange) onSearchChange('');
+                    } else {
+                      onAddCollaborator(collaboratorInput.trim());
+                    }
+                    setCollaboratorInput('');
+                  }}
+                >
+                  Add
+                </button>
+              )}
+            </div>
+            {typeof searchQuery === 'string' && searchQuery.trim() && (
+              <>
+                {searchResults && searchResults.length > 0 ? (
+                  <div className="search-suggestions">
+                    {searchResults.map((user) => (
+                      <div
+                        key={user.firebaseUid}
+                        className="search-suggestion"
+                        onClick={() => {
+                          onAddCollaborator(user.email);
+                          if (onSearchChange) onSearchChange('');
+                          else setCollaboratorInput('');
+                        }}
+                      >
+                        <div className="suggestion-name">{user.name}</div>
+                        <div className="suggestion-details">{user.username} • {user.email}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="no-results">No users found.</div>
+                )}
+              </>
             )}
           </div>
           <div className="wallet-modal-section">
@@ -782,8 +828,8 @@ function CollaboratorModal({
               </div>
               <div className="wallet-modal-person-role">Owner</div>
             </div>
-            {collaborators.map((collaborator) => (
-              <div key={collaborator.id} className="wallet-modal-person">
+            {collaborators.filter(c => !ownerUid || c.firebaseUid !== ownerUid).map((collaborator) => (
+              <div key={collaborator.firebaseUid} className="wallet-modal-person">
                 <div className="wallet-modal-person-avatar">
                   <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="16" cy="16" r="16" fill="#e2e8f0"/>
@@ -799,7 +845,7 @@ function CollaboratorModal({
                 <div className="wallet-modal-person-role-select">
                   <select
                     value={collaborator.role}
-                    onChange={(e) => onRoleChange(collaborator.id, e.target.value)}
+                    onChange={(e) => onRoleChange(collaborator.firebaseUid, e.target.value)}
                     className="wallet-modal-role-dropdown"
                   >
                     <option value="Viewer">Viewer</option>
@@ -810,7 +856,7 @@ function CollaboratorModal({
                 <button
                   className="wallet-modal-remove"
                   type="button"
-                  onClick={() => onRemoveCollaborator(collaborator.id)}
+                  onClick={() => onRemoveCollaborator(collaborator.firebaseUid)}
                   title="Remove"
                 >
                   ×
@@ -871,7 +917,7 @@ function CollaboratorModal({
               <span className="budget-collaborator-role-modal">Owner</span>
             </div>
             {collaborators.map((collaborator: CollaboratorType) => (
-              <div key={collaborator.id} className="budget-collaborator-item-modal">
+              <div key={collaborator.firebaseUid} className="budget-collaborator-item-modal">
                 <div className="budget-collaborator-info-modal">
                   <span className="budget-collaborator-name-modal">{collaborator.name}</span>
                   <span className="budget-collaborator-email-modal">{collaborator.email}</span>
@@ -879,7 +925,7 @@ function CollaboratorModal({
                 <div className="budget-collaborator-actions">
                   <select
                     value={collaborator.role}
-                    onChange={(e) => onRoleChange(collaborator.id, e.target.value)}
+                    onChange={(e) => onRoleChange(collaborator.firebaseUid, e.target.value)}
                     className="budget-role-select"
                   >
                     <option value="Editor">Editor</option>
@@ -887,7 +933,7 @@ function CollaboratorModal({
                   </select>
                   <button
                     type="button"
-                    onClick={() => onRemoveCollaborator(collaborator.id)}
+                    onClick={() => onRemoveCollaborator(collaborator.firebaseUid)}
                     className="budget-remove-btn"
                     title="Remove collaborator"
                   >
@@ -913,6 +959,7 @@ import { useAppState } from '../../state/AppStateContext';
 import * as walletService from '../../services/walletService';
 import * as budgetService from '../../services/budgetService';
 import * as transactionService from '../../services/transactionService';
+import * as userService from '../../services/userService';
 import { useCurrency } from '../../hooks/useCurrency';
 import type { Transaction } from '../../services/transactionService';
 
@@ -971,8 +1018,16 @@ export default function Shared() {
   const { currentUser, logActivity } = useAppState();
   const [showCollaboratorModal, setShowCollaboratorModal] = useState(false);
   const [collaboratorDraft, setCollaboratorDraft] = useState<Collaborator[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [collaboratorModalReturn, setCollaboratorModalReturn] = useState<'none' | 'chat'>('none');
   const { currency } = useCurrency();
+
+  // Determine true owner from collaboratorDraft when available
+  const ownerFromCollaborators = collaboratorDraft.find(c => c.role === 'Owner') || null;
+  const ownerNameToShow = ownerFromCollaborators ? ownerFromCollaborators.name : currentUser.name;
+  const ownerEmailToShow = ownerFromCollaborators ? ownerFromCollaborators.email : currentUser.email;
+  const ownerUidToShow = ownerFromCollaborators ? ownerFromCollaborators.firebaseUid : currentUser.id;
 
   const reloadFinancialData = useCallback(async () => {
     try {
@@ -1216,57 +1271,70 @@ export default function Shared() {
     if (!selectedWallet) return;
     const trimmed = input.trim();
     if (!trimmed) return;
-
-    const namePart = trimmed.includes('@') ? trimmed.split('@')[0] : trimmed;
-    const emailCandidate = trimmed.includes('@')
-      ? trimmed
-      : `${trimmed.replace(/\s+/g, '').toLowerCase()}@example.com`;
-    const normalizedEmail = emailCandidate.toLowerCase();
-
-    if (collaboratorDraft.some((collab) => collab.email.toLowerCase() === normalizedEmail)) {
+    // Prefer adding only existing users returned by searchResults
+    const user = searchResults.find((u) => (u.email === trimmed || u.username === trimmed || u.email.toLowerCase() === trimmed.toLowerCase())) || null;
+    if (!user) {
+      // No matching user found — do not add arbitrary emails
       return;
     }
 
+    if (collaboratorDraft.some((collab) => collab.firebaseUid === user.firebaseUid)) return;
+
     const newCollaborator: Collaborator = {
-      id: `collab-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-      name: namePart.trim() || trimmed,
-      email: emailCandidate,
+      firebaseUid: user.firebaseUid,
+      name: user.name || (user.username || trimmed),
+      email: user.email,
       role: 'Editor'
     };
 
     persistCollaborators([...collaboratorDraft, newCollaborator], {
       action: 'member_added',
       message: `${currentUser.name} added ${newCollaborator.name} as Editor`,
-      entityId: newCollaborator.id
+      entityId: newCollaborator.firebaseUid
     });
   };
 
-  const handleCollaboratorRemove = (id: string) => {
+  const handleCollaboratorRemove = (firebaseUid: string) => {
     if (!selectedWallet) return;
-    const target = collaboratorDraft.find((collab) => collab.id === id);
+    const target = collaboratorDraft.find((collab) => collab.firebaseUid === firebaseUid);
     if (!target) return;
 
     persistCollaborators(
-      collaboratorDraft.filter((collab) => collab.id !== id),
+      collaboratorDraft.filter((collab) => collab.firebaseUid !== firebaseUid),
       {
         action: 'member_removed',
         message: `${currentUser.name} removed ${target.name} from the wallet`,
-        entityId: id
+        entityId: firebaseUid
       }
     );
   };
 
-  const handleCollaboratorRoleChange = (id: string, role: string) => {
+  const handleSearchUsers = async (query: string) => {
+    setSearchQuery(query);
+    if (query.trim().length > 0) {
+      try {
+        const results = await userService.searchUsers(query);
+        setSearchResults(results);
+      } catch (err) {
+        console.error('Failed to search users:', err);
+        setSearchResults([]);
+      }
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  const handleCollaboratorRoleChange = (firebaseUid: string, role: string) => {
     if (!selectedWallet) return;
-    const target = collaboratorDraft.find((collab) => collab.id === id);
+    const target = collaboratorDraft.find((collab) => collab.firebaseUid === firebaseUid);
     if (!target || target.role === role) return;
 
     persistCollaborators(
-      collaboratorDraft.map((collab) => (collab.id === id ? { ...collab, role } : collab)),
+      collaboratorDraft.map((collab) => (collab.firebaseUid === firebaseUid ? { ...collab, role } : collab)),
       {
         action: 'system_message',
         message: `${currentUser.name} set ${target.name} as ${role}`,
-        entityId: id
+        entityId: firebaseUid
       }
     );
   };
@@ -1603,9 +1671,13 @@ export default function Shared() {
         onAddCollaborator={handleCollaboratorAdd}
         onRemoveCollaborator={handleCollaboratorRemove}
         onRoleChange={handleCollaboratorRoleChange}
-        ownerName={currentUser.name}
-        ownerEmail={currentUser.email}
+        ownerName={ownerNameToShow}
+        ownerEmail={ownerEmailToShow}
         variant="wallet"
+        ownerUid={ownerUidToShow}
+        searchQuery={searchQuery}
+        searchResults={searchResults}
+        onSearchChange={handleSearchUsers}
       />
 
       {showBudgetActionModal && selectedWallet && (

@@ -9,7 +9,20 @@ const router = express.Router();
 // Get all transactions for user
 router.get('/', verifyToken, async (req, res) => {
   try {
-    const transactions = await Transaction.find({ userId: req.user.uid }).sort({ dateISO: -1 });
+    // Get wallets user has access to
+    const wallets = await Wallet.find({
+      $or: [
+        { userId: req.user.uid },
+        { 'collaborators.email': req.user.email }
+      ]
+    }).select('name');
+    const walletNames = wallets.map(w => w.name);
+    const transactions = await Transaction.find({
+      $or: [
+        { userId: req.user.uid },
+        { walletFrom: { $in: walletNames } }
+      ]
+    }).sort({ dateISO: -1 });
     res.json({ success: true, transactions });
   } catch (err) {
     console.error('Get transactions error:', err?.message || err);
@@ -20,9 +33,20 @@ router.get('/', verifyToken, async (req, res) => {
 // Get single transaction
 router.get('/:id', verifyToken, async (req, res) => {
   try {
-    const transaction = await Transaction.findOne({ _id: req.params.id, userId: req.user.uid });
+    const transaction = await Transaction.findOne({ _id: req.params.id });
     if (!transaction) {
       return res.status(404).json({ error: 'Not Found', message: 'Transaction not found' });
+    }
+    // Check if user has access to the wallet
+    const wallet = await Wallet.findOne({
+      name: transaction.walletFrom,
+      $or: [
+        { userId: req.user.uid },
+        { 'collaborators.email': req.user.email }
+      ]
+    });
+    if (!wallet && transaction.userId !== req.user.uid) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Access denied' });
     }
     res.json({ success: true, transaction });
   } catch (err) {
@@ -34,6 +58,21 @@ router.get('/:id', verifyToken, async (req, res) => {
 // Create transaction
 router.post('/', verifyToken, async (req, res) => {
   try {
+    // Check permissions for shared wallets
+    if (req.body.walletFrom) {
+      const wallet = await Wallet.findOne({ name: req.body.walletFrom });
+      if (wallet && wallet.plan === 'Shared') {
+        const isOwner = wallet.userId === req.user.uid;
+        let isEditor = false;
+        if (!isOwner && wallet.collaborators) {
+          const collab = wallet.collaborators.find(c => c.email === req.user.email);
+          isEditor = collab && collab.role === 'Editor';
+        }
+        if (!isOwner && !isEditor) {
+          return res.status(403).json({ error: 'Forbidden', message: 'Only editors or owner can create transactions in shared wallets.' });
+        }
+      }
+    }
     const transactionData = {
       ...req.body,
       userId: req.user.uid,
@@ -98,6 +137,27 @@ router.post('/', verifyToken, async (req, res) => {
 // Update transaction
 router.put('/:id', verifyToken, async (req, res) => {
   try {
+    const transaction = await Transaction.findOne({ _id: req.params.id });
+    if (!transaction) {
+      return res.status(404).json({ error: 'Not Found', message: 'Transaction not found' });
+    }
+    // Check permissions
+    if (transaction.walletFrom) {
+      const wallet = await Wallet.findOne({ name: transaction.walletFrom });
+      if (wallet && wallet.plan === 'Shared') {
+        const isOwner = wallet.userId === req.user.uid;
+        let isEditor = false;
+        if (!isOwner && wallet.collaborators) {
+          const collab = wallet.collaborators.find(c => c.email === req.user.email);
+          isEditor = collab && collab.role === 'Editor';
+        }
+        if (!isOwner && !isEditor) {
+          return res.status(403).json({ error: 'Forbidden', message: 'Only editors or owner can update transactions in shared wallets.' });
+        }
+      }
+    } else if (transaction.userId !== req.user.uid) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Access denied' });
+    }
     const updateData = {
       ...req.body,
       updatedAtISO: new Date(),
@@ -105,21 +165,18 @@ router.put('/:id', verifyToken, async (req, res) => {
       updatedByName: req.user.name
     };
     if (updateData.dateISO) updateData.dateISO = new Date(updateData.dateISO);
-    const transaction = await Transaction.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.uid },
+    const updatedTransaction = await Transaction.findOneAndUpdate(
+      { _id: req.params.id },
       updateData,
       { new: true }
     );
-    if (!transaction) {
-      return res.status(404).json({ error: 'Not Found', message: 'Transaction not found' });
-    }
     // Only log activity if walletFrom is set (shared wallet)
-    if (transaction.walletFrom) {
+    if (updatedTransaction.walletFrom) {
       (async () => {
         try {
-          let resolvedWalletId = transaction.walletFrom;
+          let resolvedWalletId = updatedTransaction.walletFrom;
           try {
-            const found = await Wallet.findOne({ userId: req.user.uid, $or: [{ _id: transaction.walletFrom }, { name: transaction.walletFrom }] });
+            const found = await Wallet.findOne({ userId: req.user.uid, $or: [{ _id: updatedTransaction.walletFrom }, { name: updatedTransaction.walletFrom }] });
             if (found) resolvedWalletId = String(found._id);
           } catch (e) {}
 
@@ -130,8 +187,8 @@ router.put('/:id', verifyToken, async (req, res) => {
             actorName: req.user.name,
             action: 'transaction_updated',
             entityType: 'transaction',
-            entityId: String(transaction._id || transaction.id || ''),
-            message: `${req.user.name} updated a ${transaction.category || ''} ${transaction.type?.toLowerCase() || ''} (${transaction.amount})`
+            entityId: String(updatedTransaction._id || updatedTransaction.id || ''),
+            message: `${req.user.name} updated a ${updatedTransaction.category || ''} ${updatedTransaction.type?.toLowerCase() || ''} (${updatedTransaction.amount})`
           };
           console.log('Creating activity (transaction_updated):', activityData);
           const activity = new Activity(activityData);
@@ -149,7 +206,7 @@ router.put('/:id', verifyToken, async (req, res) => {
         }
       })();
     }
-    res.json({ success: true, transaction });
+    res.json({ success: true, transaction: updatedTransaction });
   } catch (err) {
     console.error('Update transaction error:', err?.message || err);
     res.status(500).json({ error: 'Internal Server Error', message: 'Failed to update transaction' });
@@ -159,10 +216,28 @@ router.put('/:id', verifyToken, async (req, res) => {
 // Delete transaction
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
-    const transaction = await Transaction.findOneAndDelete({ _id: req.params.id, userId: req.user.uid });
+    const transaction = await Transaction.findOne({ _id: req.params.id });
     if (!transaction) {
       return res.status(404).json({ error: 'Not Found', message: 'Transaction not found' });
     }
+    // Check permissions
+    if (transaction.walletFrom) {
+      const wallet = await Wallet.findOne({ name: transaction.walletFrom });
+      if (wallet && wallet.plan === 'Shared') {
+        const isOwner = wallet.userId === req.user.uid;
+        let isEditor = false;
+        if (!isOwner && wallet.collaborators) {
+          const collab = wallet.collaborators.find(c => c.email === req.user.email);
+          isEditor = collab && collab.role === 'Editor';
+        }
+        if (!isOwner && !isEditor) {
+          return res.status(403).json({ error: 'Forbidden', message: 'Only editors or owner can delete transactions in shared wallets.' });
+        }
+      }
+    } else if (transaction.userId !== req.user.uid) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Access denied' });
+    }
+    await Transaction.findOneAndDelete({ _id: req.params.id });
 
     // Create activity record for deletion (non-blocking)
     (async () => {
@@ -192,12 +267,12 @@ router.delete('/:id', verifyToken, async (req, res) => {
             .sort({ createdAt: 1 })
             .limit(count - 200)
             .select('_id');
-          await Activity.deleteMany({ _id: { $in: oldest.map(a => a._id) } });
+            await Activity.deleteMany({ _id: { $in: oldest.map(a => a._id) } });
+          }
+        } catch (e) {
+          console.error('Failed to create activity for transaction delete:', e?.message || e);
         }
-      } catch (e) {
-        console.error('Failed to create activity for transaction delete:', e?.message || e);
-      }
-    })();
+      })();
     res.json({ success: true, message: 'Transaction deleted' });
   } catch (err) {
     console.error('Delete transaction error:', err?.message || err);

@@ -1,3 +1,15 @@
+/* Ensure input and add button are always vertically centered regardless of suggestions or no-results */
+.budget-collaborator-input-row {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+.budget-collaborator-input {
+  flex: 1;
+}
+.budget-add-collaborator-btn {
+  margin-left: 0.5rem;
+}
 
 .dashboard-wallet-eye svg {
   font-size: 0.8em !important;
@@ -2706,6 +2718,23 @@ h1, h2, h3, h4, h5, h6,
   font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* row wrapper for wallet input + add button to keep vertical centering when suggestions appear */
+.wallet-modal-input-row {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+.wallet-modal-input {
+  display: flex;
+  align-items: center;
+  height: 48px;
+}
+.wallet-modal-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .wallet-modal-add-btn:hover {
   background: linear-gradient(135deg, #6bb6d6 0%, #5ba3d0 100%);
   transform: translateY(-50%) scale(1.05);
@@ -3609,13 +3638,18 @@ h1, h2, h3, h4, h5, h6,
 
 .budget-collaborator-input-wrapper {
   display: flex;
+  align-items: center;
   gap: 12px;
   margin-bottom: 24px;
+  position: relative;
+  min-height: 48px;
 }
 
 .budget-collaborator-input {
   flex: 1;
   padding: 12px 16px;
+  /* reserve space on the right for the in-input Add button */
+  padding-right: 120px;
   border-radius: 10px;
   border: 2px solid #e2e8f0;
   background: #ffffff;
@@ -3625,6 +3659,9 @@ h1, h2, h3, h4, h5, h6,
   font-size: 14px;
   font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 48px;
+  display: flex;
+  align-items: center;
 }
 
 .budget-collaborator-input::placeholder {
@@ -3638,16 +3675,25 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .budget-add-collaborator-btn {
+  /* place Add button inside input area */
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   background: linear-gradient(135deg, #87ceeb 0%, #6bb6d6 100%);
   color: #1a1a1a;
   border: none;
-  padding: 12px 24px;
-  border-radius: 10px;
+  padding: 8px 14px;
+  border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .budget-add-collaborator-btn:hover:not(:disabled) {
@@ -6945,4 +6991,73 @@ h1, h2, h3, h4, h5, h6,
   background: transparent;
   border-radius: 50%;
   padding: 6px;
+}
+
+/* Search Suggestions Dropdown */
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  margin-top: 4px;
+}
+
+.search-suggestion {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+.search-suggestion:last-child {
+  border-bottom: none;
+}
+
+.search-suggestion:hover {
+  background-color: #f8fafc;
+}
+
+.suggestion-name {
+  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.suggestion-details {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.no-results {
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 13px;
+  padding-left: 8px;
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .budget-collaborator-input-wrapper {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .budget-collaborator-input {
+    padding-right: 16px;
+  }
+  .budget-add-collaborator-btn {
+    position: relative;
+    transform: none;
+    right: auto;
+    top: auto;
+    width: 100%;
+  }
 }

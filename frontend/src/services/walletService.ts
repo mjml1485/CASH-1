@@ -18,7 +18,7 @@ export interface Wallet {
   template?: string;
   description?: string;
   collaborators?: Array<{
-    id: string;
+    firebaseUid: string;
     name: string;
     email: string;
     role: string;

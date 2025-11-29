@@ -3,10 +3,10 @@ import mongoose from 'mongoose';
 const { Schema, model } = mongoose;
 
 const CollaboratorSchema = new Schema({
-  id: { type: String, required: true },
+  firebaseUid: { type: String, required: true },
   name: { type: String, required: true },
   email: { type: String, required: true },
-  role: { type: String, required: true, default: 'Editor' }
+  role: { type: String, required: true, enum: ['Owner', 'Editor', 'Viewer'], default: 'Editor' }
 }, { _id: false });
 
 const BudgetSchema = new Schema({

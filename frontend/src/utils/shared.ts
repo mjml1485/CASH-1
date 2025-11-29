@@ -1,7 +1,7 @@
 // SHARED TYPES
 
 export interface Collaborator {
-  id: string;
+  firebaseUid: string;
   name: string;
   email: string;
   role: string;
