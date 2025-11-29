@@ -124,4 +124,45 @@ router.post('/me/email', verifyToken, async (req, res) => {
   }
 });
 
+router.post('/me/username', verifyToken, async (req, res) => {
+  try {
+    const { uid, email: currentEmail } = req.user;
+    const { newUsername, password } = req.body;
+    if (!newUsername || !password) {
+      return res.status(400).json({ error: 'Bad Request', message: 'New username and password are required.' });
+    }
+
+    const existing = await User.findOne({ username: newUsername });
+    if (existing) {
+      return res.status(409).json({ error: 'Conflict', message: 'Username already in use.' });
+    }
+
+    const firebaseApiKey = process.env.FIREBASE_API_KEY;
+    if (!firebaseApiKey) {
+      console.error('FIREBASE_API_KEY is missing from environment variables.');
+      return res.status(500).json({ error: 'Server Error', message: 'Firebase API key not configured on backend. Please set FIREBASE_API_KEY in your .env file.' });
+    }
+
+    const fetch = (await import('node-fetch')).default;
+    const resp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseApiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: currentEmail, password, returnSecureToken: true })
+    });
+    if (!resp.ok) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Password is incorrect.' });
+    }
+
+    const user = await User.findOneAndUpdate({ firebaseUid: uid }, { username: newUsername }, { new: true });
+    if (!user) return res.status(404).json({ error: 'Not Found', message: 'Profile not found' });
+    res.json({ success: true, user });
+  } catch (err) {
+    console.error('Change username error:', err?.message || err);
+    if (err && err.code === 11000) {
+      return res.status(409).json({ error: 'Conflict', message: 'Username already exists' });
+    }
+    res.status(500).json({ error: 'Internal Server Error', message: 'Failed to change username' });
+  }
+});
+
 export default router;

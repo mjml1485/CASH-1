@@ -92,6 +92,21 @@ export const changeEmailBackend = async ({ newEmail, password }: { newEmail: str
   }
 };
 
+export const changeUsernameBackend = async ({ newUsername, password }: { newUsername: string; password: string }) => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+    const res = await axios.post(`${API_URL}/api/users/me/username`, { newUsername, password }, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.user;
+  } catch (err) {
+    console.warn('changeUsernameBackend failed', err);
+    throw err;
+  }
+};
+
 export const markOnboardingCompleted = async () => {
   try {
     const { getIdToken } = await import('./authService');

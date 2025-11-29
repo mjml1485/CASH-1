@@ -68,6 +68,13 @@ export default function Profile() {
   const [showEmailChangeModal, setShowEmailChangeModal] = useState(false);
   const [emailChangeStep, setEmailChangeStep] = useState<'password' | 'newEmail'>('password');
   const [showPassword, setShowPassword] = useState(false);
+  const [showUsernameChangeModal, setShowUsernameChangeModal] = useState(false);
+  const [usernameChangeStep, setUsernameChangeStep] = useState<'password' | 'newUsername'>('password');
+  const [newUsername, setNewUsername] = useState('');
+  const [usernamePassword, setUsernamePassword] = useState('');
+  const [usernameTouched, setUsernameTouched] = useState(false);
+  const [usernameChangeError, setUsernameChangeError] = useState<string | null>(null);
+  const [usernameChangeSuccess, setUsernameChangeSuccess] = useState<string | null>(null);
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [newEmail, setNewEmail] = useState('');
@@ -245,6 +252,79 @@ export default function Profile() {
         setEmailChangeError('Please log out and log in again, then try changing your email.');
       } else {
         setEmailChangeError('Failed to verify password.');
+      }
+    }
+  };
+
+  const handleVerifyUsernamePassword = async () => {
+    setPasswordTouched(true);
+    setUsernameChangeError(null);
+    setUsernameChangeSuccess(null);
+    if (!usernamePassword) {
+      setUsernameChangeError('Password is required');
+      return;
+    }
+    try {
+      const { reauthenticate } = await import('../../services/authService');
+      await reauthenticate(usernamePassword);
+      setUsernameChangeStep('newUsername');
+      setUsernameChangeError(null);
+    } catch (err: any) {
+      if (err?.code === 'auth/wrong-password' || err?.response?.status === 401) {
+        setUsernameChangeError('Invalid password. Please try again.');
+      } else if (err?.code === 'auth/too-many-requests') {
+        setUsernameChangeError('Too many failed attempts. Please try again later.');
+      } else if (err?.code === 'auth/requires-recent-login') {
+        setUsernameChangeError('Please log out and log in again, then try changing your username.');
+      } else {
+        setUsernameChangeError('Failed to verify password. Please try again.');
+      }
+    }
+  };
+
+  const validateUsername = (username: string) => {
+    // Basic username validation: alphanumeric + underscores, 3-30 chars
+    return /^[a-zA-Z0-9_]{3,30}$/.test(username);
+  };
+
+  const handleUsernameChange = async () => {
+    setUsernameTouched(true);
+    setUsernameChangeError(null);
+    setUsernameChangeSuccess(null);
+    if (!newUsername.trim()) {
+      setUsernameChangeError('Username is required');
+      return;
+    }
+    if (!validateUsername(newUsername.trim())) {
+      setUsernameChangeError('Username must be 3-30 characters and contain only letters, numbers, or underscores.');
+      return;
+    }
+    const prevUsername = profile.username;
+    // Optimistically apply the username so it updates immediately in the UI
+    setProfile(prev => ({ ...prev, username: newUsername.trim() }));
+    setEditedUsername(newUsername.trim());
+    try {
+      const { changeUsernameBackend } = await import('../../services/userService');
+      await changeUsernameBackend({ newUsername: newUsername.trim(), password: usernamePassword });
+      setUsernameChangeSuccess('Username changed successfully!');
+      setTimeout(() => {
+        setShowUsernameChangeModal(false);
+        setUsernameChangeStep('password');
+        setNewUsername('');
+        setUsernamePassword('');
+        setUsernameTouched(false);
+        setPasswordTouched(false);
+      }, 1200);
+    } catch (err: any) {
+      // Revert optimistic update on failure
+      setProfile(prev => ({ ...prev, username: prevUsername }));
+      setEditedUsername(prevUsername);
+      if (err?.response?.status === 409) {
+        setUsernameChangeError("Username isn't available. Please try again.");
+      } else if (err?.response?.status === 401) {
+        setUsernameChangeError('Invalid password. Please try again.');
+      } else {
+        setUsernameChangeError(err?.response?.data?.message || err?.message || 'Failed to change username. Please try again.');
       }
     }
   };
@@ -456,13 +536,25 @@ export default function Profile() {
                         onChange={(e) => setEditedName(e.target.value)}
                         placeholder="Enter your name"
                       />
-                      <input
-                        type="text"
-                        className="profile-username-input"
-                        value={editedUsername}
-                        onChange={(e) => setEditedUsername(e.target.value)}
-                        placeholder="Enter your username"
-                      />
+                      <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                        <input
+                          type="text"
+                          className="profile-username-input"
+                          value={editedUsername}
+                          onChange={(e) => setEditedUsername(e.target.value)}
+                          placeholder="Enter your username"
+                        />
+                        <button type="button" className="profile-edit-btn profile-edit-btn-small" onClick={() => {
+                          setShowUsernameChangeModal(true);
+                          setUsernameChangeStep('password');
+                          setNewUsername('');
+                          setUsernamePassword('');
+                          setUsernameChangeError(null);
+                          setUsernameChangeSuccess(null);
+                          setUsernameTouched(false);
+                          setPasswordTouched(false);
+                        }}>Change</button>
+                      </div>
                       <div className="profile-email-row-flex">
                         <input
                           type="email"
@@ -669,6 +761,103 @@ export default function Profile() {
       </div>
 
       {/* Followers Modal */}
+      {/* Username Change Modal */}
+      {showUsernameChangeModal && (
+        <div className="profile-modal-overlay" onClick={() => { setShowUsernameChangeModal(false); setUsernameChangeStep('password'); }}>
+          <div
+            className="profile-modal profile-modal-custom"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="profile-modal-header profile-modal-header-flex">
+              <h3 className="profile-modal-title-custom">Change Username</h3>
+            </div>
+            <div className="profile-modal-content profile-modal-content-flex" style={{overflow:'hidden'}}>
+              {usernameChangeStep === 'password' ? (
+                <>
+                  <label className="profile-modal-label">Enter your password to continue</label>
+                  <div className="sign-up-wrapper-password">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={usernamePassword}
+                      onChange={e => { setUsernamePassword(e.target.value); }}
+                      className={`sign-in-input${passwordTouched && !usernamePassword ? ' input-error' : ''}`}
+                      placeholder="Enter your password"
+                      autoFocus
+                      onBlur={() => setPasswordTouched(true)}
+                    />
+                    <button
+                      type="button"
+                      className="sign-up-toggle-password"
+                      tabIndex={-1}
+                      onClick={() => setShowPassword(v => !v)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                  {usernameChangeError && (
+                    <div className="sign-up-error">{usernameChangeError}</div>
+                  )}
+                  <div className="sign-in-button-row" style={{marginTop:'18px',gap:'12px'}}>
+                      <button
+                        className="profile-cancel-btn profile-cancel-btn-light"
+                        onClick={() => { setShowUsernameChangeModal(false); setUsernameChangeStep('password'); setPasswordTouched(false); setUsernameTouched(false); setUsernameChangeError(null); setUsernameChangeSuccess(null); setUsernamePassword(''); setNewUsername(''); }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="sign-in-button-primary"
+                        onClick={handleVerifyUsernamePassword}
+                        disabled={!usernamePassword}
+                        style={{width:'120px'}}
+                      >
+                        Next
+                      </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label className="profile-modal-label">New Username</label>
+                  <input
+                    type="text"
+                    value={newUsername}
+                    onChange={e => { setNewUsername(e.target.value); }}
+                    className={`sign-in-input${usernameTouched && (!newUsername.trim() || !validateUsername(newUsername.trim())) ? ' input-error' : ''}`}
+                    placeholder="Enter new username"
+                    autoFocus
+                    onBlur={() => setUsernameTouched(true)}
+                  />
+                  {usernameTouched && newUsername.trim() && !validateUsername(newUsername.trim()) && (
+                    <div className="sign-up-error" style={{margin:'8px 0 0 0',padding:'0',background:'none',border:'none',boxShadow:'none'}}>
+                      Username must be 3-30 characters and contain only letters, numbers, or underscores.
+                    </div>
+                  )}
+                  {usernameChangeError && (
+                    <div className="sign-up-error">{usernameChangeError}</div>
+                  )}
+                  {usernameChangeSuccess && <p className="profile-save-success">{usernameChangeSuccess}</p>}
+                  <div className="sign-in-button-row" style={{marginTop:'18px',gap:'12px'}}>
+                    <button
+                      className="profile-cancel-btn profile-cancel-btn-light"
+                      onClick={() => { setShowUsernameChangeModal(false); setUsernameChangeStep('password'); setPasswordTouched(false); setUsernameTouched(false); setUsernameChangeError(null); setUsernameChangeSuccess(null); setUsernamePassword(''); setNewUsername(''); }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="sign-in-button-primary"
+                      onClick={handleUsernameChange}
+                      disabled={!newUsername.trim() || !validateUsername(newUsername.trim())}
+                      style={{width:'160px'}}
+                    >
+                      Change Username
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {showFollowersModal && (
         <div className="profile-modal-overlay" onClick={() => setShowFollowersModal(false)}>
           <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
