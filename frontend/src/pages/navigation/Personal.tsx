@@ -1,8 +1,9 @@
 import { useAppState } from '../../state/AppStateContext';
+import { WALLET_TEMPLATES } from '../components/AddWallet';
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { CURRENCY_SYMBOLS, formatAmount, CHART_COLORS, DEFAULT_TEXT_COLOR } from '../../utils/shared';
+import { CURRENCY_SYMBOLS, formatAmount, CHART_COLORS } from '../../utils/shared';
 import { FaPlus, FaPen } from 'react-icons/fa';
 // Inlined AddTransaction component from AddTransaction.tsx
 import { useEffect as useEffectAddTx, useMemo as useMemoAddTx, useState as useStateAddTx } from 'react';
@@ -621,7 +622,30 @@ export default function Personal() {
     }
   };
 
-  const personalWallets = useMemo(() => wallets.filter(w => w.plan === 'Personal'), [wallets]);
+  // Migration: Ensure all personal wallets have template/color fields
+  type WalletWithTemplate = typeof wallets[number] & {
+    template: string;
+    backgroundColor: string;
+    textColor: string;
+    color1: string;
+    color2: string;
+  };
+  const personalWallets: WalletWithTemplate[] = useMemo(() => {
+    return wallets
+      .filter(w => w.plan === 'Personal')
+      .map(w => {
+        const wAny = w as any;
+        // Only fill missing fields, never overwrite existing color/template fields
+        return {
+          ...wAny,
+          template: wAny.template || (WALLET_TEMPLATES.find(t => t.bgColor === wAny.backgroundColor && t.textColor === wAny.textColor)?.name ?? 'Default'),
+          backgroundColor: wAny.backgroundColor || wAny.color1 || '#e2e8f0',
+          textColor: wAny.textColor || '#1a1a1a',
+          color1: wAny.color1 || wAny.backgroundColor || '#e2e8f0',
+          color2: wAny.color2 || wAny.backgroundColor || '#e2e8f0',
+        };
+      });
+  }, [wallets]);
 
   useEffect(() => {
     reloadFinancialData(true); // Initial load
@@ -751,7 +775,7 @@ export default function Personal() {
                     className="personal-wallet-card"
                     style={{
                       background: `linear-gradient(135deg, ${selectedWallet.color1} 0%, ${selectedWallet.color2} 100%)`,
-                      color: selectedWallet.textColor || DEFAULT_TEXT_COLOR
+                      color: selectedWallet.textColor
                     }}
                   >
                     <div className="personal-wallet-header">

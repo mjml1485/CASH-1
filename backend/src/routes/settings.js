@@ -27,7 +27,7 @@ router.get('/', verifyToken, async (req, res) => {
 router.put('/', verifyToken, async (req, res) => {
   try {
     const updates = req.body;
-    const allowedFields = ['currency'];
+    const allowedFields = ['currency', 'balanceVisibility'];
     const filteredUpdates = {};
     for (const key of allowedFields) {
       if (key in updates) filteredUpdates[key] = updates[key];

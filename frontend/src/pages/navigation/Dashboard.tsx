@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import * as settingsService from '../../services/settingsService';
 import { useNavigate } from 'react-router-dom';
 import { FaWallet, FaMoneyBill, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { formatAmount, CURRENCY_SYMBOLS, DEFAULT_TEXT_COLOR } from '../../utils/shared';
@@ -38,6 +39,8 @@ export default function Dashboard() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const { currency } = useCurrency();
   const [hiddenWallets, setHiddenWallets] = useState<Set<string>>(new Set());
+  const [settings, setSettings] = useState<settingsService.UserSettings | null>(null);
+  // const [settingsLoading, setSettingsLoading] = useState(true);
 
   const [isLoading, setIsLoading] = useState(false);
   const isInitialLoad = useRef(true);
@@ -111,6 +114,22 @@ export default function Dashboard() {
       isInitialLoad.current = false;
     }
   };
+
+
+  // Load user settings (including balanceVisibility) on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = await settingsService.getSettings();
+        setSettings(s);
+        if (s.balanceVisibility) {
+          setHiddenWallets(new Set(Object.entries(s.balanceVisibility).filter(([_, v]) => v === false).map(([k]) => k)));
+        }
+      } catch (err) {
+        console.error('Failed to load user settings:', err);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     loadData(true); // Show loading on initial load
@@ -213,7 +232,7 @@ export default function Dashboard() {
                         <span className="dashboard-wallet-label">Balance</span>
                         <button
                           className="dashboard-wallet-eye"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
                             setHiddenWallets(prev => {
                               const newSet = new Set(prev);
@@ -222,6 +241,12 @@ export default function Dashboard() {
                               } else {
                                 newSet.add(wallet.id);
                               }
+                              // Update backend settings
+                              const newVisibility: Record<string, boolean> = { ...(settings?.balanceVisibility || {}) };
+                              newVisibility[wallet.id] = !newSet.has(wallet.id); // true = visible, false = hidden
+                              settingsService.updateSettings({ balanceVisibility: newVisibility })
+                                .then(s => setSettings(s))
+                                .catch(err => console.error('Failed to update visibility:', err));
                               return newSet;
                             });
                           }}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaChevronLeft, FaChevronDown, FaEye, FaEyeSlash, FaUsers, FaTrash } from 'react-icons/fa';
 import type { Collaborator } from '../../utils/shared';
@@ -223,7 +223,7 @@ import { useCurrency } from '../../hooks/useCurrency';
 
 // CONSTANTS
 
-const WALLET_TEMPLATES = [
+export const WALLET_TEMPLATES = [
   { name: 'Default', bgColor: '#e2e8f0', textColor: '#1a1a1a' },
   { name: 'GCash', bgColor: '#0070f3', textColor: '#ffffff' },
   { name: 'Maya', bgColor: '#000000', textColor: '#00ff00' },
@@ -274,12 +274,14 @@ export default function AddWallet() {
   const { currency: selectedCurrency } = useCurrency();
   const currencySymbol = CURRENCY_SYMBOLS[selectedCurrency] || '₱';
 
+  // Only initialize wallet state from existingWallet on first mount
+  const didInit = useRef(false);
   useEffect(() => {
-    if (editMode && existingWallet) {
+    if (editMode && existingWallet && !didInit.current) {
       setWalletName(existingWallet.name || '');
       setWalletBalance(existingWallet.balance || '');
       setWalletPlan(existingWallet.plan || '');
-      
+
       const predefinedTypes = ['Cash', 'E-Wallet', 'Bank', 'Savings Account', 'Insurance', 'Investment'];
       if (predefinedTypes.includes(existingWallet.walletType)) {
         setWalletType(existingWallet.walletType);
@@ -288,22 +290,25 @@ export default function AddWallet() {
         setWalletType('Custom');
         setCustomWalletType(existingWallet.walletType || '');
       }
-      
-      if (existingWallet.backgroundColor) {
-        setBackgroundColor(existingWallet.backgroundColor);
-      }
-      if (existingWallet.textColor) {
-        setTextColor(existingWallet.textColor);
-      }
-      if (existingWallet.template) {
-        setSelectedTemplate(existingWallet.template);
-      }
-      
+
+      // Always initialize color fields from wallet data, fallback to defaults if missing
+      setBackgroundColor(existingWallet.backgroundColor || existingWallet.color1 || '#e2e8f0');
+      setTextColor(existingWallet.textColor || '#1a1a1a');
+
+      // Only select a template if both name and colors match a template
+      const match = WALLET_TEMPLATES.find(
+        t => t.name === existingWallet.template &&
+        t.bgColor === (existingWallet.backgroundColor || existingWallet.color1) &&
+        t.textColor === (existingWallet.textColor || '#1a1a1a')
+      );
+      setSelectedTemplate(match ? match.name : '');
+
       if (existingWallet.collaborators && existingWallet.collaborators.length > 0) {
         setCollaborators(existingWallet.collaborators);
       }
-      
+
       setHasInteracted({ name: true, balance: true, walletType: true });
+      didInit.current = true;
     }
   }, [editMode, existingWallet]);
 
@@ -345,6 +350,19 @@ export default function AddWallet() {
     setTextColor(template.textColor);
   };
 
+  // When user customizes color, clear template selection
+  const handleBackgroundColorChange = (color: string) => {
+    setBackgroundColor(color);
+    // If color doesn't match any template, clear template selection
+    const match = WALLET_TEMPLATES.find(t => t.bgColor === color && t.textColor === textColor);
+    setSelectedTemplate(match ? match.name : '');
+  };
+  const handleTextColorChange = (color: string) => {
+    setTextColor(color);
+    const match = WALLET_TEMPLATES.find(t => t.bgColor === backgroundColor && t.textColor === color);
+    setSelectedTemplate(match ? match.name : '');
+  };
+
   const validateWallet = () => {
     const missing: string[] = [];
     const nextErrors: Record<string, string> = {};
@@ -370,7 +388,7 @@ export default function AddWallet() {
       textColor: textColor,
       color1: backgroundColor,
       color2: backgroundColor,
-      template: selectedTemplate
+      template: selectedTemplate || '', // Always save template, even if empty
     };
 
     if (returnTo === '/onboarding/wallet') {
@@ -698,17 +716,23 @@ export default function AddWallet() {
                 <label>Templates</label>
               </div>
               <div className="wallet-templates">
-                {WALLET_TEMPLATES.map((template) => (
-                  <button
-                    key={template.name}
-                    className={`wallet-template ${selectedTemplate === template.name ? 'selected' : ''}`}
-                    type="button"
-                    onClick={() => handleTemplateSelect(template)}
-                    style={{ backgroundColor: template.bgColor, color: template.textColor }}
-                  >
-                    {template.name}
-                  </button>
-                ))}
+                {WALLET_TEMPLATES.map((template) => {
+                  const isSelected =
+                    selectedTemplate === template.name &&
+                    backgroundColor === template.bgColor &&
+                    textColor === template.textColor;
+                  return (
+                    <button
+                      key={template.name}
+                      className={`wallet-template${isSelected ? ' selected' : ''}`}
+                      type="button"
+                      onClick={() => handleTemplateSelect(template)}
+                      style={{ backgroundColor: template.bgColor, color: template.textColor }}
+                    >
+                      {template.name}
+                    </button>
+                  );
+                })}
               </div>
               <div className="wallet-field">
                 <div className="wallet-field-label-row">
@@ -775,9 +799,9 @@ export default function AddWallet() {
                     <input
                       type="color"
                       value={backgroundColor}
-                      onChange={(e) => setBackgroundColor(e.target.value)}
+                      onChange={e => handleBackgroundColorChange(e.target.value)}
+                      className="wallet-color-input"
                     />
-                    <span>{backgroundColor}</span>
                   </div>
                 </div>
                 <div className="wallet-field">
@@ -786,9 +810,9 @@ export default function AddWallet() {
                     <input
                       type="color"
                       value={textColor}
-                      onChange={(e) => setTextColor(e.target.value)}
+                      onChange={e => handleTextColorChange(e.target.value)}
+                      className="wallet-color-input"
                     />
-                    <span>{textColor}</span>
                   </div>
                 </div>
               </div>

@@ -6,6 +6,8 @@ const API_URL = import.meta.env.VITE_CASH_API_URL || 'http://localhost:3001';
 export interface UserSettings {
   userId?: string;
   currency: string;
+  // Map of walletId -> boolean (true = visible, false = hidden)
+  balanceVisibility?: Record<string, boolean>;
 }
 
 const getAuthHeaders = async () => {
