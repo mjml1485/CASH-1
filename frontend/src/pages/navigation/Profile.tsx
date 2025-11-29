@@ -15,7 +15,7 @@ async function uploadToCloudinary(file: File): Promise<string> {
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { FaCamera, FaSearch, FaTimes, FaArrowLeft, FaSignOutAlt } from 'react-icons/fa';
+import { FaCamera, FaSearch, FaTimes, FaArrowLeft, FaSignOutAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
 import { fetchProfileBackend, updateProfileBackend, createOrUpdateProfileBackend } from '../../services/userService';
 
@@ -66,6 +66,10 @@ export default function Profile() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [showEmailChangeModal, setShowEmailChangeModal] = useState(false);
+  const [emailChangeStep, setEmailChangeStep] = useState<'password' | 'newEmail'>('password');
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [emailPassword, setEmailPassword] = useState('');
   const [emailChangeError, setEmailChangeError] = useState<string | null>(null);
@@ -218,28 +222,74 @@ export default function Profile() {
     }
   };
 
-  const handleEmailChange = async () => {
+  // Step 1: Verify password, then Step 2: Ask for new email
+  const handleVerifyPassword = async () => {
+    setPasswordTouched(true);
     setEmailChangeError(null);
     setEmailChangeSuccess(null);
-    if (!newEmail.trim() || !newEmail.includes('@') || !newEmail.includes('.')) {
-      setEmailChangeError('A valid email is required');
-      return;
-    }
     if (!emailPassword) {
       setEmailChangeError('Password is required');
       return;
     }
     try {
+      const { reauthenticate } = await import('../../services/authService');
+      await reauthenticate(emailPassword);
+      setEmailChangeStep('newEmail');
+      setEmailChangeError(null);
+    } catch (err: any) {
+      if (err?.code === 'auth/wrong-password' || err?.response?.status === 401) {
+        setEmailChangeError('Password is incorrect.');
+      } else if (err?.code === 'auth/too-many-requests') {
+        setEmailChangeError('Too many failed attempts. Please try again later.');
+      } else if (err?.code === 'auth/requires-recent-login') {
+        setEmailChangeError('Please log out and log in again, then try changing your email.');
+      } else {
+        setEmailChangeError('Failed to verify password.');
+      }
+    }
+  };
+
+  const validateEmail = (email: string) => {
+    // Simple email regex
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const handleEmailChange = async () => {
+    setEmailTouched(true);
+    setEmailChangeError(null);
+    setEmailChangeSuccess(null);
+    if (!newEmail.trim()) {
+      setEmailChangeError('Email is required');
+      return;
+    }
+    if (!validateEmail(newEmail.trim())) {
+      setEmailChangeError('Please enter a valid email address.');
+      return;
+    }
+    try {
       const { changeEmailBackend } = await import('../../services/userService');
+      const { updateEmail } = await import('../../services/authService');
       await changeEmailBackend({ newEmail: newEmail.trim(), password: emailPassword });
+      await updateEmail(newEmail.trim());
       setEmailChangeSuccess('Email changed successfully! Please use your new email next time you log in.');
       setProfile(prev => ({ ...prev, email: newEmail.trim() }));
-      setShowEmailChangeModal(false);
+      setTimeout(() => {
+        setShowEmailChangeModal(false);
+        setEmailChangeStep('password');
+        setNewEmail('');
+        setEmailPassword('');
+        setEmailTouched(false);
+        setPasswordTouched(false);
+      }, 1500);
     } catch (err: any) {
       if (err?.response?.status === 409) {
-        setEmailChangeError('Email already exists. Please use another.');
+        setEmailChangeError('This email is already registered. Please use another.');
       } else if (err?.response?.status === 401) {
         setEmailChangeError('Password is incorrect.');
+      } else if (err?.code === 'auth/invalid-email') {
+        setEmailChangeError('Please enter a valid email address.');
+      } else if (err?.code === 'auth/requires-recent-login') {
+        setEmailChangeError('Please log out and log in again, then try changing your email.');
       } else {
         setEmailChangeError('Failed to change email.');
       }
@@ -422,56 +472,111 @@ export default function Profile() {
                         />
                         <button type="button" className="profile-edit-btn profile-edit-btn-small" onClick={() => {
                           setShowEmailChangeModal(true);
+                          setEmailChangeStep('password');
                           setNewEmail('');
                           setEmailPassword('');
                           setEmailChangeError(null);
                           setEmailChangeSuccess(null);
+                          setPasswordTouched(false);
+                          setEmailTouched(false);
                         }}>Change</button>
                       </div>
                             {/* Email Change Modal */}
                             {showEmailChangeModal && (
-                              <div className="profile-modal-overlay" onClick={() => setShowEmailChangeModal(false)}>
+                              <div className="profile-modal-overlay" onClick={() => { setShowEmailChangeModal(false); setEmailChangeStep('password'); }}>
                                 <div
                                   className="profile-modal profile-modal-custom"
                                   onClick={e => e.stopPropagation()}
                                 >
                                   <div className="profile-modal-header profile-modal-header-flex">
                                     <h3 className="profile-modal-title-custom">Change Email</h3>
-                                    <button className="profile-modal-close profile-modal-close-custom" onClick={() => setShowEmailChangeModal(false)}><FaTimes /></button>
                                   </div>
-                                  <div className="profile-modal-content profile-modal-content-flex">
-                                    <label className="profile-modal-label">New Email</label>
-                                    <input
-                                      type="email"
-                                      value={newEmail}
-                                      onChange={e => setNewEmail(e.target.value)}
-                                      className="profile-email-input profile-modal-input"
-                                      placeholder="Enter new email"
-                                    />
-                                    <label className="profile-modal-label">Password</label>
-                                    <input
-                                      type="password"
-                                      value={emailPassword}
-                                      onChange={e => setEmailPassword(e.target.value)}
-                                      className="profile-email-input profile-modal-input"
-                                      placeholder="Enter your password"
-                                    />
-                                    {emailChangeError && <p className="profile-save-error profile-save-error-custom">{emailChangeError}</p>}
-                                    {emailChangeSuccess && <p className="profile-save-success">{emailChangeSuccess}</p>}
-                                    <div className="profile-modal-btn-row">
-                                      <button
-                                        className="profile-edit-btn profile-edit-btn-gradient"
-                                        onClick={handleEmailChange}
-                                      >
-                                        Change Email
-                                      </button>
-                                      <button
-                                        className="profile-cancel-btn profile-cancel-btn-light"
-                                        onClick={() => setShowEmailChangeModal(false)}
-                                      >
-                                        Cancel
-                                      </button>
-                                    </div>
+                                  <div className="profile-modal-content profile-modal-content-flex" style={{overflow:'hidden'}}>
+                                    {emailChangeStep === 'password' ? (
+                                      <>
+                                        <label className="profile-modal-label">Enter your password to continue</label>
+                                        <div className="sign-up-wrapper-password">
+                                          <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={emailPassword}
+                                            onChange={e => { setEmailPassword(e.target.value); }}
+                                            className={`sign-in-input${passwordTouched && !emailPassword ? ' input-error' : ''}`}
+                                            placeholder="Enter your password"
+                                            autoFocus
+                                            onBlur={() => setPasswordTouched(true)}
+                                          />
+                                          <button
+                                            type="button"
+                                            className="sign-up-toggle-password"
+                                            tabIndex={-1}
+                                            onClick={() => setShowPassword(v => !v)}
+                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                          >
+                                            {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                          </button>
+                                        </div>
+                                        {/* Only show error if password is wrong */}
+                                        {emailChangeError && emailChangeError.toLowerCase().includes('incorrect') && (
+                                          <div className="sign-up-error">Invalid password</div>
+                                        )}
+                                        <div className="sign-in-button-row" style={{marginTop:'18px',gap:'12px'}}>
+                                            <button
+                                              className="profile-cancel-btn profile-cancel-btn-light"
+                                              onClick={() => { setShowEmailChangeModal(false); setEmailChangeStep('password'); setPasswordTouched(false); setEmailTouched(false); setEmailChangeError(null); setEmailChangeSuccess(null); setEmailPassword(''); setNewEmail(''); }}
+                                            >
+                                              Cancel
+                                            </button>
+                                            <button
+                                              className="sign-in-button-primary"
+                                              onClick={handleVerifyPassword}
+                                              disabled={!emailPassword}
+                                              style={{width:'120px'}}
+                                            >
+                                              Next
+                                            </button>
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <label className="profile-modal-label">New Email</label>
+                                        <input
+                                          type="email"
+                                          value={newEmail}
+                                          onChange={e => { setNewEmail(e.target.value); }}
+                                          className={`sign-in-input${emailTouched && (!newEmail.trim() || !validateEmail(newEmail.trim())) ? ' input-error' : ''}`}
+                                          placeholder="Enter new email"
+                                          autoFocus
+                                          onBlur={() => setEmailTouched(true)}
+                                        />
+                                        {/* Only show tooltip for invalid email format */}
+                                        {emailTouched && newEmail.trim() && !validateEmail(newEmail.trim()) && (
+                                          <div className="sign-up-error" style={{margin:'8px 0 0 0',padding:'0',background:'none',border:'none',boxShadow:'none'}}>
+                                            Please enter a valid email address.
+                                          </div>
+                                        )}
+                                        {/* Only show error if email is already registered */}
+                                        {emailChangeError && emailChangeError.toLowerCase().includes('already registered') && (
+                                          <div className="sign-up-error">Email already registered. Please try again</div>
+                                        )}
+                                        {emailChangeSuccess && <p className="profile-save-success">{emailChangeSuccess}</p>}
+                                        <div className="sign-in-button-row" style={{marginTop:'18px',gap:'12px'}}>
+                                          <button
+                                            className="profile-cancel-btn profile-cancel-btn-light"
+                                            onClick={() => { setShowEmailChangeModal(false); setEmailChangeStep('password'); setPasswordTouched(false); setEmailTouched(false); setEmailChangeError(null); setEmailChangeSuccess(null); setEmailPassword(''); setNewEmail(''); }}
+                                          >
+                                            Cancel
+                                          </button>
+                                          <button
+                                            className="sign-in-button-primary"
+                                            onClick={handleEmailChange}
+                                            disabled={!newEmail.trim() || !validateEmail(newEmail.trim())}
+                                            style={{width:'120px'}}
+                                          >
+                                            Change Email
+                                          </button>
+                                        </div>
+                                      </>
+                                    )}
                                   </div>
                                 </div>
                               </div>

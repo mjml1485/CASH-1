@@ -92,7 +92,8 @@ router.post('/me/email', verifyToken, async (req, res) => {
 
     const firebaseApiKey = process.env.FIREBASE_API_KEY;
     if (!firebaseApiKey) {
-      return res.status(500).json({ error: 'Server Error', message: 'Firebase API key not configured.' });
+      console.error('FIREBASE_API_KEY is missing from environment variables.');
+      return res.status(500).json({ error: 'Server Error', message: 'Firebase API key not configured on backend. Please set FIREBASE_API_KEY in your .env file.' });
     }
     const fetch = (await import('node-fetch')).default;
     const resp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseApiKey}`, {

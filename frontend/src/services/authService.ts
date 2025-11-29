@@ -1,12 +1,41 @@
-import {
+// Check if a user exists by email (calls backend)
+export const checkUserExists = async (email: string): Promise<boolean> => {
+  try {
+    const response = await axios.get(`${API_URL}/api/users/exists`, { params: { email } });
+    return !!response.data.exists;
+  } catch (error) {
+    // If the endpoint doesn't exist or fails, assume user does not exist
+    return false;
+  }
+};
+
+import { 
+  reauthenticateWithCredential, 
+  EmailAuthProvider, 
+  updateEmail as firebaseUpdateEmail, 
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
-  updateProfile,
+  updateProfile
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import axios from 'axios';
+
+// Re-authenticate the current user with password (for sensitive actions)
+export const reauthenticate = async (password: string) => {
+  const user = auth.currentUser;
+  if (!user || !user.email) throw new Error('No authenticated user');
+  const credential = EmailAuthProvider.credential(user.email, password);
+  await reauthenticateWithCredential(user, credential);
+};
+
+// Update the current user's email in Firebase Auth (frontend)
+export const updateEmail = async (newEmail: string) => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('No authenticated user');
+  await firebaseUpdateEmail(user, newEmail);
+};
 
 const API_URL = import.meta.env.VITE_CASH_API_URL || 'http://localhost:3001';
 

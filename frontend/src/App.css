@@ -1,3 +1,115 @@
+/* --- Profile Modal Password Input (Match Auth Pages) --- */
+.profile-password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+.profile-password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #718096;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  z-index: 1;
+  line-height: 0;
+  width: 24px;
+  height: 24px;
+}
+.profile-password-toggle-btn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.profile-password-toggle-btn:hover {
+  color: #2d3748;
+}
+.profile-password-toggle-btn:focus {
+  outline: none;
+  color: #87ceeb;
+}
+.profile-password-toggle-btn:active {
+  transform: translateY(-50%) scale(0.9);
+}
+.profile-modal-input.profile-input-error {
+  border-color: #fc8181 !important;
+  background: #fff5f5;
+}
+.profile-modal-input.profile-input-error:focus {
+  border-color: #f56565 !important;
+  box-shadow:
+    0 0 0 4px rgba(245, 101, 101, 0.15),
+    0 4px 6px rgba(245, 101, 101, 0.1) !important;
+}
+.profile-input-tooltip {
+  font-size: 13px;
+  color: #c53030;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  padding-left: 2px;
+}
+.profile-modal-btn-row .profile-edit-btn.profile-edit-btn-gradient {
+  background: linear-gradient(135deg, #87ceeb 0%, #6bb6d6 100%);
+  color: #1a1a1a;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  box-shadow:
+    0 4px 6px rgba(135, 206, 235, 0.3),
+    0 2px 4px rgba(135, 206, 235, 0.2);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
+}
+.profile-modal-btn-row .profile-edit-btn.profile-edit-btn-gradient:disabled {
+  background: #e2e8f0;
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+.profile-modal-btn-row .profile-cancel-btn.profile-cancel-btn-light {
+  background: #eef8fc;
+  color: #000000;
+  border: 1px solid #d1eaf4;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.profile-modal-btn-row .profile-cancel-btn.profile-cancel-btn-light:hover {
+  background: #dff2f9;
+  color: #000000;
+}
+
+/* Ensure cancel always appears enabled inside modal */
+.profile-modal .profile-modal-btn-row .profile-cancel-btn,
+.profile-modal .sign-in-button-row .profile-cancel-btn {
+  color: #0b1723 !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  text-shadow: none !important;
+}
+
+/* Strong override placed at end to ensure modal cancel matches primary button text */
+.profile-modal .sign-in-button-row .profile-cancel-btn.profile-cancel-btn-light,
+.profile-modal .profile-modal-btn-row .profile-cancel-btn.profile-cancel-btn-light {
+  color: #1a1a1a !important;
+  font-weight: 600 !important;
+}
 /* Filter Button Group Styles */
 .filter-btn-group {
   display: flex;
@@ -164,6 +276,33 @@
   gap: 12px;
   margin-top: 18px;
   justify-content: flex-end;
+}
+
+/* Modal action layout: Cancel left, primary right, equal height */
+.profile-modal .profile-modal-btn-row,
+.profile-modal .sign-in-button-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.profile-modal .profile-modal-btn-row .profile-cancel-btn,
+.profile-modal .sign-in-button-row .profile-cancel-btn,
+.profile-modal .profile-modal-btn-row .sign-in-button-primary,
+.profile-modal .sign-in-button-row .sign-in-button-primary {
+  min-height: 44px;
+  height: 44px;
+  padding: 10px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile-modal .profile-modal-btn-row .profile-cancel-btn {
+  margin-right: auto;
+}
+.profile-modal .profile-modal-btn-row .sign-in-button-primary {
+  margin-left: auto;
 }
 /* Profile edit btn gradient */
 .profile-edit-btn-gradient {
