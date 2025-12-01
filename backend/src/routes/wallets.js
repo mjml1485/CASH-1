@@ -2,6 +2,7 @@ import express from 'express';
 import { verifyToken } from '../middleware/auth.js';
 import Wallet from '../models/Wallet.js';
 import Budget from '../models/Budget.js';
+import { canEditWallet, isOwner } from '../utils/roleCheck.js';
 
 const router = express.Router();
 
@@ -77,19 +78,14 @@ router.put('/:id', verifyToken, async (req, res) => {
     if (!wallet) {
       return res.status(404).json({ error: 'Not Found', message: 'Wallet not found' });
     }
-    const isOwner = wallet.userId === req.user.uid;
+    const userIsOwner = isOwner(wallet, req.user.uid, req.user.email);
     // If updating collaborators or deleting, only owner allowed
-    if ((req.body.collaborators !== undefined || req.body.delete) && !isOwner) {
+    if ((req.body.collaborators !== undefined || req.body.delete) && !userIsOwner) {
       return res.status(403).json({ error: 'Forbidden', message: 'Only the owner can manage collaborators or delete the wallet.' });
     }
-    // For other updates, allow owner or editor
-    let isEditor = false;
-    if (!isOwner && wallet.collaborators && wallet.collaborators.length > 0) {
-      const collab = wallet.collaborators.find(c => c.email === req.user.email);
-      isEditor = collab && collab.role === 'Editor';
-    }
-    if (!isOwner && !isEditor) {
-      return res.status(403).json({ error: 'Forbidden', message: 'Only editors or owner can update wallet.' });
+    // For other updates, allow owner or editor (not viewers)
+    if (!canEditWallet(wallet, req.user.uid, req.user.email)) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Viewers cannot update wallets. Only editors or owner can update wallet.' });
     }
     // Prevent non-owners from updating collaborators
     if (!isOwner && req.body.collaborators !== undefined) {
@@ -114,8 +110,8 @@ router.delete('/:id', verifyToken, async (req, res) => {
     if (!wallet) {
       return res.status(404).json({ error: 'Not Found', message: 'Wallet not found' });
     }
-    const isOwner = wallet.userId === req.user.uid;
-    if (!isOwner) {
+    const userIsOwner = isOwner(wallet, req.user.uid, req.user.email);
+    if (!userIsOwner) {
       return res.status(403).json({ error: 'Forbidden', message: 'Only the owner can delete the wallet.' });
     }
     // If shared wallet, delete associated shared budgets

@@ -3,6 +3,7 @@ import { verifyToken } from '../middleware/auth.js';
 import Transaction from '../models/Transaction.js';
 import Activity from '../models/Activity.js';
 import Wallet from '../models/Wallet.js';
+import { canEditWallet } from '../utils/roleCheck.js';
 
 const router = express.Router();
 
@@ -62,14 +63,8 @@ router.post('/', verifyToken, async (req, res) => {
     if (req.body.walletFrom) {
       const wallet = await Wallet.findOne({ name: req.body.walletFrom });
       if (wallet && wallet.plan === 'Shared') {
-        const isOwner = wallet.userId === req.user.uid;
-        let isEditor = false;
-        if (!isOwner && wallet.collaborators) {
-          const collab = wallet.collaborators.find(c => c.email === req.user.email);
-          isEditor = collab && collab.role === 'Editor';
-        }
-        if (!isOwner && !isEditor) {
-          return res.status(403).json({ error: 'Forbidden', message: 'Only editors or owner can create transactions in shared wallets.' });
+        if (!canEditWallet(wallet, req.user.uid, req.user.email)) {
+          return res.status(403).json({ error: 'Forbidden', message: 'Viewers cannot create transactions. Only editors or owner can create transactions in shared wallets.' });
         }
       }
     }
@@ -145,14 +140,8 @@ router.put('/:id', verifyToken, async (req, res) => {
     if (transaction.walletFrom) {
       const wallet = await Wallet.findOne({ name: transaction.walletFrom });
       if (wallet && wallet.plan === 'Shared') {
-        const isOwner = wallet.userId === req.user.uid;
-        let isEditor = false;
-        if (!isOwner && wallet.collaborators) {
-          const collab = wallet.collaborators.find(c => c.email === req.user.email);
-          isEditor = collab && collab.role === 'Editor';
-        }
-        if (!isOwner && !isEditor) {
-          return res.status(403).json({ error: 'Forbidden', message: 'Only editors or owner can update transactions in shared wallets.' });
+        if (!canEditWallet(wallet, req.user.uid, req.user.email)) {
+          return res.status(403).json({ error: 'Forbidden', message: 'Viewers cannot update transactions. Only editors or owner can update transactions in shared wallets.' });
         }
       }
     } else if (transaction.userId !== req.user.uid) {
@@ -224,14 +213,8 @@ router.delete('/:id', verifyToken, async (req, res) => {
     if (transaction.walletFrom) {
       const wallet = await Wallet.findOne({ name: transaction.walletFrom });
       if (wallet && wallet.plan === 'Shared') {
-        const isOwner = wallet.userId === req.user.uid;
-        let isEditor = false;
-        if (!isOwner && wallet.collaborators) {
-          const collab = wallet.collaborators.find(c => c.email === req.user.email);
-          isEditor = collab && collab.role === 'Editor';
-        }
-        if (!isOwner && !isEditor) {
-          return res.status(403).json({ error: 'Forbidden', message: 'Only editors or owner can delete transactions in shared wallets.' });
+        if (!canEditWallet(wallet, req.user.uid, req.user.email)) {
+          return res.status(403).json({ error: 'Forbidden', message: 'Viewers cannot delete transactions. Only editors or owner can delete transactions in shared wallets.' });
         }
       }
     } else if (transaction.userId !== req.user.uid) {

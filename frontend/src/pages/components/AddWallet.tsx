@@ -342,9 +342,7 @@ export default function AddWallet() {
   }, [editMode, existingWallet]);
 
   useEffect(() => {
-    if (walletPlan === 'Shared' && !editMode) {
-      setShowShareModal(true);
-    } else if (walletPlan === 'Personal') {
+    if (walletPlan === 'Personal') {
       setShowShareModal(false);
       if (!editMode) {
         setCollaborators([]);
@@ -549,7 +547,6 @@ export default function AddWallet() {
       }
     } else if (pendingPlan === 'Shared') {
       setWalletPlan('Shared');
-      setShowShareModal(true);
     }
     setPendingPlan(null);
   };
