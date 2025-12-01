@@ -11,6 +11,7 @@ export interface Wallet {
   id: string;
   name: string;
   plan: 'Personal' | 'Shared';
+  userId?: string;
   collaborators?: Collaborator[];
 }
 
@@ -132,3 +133,67 @@ export const calculateDateRange = (period: string, baseDate: Date = new Date()):
 
   return { startDate, endDate };
 };
+
+// ROLE CHECKING UTILITIES
+
+export type UserRole = 'Owner' | 'Editor' | 'Viewer' | null;
+
+/**
+ * Get user role for a wallet
+ * @param wallet - The wallet object
+ * @param userUid - User's Firebase UID
+ * @param userEmail - User's email
+ * @returns 'Owner', 'Editor', 'Viewer', or null if no access
+ */
+export function getUserRoleForWallet(
+  wallet: Wallet,
+  userUid: string,
+  userEmail: string
+): UserRole {
+  // Check if user is the owner
+  if (wallet.userId === userUid) {
+    return 'Owner';
+  }
+  
+  // Check collaborators
+  if (wallet.collaborators && wallet.collaborators.length > 0) {
+    const collab = wallet.collaborators.find(c => c.email === userEmail);
+    if (collab) {
+      return collab.role as 'Owner' | 'Editor' | 'Viewer';
+    }
+  }
+  
+  return null; // No access
+}
+
+/**
+ * Check if user can edit (Owner or Editor)
+ * @param wallet - The wallet object
+ * @param userUid - User's Firebase UID
+ * @param userEmail - User's email
+ * @returns true if user can edit
+ */
+export function canEditWallet(
+  wallet: Wallet,
+  userUid: string,
+  userEmail: string
+): boolean {
+  const role = getUserRoleForWallet(wallet, userUid, userEmail);
+  return role === 'Owner' || role === 'Editor';
+}
+
+/**
+ * Check if user is owner
+ * @param wallet - The wallet object
+ * @param userUid - User's Firebase UID
+ * @param userEmail - User's email
+ * @returns true if user is owner
+ */
+export function isOwner(
+  wallet: Wallet,
+  userUid: string,
+  userEmail: string
+): boolean {
+  const role = getUserRoleForWallet(wallet, userUid, userEmail);
+  return role === 'Owner';
+}

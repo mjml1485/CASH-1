@@ -1,6 +1,8 @@
 import express from 'express';
 import { verifyToken } from '../middleware/auth.js';
 import Comment from '../models/Comment.js';
+import Wallet from '../models/Wallet.js';
+import { canEditWallet } from '../utils/roleCheck.js';
 
 const router = express.Router();
 
@@ -23,6 +25,22 @@ router.get('/', verifyToken, async (req, res) => {
 // Create comment
 router.post('/', verifyToken, async (req, res) => {
   try {
+    // Check permissions for shared wallet comments
+    if (req.body.walletId) {
+      // Try to find wallet by ID or name
+      const wallet = await Wallet.findOne({
+        $or: [
+          { _id: req.body.walletId },
+          { name: req.body.walletId }
+        ]
+      });
+      if (wallet && wallet.plan === 'Shared') {
+        if (!canEditWallet(wallet, req.user.uid, req.user.email)) {
+          return res.status(403).json({ error: 'Forbidden', message: 'Viewers cannot create comments. Only editors or owner can create comments in shared wallets.' });
+        }
+      }
+    }
+    
     const commentData = {
       ...req.body,
       userId: req.user.uid,

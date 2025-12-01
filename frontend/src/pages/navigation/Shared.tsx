@@ -2,7 +2,7 @@ import { WALLET_TEMPLATES } from '../components/AddWallet';
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { CURRENCY_SYMBOLS, formatAmount, formatAmountNoTrailing, CHART_COLORS, validateAndFormatAmount } from '../../utils/shared';
+import { CURRENCY_SYMBOLS, formatAmount, formatAmountNoTrailing, CHART_COLORS, validateAndFormatAmount, canEditWallet, isOwner, getUserRoleForWallet } from '../../utils/shared';
 import type { Collaborator } from '../../utils/shared';
 import { FaPlus, FaPen, FaUsers, FaRegCommentDots } from 'react-icons/fa';
 // Inlined AddTransaction component from AddTransaction.tsx
@@ -968,6 +968,7 @@ interface Wallet {
   name: string;
   balance: string;
   plan: 'Personal' | 'Shared';
+  userId?: string;
   color1: string;
   color2: string;
   textColor?: string;
@@ -1042,6 +1043,7 @@ export default function Shared() {
         name: w.name,
         balance: w.balance,
         plan: w.plan,
+        userId: w.userId,
         color1: w.color1 || w.backgroundColor || '#e2e8f0',
         color2: w.color2 || w.backgroundColor || '#e2e8f0',
         textColor: w.textColor,
@@ -1116,6 +1118,22 @@ export default function Shared() {
     () => sharedWallets.find(w => w.name === selectedWalletName) || null,
     [sharedWallets, selectedWalletName]
   );
+
+  // Get user role for selected wallet
+  const userRole = useMemo(() => {
+    if (!selectedWallet || !currentUser) return null;
+    return getUserRoleForWallet(selectedWallet, currentUser.id, currentUser.email);
+  }, [selectedWallet, currentUser]);
+
+  const canEdit = useMemo(() => {
+    if (!selectedWallet || !currentUser) return false;
+    return canEditWallet(selectedWallet, currentUser.id, currentUser.email);
+  }, [selectedWallet, currentUser]);
+
+  const userIsOwner = useMemo(() => {
+    if (!selectedWallet || !currentUser) return false;
+    return isOwner(selectedWallet, currentUser.id, currentUser.email);
+  }, [selectedWallet, currentUser]);
 
   useEffect(() => {
     if (selectedWallet) {
@@ -1387,7 +1405,7 @@ export default function Shared() {
                         className="shared-icon-btn shared-icon-btn--compact"
                         onClick={() => openCollaboratorModal('panel')}
                         title={selectedWallet ? `Manage collaborators (${collaboratorCount})` : 'Select a shared wallet first'}
-                        disabled={!selectedWallet}
+                        disabled={!selectedWallet || !userIsOwner}
                         aria-label={selectedWallet ? `Manage collaborators (${collaboratorCount})` : 'Manage collaborators'}
                       >
                         <FaUsers />
@@ -1408,15 +1426,15 @@ export default function Shared() {
                   {selectedWallet && (
                     <>
                       <div
-                        className="shared-wallet-card shared-wallet-card--clickable"
+                        className={`shared-wallet-card ${canEdit ? 'shared-wallet-card--clickable' : ''}`}
                         style={{
                           background: `linear-gradient(135deg, ${selectedWallet.color1} 0%, ${selectedWallet.color2} 100%)`,
                           color: selectedWallet.textColor
                         }}
-                        onClick={() => setShowEditWalletConfirm(true)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowEditWalletConfirm(true); }}
+                        onClick={canEdit ? () => setShowEditWalletConfirm(true) : undefined}
+                        role={canEdit ? "button" : undefined}
+                        tabIndex={canEdit ? 0 : undefined}
+                        onKeyDown={canEdit ? (e) => { if (e.key === 'Enter' || e.key === ' ') setShowEditWalletConfirm(true); } : undefined}
                       >
                         <div className="shared-wallet-header">
                           <div className="shared-wallet-balance-label">Balance</div>
@@ -1471,7 +1489,7 @@ export default function Shared() {
                     className="shared-icon-btn shared-icon-btn--inline"
                     onClick={() => setShowBudgetActionModal(true)}
                     title="Manage shared budgets"
-                    disabled={!selectedWallet}
+                    disabled={!selectedWallet || !canEdit}
                   >
                     <FaPen />
                   </button>
@@ -1499,11 +1517,11 @@ export default function Shared() {
                 {rows.map(r => (
                   <div
                     key={r.id}
-                    className="shared-table-row shared-row-clickable"
-                    onClick={() => {
+                    className={`shared-table-row ${canEdit ? 'shared-row-clickable' : ''}`}
+                    onClick={canEdit ? () => {
                       const b = budgets.find(x => x.id === r.id);
                       if (b) navigate('/add-budget', { state: { returnTo: '/shared', editMode: true, budgetIndex: budgets.findIndex(x => x.id === b.id), budgetData: b, budgetPlan: 'Shared', lockWalletName: selectedWallet?.name } });
-                    }}
+                    } : undefined}
                   >
                     <div>{r.name}</div>
                     <div>{CURRENCY_SYMBOLS[currency]} {formatAmountNoTrailing(String(r.allocated))}</div>
@@ -1538,7 +1556,7 @@ export default function Shared() {
                       setEditTx(null);
                       setShowTxModal(true);
                     }}
-                    disabled={!selectedWallet}
+                    disabled={!selectedWallet || !canEdit}
                   >
                     <FaPlus />
                   </button>
@@ -1551,8 +1569,8 @@ export default function Shared() {
                   {filteredTxForWallet.map(tx => (
                     <div
                       key={tx.id}
-                      className={`shared-tx-item type-${tx.type.toLowerCase()}`}
-                      onClick={() => { setEditTx(tx as AddTransactionType); setShowTxModal(true); }}
+                      className={`shared-tx-item type-${tx.type.toLowerCase()} ${canEdit ? 'shared-tx-item--clickable' : ''}`}
+                      onClick={canEdit ? () => { setEditTx(tx as AddTransactionType); setShowTxModal(true); } : undefined}
                     >
                       <div className="shared-tx-top">
                         <span className="shared-tx-type">{tx.type}</span>
@@ -1688,6 +1706,7 @@ export default function Shared() {
             <div className="budget-modal-buttons">
               <button
                 className="budget-modal-button"
+                disabled={!canEdit}
                 onClick={() => {
                   setShowBudgetActionModal(false);
                   navigate('/add-budget', { state: { returnTo: '/shared', budgetPlan: 'Shared', lockWalletName: selectedWallet.name } });
@@ -1695,7 +1714,7 @@ export default function Shared() {
               >Add New Budget</button>
               <button
                 className="budget-modal-button"
-                disabled={budgetsForSelectedWallet.length === 0}
+                disabled={budgetsForSelectedWallet.length === 0 || !canEdit}
                 onClick={() => {
                   setShowBudgetActionModal(false);
                   setShowBudgetSelectModal(true);
@@ -1719,6 +1738,7 @@ export default function Shared() {
                 <button
                   key={b.id}
                   className="budget-select-item"
+                  disabled={!canEdit}
                   onClick={() => {
                     setShowBudgetSelectModal(false);
                     navigate('/add-budget', { state: { returnTo: '/shared', editMode: true, budgetIndex: budgets.findIndex(x => x.id === b.id), budgetData: b, budgetPlan: 'Shared', lockWalletName: selectedWallet.name } });
