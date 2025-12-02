@@ -144,6 +144,24 @@ export default function Dashboard() {
     };
   }, []);
 
+  // Auto-refresh for collaborators - poll every 3 seconds if there are shared wallets
+  useEffect(() => {
+    const hasSharedWallets = wallets.some(w => w.plan === 'Shared');
+    if (!hasSharedWallets) return; // Don't poll if no shared wallets
+    
+    const pollInterval = setInterval(() => {
+      // Only poll if page is visible (not in background tab)
+      if (document.visibilityState === 'visible') {
+        loadData(false);
+      }
+    }, 3000); // Poll every 3 seconds
+
+    return () => {
+      clearInterval(pollInterval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wallets]);
+
 
   const handleNavigateAddWallet = () => {
     navigate('/add-wallet', { state: { returnTo: '/dashboard' } });

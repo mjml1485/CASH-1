@@ -1,8 +1,8 @@
-import { WALLET_TEMPLATES } from '../components/AddWallet';
+﻿import { WALLET_TEMPLATES } from '../components/AddWallet';
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { CURRENCY_SYMBOLS, formatAmount, formatAmountNoTrailing, CHART_COLORS, validateAndFormatAmount, canEditWallet, isOwner, getUserRoleForWallet } from '../../utils/shared';
+import { CURRENCY_SYMBOLS, formatAmount, formatAmountNoTrailing, CHART_COLORS, validateAndFormatAmount, canEditWallet, isOwner } from '../../utils/shared';
 import type { Collaborator } from '../../utils/shared';
 import { FaPlus, FaPen, FaUsers, FaRegCommentDots } from 'react-icons/fa';
 // Inlined AddTransaction component from AddTransaction.tsx
@@ -26,9 +26,11 @@ export type AddTransactionType = {
   description?: string;
   createdById?: string;
   createdByName?: string;
+  createdByUsername?: string;
   createdAtISO?: string;
   updatedById?: string;
   updatedByName?: string;
+  updatedByUsername?: string;
   updatedAtISO?: string;
 };
 
@@ -44,7 +46,7 @@ interface AddTransactionProps {
   onSaved?: (tx: AddTransactionType) => void;
 }
 
-const TRANSACTION_BASE_CATEGORIES = ['Income','Expense','Food','Shopping','Bills','Car','Custom'] as const;
+const TRANSACTION_BASE_CATEGORIES = ['Food','Shopping','Bills','Car','Custom'] as const;
 
 function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onSaved }: AddTransactionProps) {
   const { currentUser } = useAppState();
@@ -118,12 +120,15 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
         if (defaultWallet) setWalletFrom(defaultWallet); else setWalletFrom('');
       }
       if (editTx) {
-        setType(editTx.type);
+        // If editing a Transfer in shared wallet, change it to Expense (Transfer not allowed in shared wallets)
+        const editType = editTx.type === 'Transfer' && isSharedWallet ? 'Expense' : editTx.type;
+        setType(editType);
         setAmount(editTx.amount);
         try { setDateISO(new Date(editTx.dateISO).toISOString().slice(0,16)); } catch { setDateISO(v); }
         setCategory(editTx.category || '');
         setWalletFrom(editTx.walletFrom);
-        setWalletTo(editTx.walletTo || '');
+        // Clear walletTo if it was a Transfer in shared wallet
+        setWalletTo(editTx.type === 'Transfer' && isSharedWallet ? '' : (editTx.walletTo || ''));
         setDescription(editTx.description || '');
       }
     } else {
@@ -199,18 +204,31 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!type) errs.type = 'Select a type.';
+    // Prevent Transfer in shared wallets
+    if (type === 'Transfer' && isSharedWallet) {
+      errs.type = 'Transfer is not allowed in shared wallets.';
+    }
     const amt = parseFloat(amount || '0') || 0;
     if (amt <= 0) errs.amount = 'Enter a valid amount.';
     if (!dateISO) errs.date = 'Select a date.';
     if (!walletFrom) errs.walletFrom = 'Select a wallet.';
-    if (type === 'Transfer' && !walletTo) errs.walletTo = 'Select destination wallet.';
+    if (type === 'Transfer' && !isSharedWallet && !walletTo) errs.walletTo = 'Select destination wallet.';
     if (type === 'Expense' && !(category || customCategory)) errs.category = 'Select a category.';
+    if (type === 'Income' && !(category || customCategory)) errs.category = 'Select a category.';
 
     // Overspending checks
     if (type === 'Expense' && amt > 0 && walletFrom) {
       const wallet = wallets.find(w => w.name === walletFrom);
-      if (wallet && amt > parseFloat(wallet.balance)) {
-        errs.amount = 'Amount exceeds wallet balance.';
+      if (wallet) {
+        let effectiveBalance = parseFloat(wallet.balance);
+        // If editing, add back the original transaction amount to get effective balance
+        if (editTx && editTx.id && editTx.type === 'Expense') {
+          const originalAmount = parseFloat(editTx.amount || '0');
+          effectiveBalance += originalAmount;
+        }
+        if (amt > effectiveBalance) {
+          errs.amount = 'Amount exceeds wallet balance.';
+        }
       }
       // Check budget
       const chosenCategory = customCategory || category;
@@ -221,8 +239,19 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
         return isMatch && (isPersonal || isSharedMatch);
       });
       if (budget) {
-        const left = parseFloat(budget.left ?? budget.amount ?? '0') || 0;
-        if (amt > left) {
+        let effectiveLeft = parseFloat(budget.left ?? budget.amount ?? '0') || 0;
+        // If editing an expense with the same category, add back the original amount
+        if (editTx && editTx.id && editTx.type === 'Expense') {
+          // Get the original category (custom categories are stored directly in category field)
+          const originalCategory = (editTx.category || '').toLowerCase();
+          const currentCategory = chosenCategory.toLowerCase();
+          // If categories match, add back the original amount to budget
+          if (originalCategory === currentCategory) {
+            const originalAmount = parseFloat(editTx.amount || '0');
+            effectiveLeft += originalAmount;
+          }
+        }
+        if (amt > effectiveLeft) {
           errs.amount = 'Amount exceeds budget limit.';
         }
       }
@@ -308,7 +337,8 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
             await budgetServiceAddTx.updateBudget(b.id || b._id || '', { left: nextLeft });
           }
         }
-      } else if (type === 'Transfer') {
+      } else if (type === 'Transfer' && !isSharedWallet) {
+        // Transfer only allowed in personal wallets
         const walletFromData = walletsData.find(w => w.name === walletFrom);
         if (walletFromData) {
           const newBalance = (parseFloat(walletFromData.balance) - amt).toFixed(2);
@@ -341,7 +371,7 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
       dateISO: new Date(dateISO).toISOString(),
       category: chosenCategory,
       walletFrom,
-      walletTo: type === 'Transfer' ? walletTo : undefined,
+      walletTo: type === 'Transfer' && !isSharedWallet ? walletTo : undefined,
       description,
       createdById: editTx?.createdById || actorId,
       createdByName: editTx?.createdByName || actorName,
@@ -397,11 +427,11 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
             <div className="tx-audit">
               <div className="tx-audit-row">
                 <span className="tx-audit-label">Created by</span>
-                <span className="tx-audit-value">{editTx.createdByName || 'Not recorded'}  b7 {formatAuditStamp(editTx.createdAtISO || editTx.dateISO)}</span>
+                <span className="tx-audit-value">{editTx.createdByUsername || editTx.createdByName || 'Not recorded'} | {formatAuditStamp(editTx.createdAtISO || editTx.dateISO)}</span>
               </div>
               <div className="tx-audit-row">
                 <span className="tx-audit-label">Last updated by</span>
-                <span className="tx-audit-value">{editTx.updatedByName || editTx.createdByName || 'Not recorded'}  b7 {formatAuditStamp(editTx.updatedAtISO || editTx.dateISO)}</span>
+                <span className="tx-audit-value">{editTx.updatedByUsername || editTx.createdByUsername || editTx.updatedByName || editTx.createdByName || 'Not recorded'} | {formatAuditStamp(editTx.updatedAtISO || editTx.createdAtISO || editTx.dateISO)}</span>
               </div>
             </div>
           )}
@@ -411,10 +441,25 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
               <div className={`tx-select-display ${errors.type ? 'input-error' : ''}`} onClick={(e) => e.preventDefault()}>
                 <span>{type}</span>
               </div>
-              <select value={type} onChange={(e) => setType(e.target.value as 'Income' | 'Expense' | 'Transfer')} className="tx-hidden-select">
+              <select 
+                value={type} 
+                onChange={(e) => {
+                  const newType = e.target.value as 'Income' | 'Expense' | 'Transfer';
+                  // Prevent Transfer in shared wallets
+                  if (newType === 'Transfer' && isSharedWallet) {
+                    return; // Don't allow Transfer selection
+                  }
+                  setType(newType);
+                  // Clear walletTo if changing away from Transfer
+                  if (newType !== 'Transfer') {
+                    setWalletTo('');
+                  }
+                }} 
+                className="tx-hidden-select"
+              >
                 <option value="Expense">Expense</option>
                 <option value="Income">Income</option>
-                <option value="Transfer">Transfer</option>
+                {!isSharedWallet && <option value="Transfer">Transfer</option>}
               </select>
               <button type="button" className="tx-select-arrow" onClick={(e) => handleDropdownClick(e, 'type')} aria-label="Change type">
                 <FaChevronDownAddTx />
@@ -499,7 +544,7 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
             <input
               type="text"
               inputMode="decimal"
-              placeholder="0.00"
+              placeholder="0"
               value={amount ? formatAmount(amount) : amount}
               onChange={(e) => {
                 const cleaned = validateAndFormatAmount(e.target.value);
@@ -536,7 +581,7 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
             {errors.walletFrom && <div className="error-text">{errors.walletFrom}</div>}
           </div>
 
-          {type === 'Transfer' && (
+          {type === 'Transfer' && !isSharedWallet && (
             <div className="tx-field">
               <label>Destination Wallet</label>
               <div className="tx-select">
@@ -997,8 +1042,14 @@ const mapTransactionData = (t: any): Transaction => ({
   walletFrom: t.walletFrom,
   walletTo: t.walletTo,
   description: t.description,
-  createdAtISO: t.createdAtISO?.toString() || '',
-  updatedAtISO: t.updatedAtISO?.toString() || ''
+  createdById: t.createdById,
+  createdByName: t.createdByName,
+  createdByUsername: t.createdByUsername,
+  createdAtISO: t.createdAtISO ? (typeof t.createdAtISO === 'string' ? t.createdAtISO : t.createdAtISO.toISOString()) : '',
+  updatedById: t.updatedById,
+  updatedByName: t.updatedByName,
+  updatedByUsername: t.updatedByUsername,
+  updatedAtISO: t.updatedAtISO ? (typeof t.updatedAtISO === 'string' ? t.updatedAtISO : t.updatedAtISO.toISOString()) : ''
 });
 
 export default function Shared() {
@@ -1106,6 +1157,22 @@ export default function Shared() {
     };
   }, [reloadFinancialData]);
 
+  // Auto-refresh for collaborators - poll every 3 seconds when viewing shared wallets
+  useEffect(() => {
+    if (sharedWallets.length === 0) return; // Don't poll if no shared wallets
+    
+    const pollInterval = setInterval(() => {
+      // Only poll if page is visible (not in background tab)
+      if (document.visibilityState === 'visible') {
+        reloadFinancialData();
+      }
+    }, 3000); // Poll every 3 seconds
+
+    return () => {
+      clearInterval(pollInterval);
+    };
+  }, [sharedWallets.length, reloadFinancialData]);
+
   useEffect(() => {
     if (sharedWallets.length > 0 && !selectedWalletName) {
       setSelectedWalletName(sharedWallets[0].name);
@@ -1120,11 +1187,6 @@ export default function Shared() {
   );
 
   // Get user role for selected wallet
-  const userRole = useMemo(() => {
-    if (!selectedWallet || !currentUser) return null;
-    return getUserRoleForWallet(selectedWallet, currentUser.id, currentUser.email);
-  }, [selectedWallet, currentUser]);
-
   const canEdit = useMemo(() => {
     if (!selectedWallet || !currentUser) return false;
     return canEditWallet(selectedWallet, currentUser.id, currentUser.email);
@@ -1753,3 +1815,4 @@ export default function Shared() {
     </>
   );
 }
+

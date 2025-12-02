@@ -44,7 +44,7 @@ interface AddTransactionProps {
   onSaved?: (tx: AddTransactionType) => void;
 }
 
-const TRANSACTION_BASE_CATEGORIES = ['Income','Expense','Food','Shopping','Bills','Car','Custom'] as const;
+const TRANSACTION_BASE_CATEGORIES = ['Food','Shopping','Bills','Car','Custom'] as const;
 
 function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onSaved }: AddTransactionProps) {
   const { currentUser } = useAppState();
@@ -206,13 +206,21 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
     if (!dateISO) errs.date = 'Select a date.';
     if (!walletFrom) errs.walletFrom = 'Select a wallet.';
     if (type === 'Transfer' && !walletTo) errs.walletTo = 'Select destination wallet.';
-    if (type === 'Expense' && !(category || customCategory)) errs.category = 'Select a category.';
+    if ((type === 'Expense' || type === 'Income') && !(category || customCategory)) errs.category = 'Select a category.';
 
     // Overspending checks
     if (type === 'Expense' && amt > 0 && walletFrom) {
       const wallet = wallets.find(w => w.name === walletFrom);
-      if (wallet && amt > parseFloat(wallet.balance)) {
-        errs.amount = 'Amount exceeds wallet balance.';
+      if (wallet) {
+        let effectiveBalance = parseFloat(wallet.balance);
+        // If editing, add back the original transaction amount to get effective balance
+        if (editTx && editTx.id && editTx.type === 'Expense') {
+          const originalAmount = parseFloat(editTx.amount || '0');
+          effectiveBalance += originalAmount;
+        }
+        if (amt > effectiveBalance) {
+          errs.amount = 'Amount exceeds wallet balance.';
+        }
       }
       // Check budget
       const chosenCategory = customCategory || category;
@@ -223,8 +231,19 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
         return isMatch && (isPersonal || isSharedMatch);
       });
       if (budget) {
-        const left = parseFloat(budget.left ?? budget.amount ?? '0') || 0;
-        if (amt > left) {
+        let effectiveLeft = parseFloat(budget.left ?? budget.amount ?? '0') || 0;
+        // If editing an expense with the same category, add back the original amount
+        if (editTx && editTx.id && editTx.type === 'Expense') {
+          // Get the original category (custom categories are stored directly in category field)
+          const originalCategory = (editTx.category || '').toLowerCase();
+          const currentCategory = chosenCategory.toLowerCase();
+          // If categories match, add back the original amount to budget
+          if (originalCategory === currentCategory) {
+            const originalAmount = parseFloat(editTx.amount || '0');
+            effectiveLeft += originalAmount;
+          }
+        }
+        if (amt > effectiveLeft) {
           errs.amount = 'Amount exceeds budget limit.';
         }
       }
@@ -501,7 +520,7 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
             <input
               type="text"
               inputMode="decimal"
-              placeholder="0.00"
+              placeholder="0"
               value={amount ? formatAmount(amount) : amount}
               onChange={(e) => {
                 const cleaned = validateAndFormatAmount(e.target.value);
@@ -737,6 +756,23 @@ export default function Personal() {
       window.removeEventListener('data-updated', handler as EventListener);
     };
   }, []);
+
+  // Auto-refresh for collaborators - poll every 3 seconds if viewing a shared wallet
+  useEffect(() => {
+    const hasSharedWallet = selectedWallet && selectedWallet.plan === 'Shared';
+    if (!hasSharedWallet) return; // Don't poll if not viewing a shared wallet
+    
+    const pollInterval = setInterval(() => {
+      // Only poll if page is visible (not in background tab)
+      if (document.visibilityState === 'visible') {
+        reloadFinancialData(false);
+      }
+    }, 3000); // Poll every 3 seconds
+
+    return () => {
+      clearInterval(pollInterval);
+    };
+  }, [selectedWallet, reloadFinancialData]);
 
   useEffect(() => {
     if (personalWallets.length > 0 && !selectedWalletName) {

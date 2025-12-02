@@ -16,9 +16,11 @@ export interface Transaction {
   description?: string;
   createdById?: string;
   createdByName?: string;
+  createdByUsername?: string;
   createdAtISO?: string | Date;
   updatedById?: string;
   updatedByName?: string;
+  updatedByUsername?: string;
   updatedAtISO?: string | Date;
 }
 

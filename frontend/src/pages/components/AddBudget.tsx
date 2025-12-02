@@ -874,7 +874,7 @@ export default function AddBudget() {
               <input
                 type="text"
                 inputMode="decimal"
-                placeholder={budgetAmount || !hasInteracted.amount ? '0.00' : ''}
+                placeholder={budgetAmount || !hasInteracted.amount ? '0' : ''}
                 value={budgetAmount ? formatAmount(budgetAmount) : budgetAmount}
                 onChange={(e) => { setErrors(prev => ({...prev, amount: ''})); handleAmountChange(e); }}
                 onFocus={() => setHasInteracted(prev => ({ ...prev, amount: true }))}

@@ -3,6 +3,7 @@ import { verifyToken } from '../middleware/auth.js';
 import Transaction from '../models/Transaction.js';
 import Activity from '../models/Activity.js';
 import Wallet from '../models/Wallet.js';
+import User from '../models/User.js';
 import { canEditWallet } from '../utils/roleCheck.js';
 
 const router = express.Router();
@@ -68,6 +69,17 @@ router.post('/', verifyToken, async (req, res) => {
         }
       }
     }
+    // Get username from User model
+    let username = req.user.name;
+    try {
+      const user = await User.findOne({ firebaseUid: req.user.uid });
+      if (user && user.username) {
+        username = user.username;
+      }
+    } catch (err) {
+      console.error('Failed to fetch username:', err);
+    }
+    
     const transactionData = {
       ...req.body,
       userId: req.user.uid,
@@ -76,8 +88,10 @@ router.post('/', verifyToken, async (req, res) => {
       updatedAtISO: new Date(),
       createdById: req.user.uid,
       createdByName: req.user.name,
+      createdByUsername: username,
       updatedById: req.user.uid,
-      updatedByName: req.user.name
+      updatedByName: req.user.name,
+      updatedByUsername: username
     };
     const transaction = new Transaction(transactionData);
     await transaction.save();
@@ -147,11 +161,28 @@ router.put('/:id', verifyToken, async (req, res) => {
     } else if (transaction.userId !== req.user.uid) {
       return res.status(403).json({ error: 'Forbidden', message: 'Access denied' });
     }
+    // Get username from User model
+    let username = req.user.name;
+    try {
+      const user = await User.findOne({ firebaseUid: req.user.uid });
+      if (user && user.username) {
+        username = user.username;
+      }
+    } catch (err) {
+      console.error('Failed to fetch username:', err);
+    }
+    
     const updateData = {
       ...req.body,
       updatedAtISO: new Date(),
       updatedById: req.user.uid,
-      updatedByName: req.user.name
+      updatedByName: req.user.name,
+      updatedByUsername: username,
+      // Preserve original createdBy fields - don't allow them to be overwritten
+      createdById: transaction.createdById || req.user.uid,
+      createdByName: transaction.createdByName || req.user.name,
+      createdByUsername: transaction.createdByUsername || username,
+      createdAtISO: transaction.createdAtISO || transaction.createdAt || new Date()
     };
     if (updateData.dateISO) updateData.dateISO = new Date(updateData.dateISO);
     const updatedTransaction = await Transaction.findOneAndUpdate(

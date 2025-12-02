@@ -13,9 +13,11 @@ const TransactionSchema = new Schema({
   description: { type: String, default: '' },
   createdById: { type: String },
   createdByName: { type: String },
+  createdByUsername: { type: String },
   createdAtISO: { type: Date },
   updatedById: { type: String },
   updatedByName: { type: String },
+  updatedByUsername: { type: String },
   updatedAtISO: { type: Date }
 }, { timestamps: true });
 
