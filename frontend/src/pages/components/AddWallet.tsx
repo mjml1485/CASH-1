@@ -680,7 +680,7 @@ export default function AddWallet() {
                 <input
                   type="text"
                     inputMode="decimal"
-                    placeholder={walletBalance || !hasInteracted.balance ? '0.00' : ''}
+                    placeholder={walletBalance || !hasInteracted.balance ? '0' : ''}
                     value={walletBalance ? formatAmount(walletBalance) : walletBalance}
                     onChange={(e) => { setErrors(prev => ({...prev, balance: ''})); handleBalanceChange(e); }}
                   onFocus={() => setHasInteracted(prev => ({ ...prev, balance: true }))}

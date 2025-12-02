@@ -46,11 +46,13 @@ export const DEFAULT_TEXT_COLOR = '#ffffff';
 // SHARED UTILITY FUNCTIONS
 
 export const formatAmount = (value: string): string => {
-  if (!value) return '0.00';
+  if (!value) return '0';
   const parts = value.split('.');
   const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   const decimalPart = parts[1] ? `.${parts[1]}` : '';
-  return integerPart + decimalPart;
+  const result = integerPart + decimalPart;
+  // Remove trailing .00
+  return result.replace(/\.00$/, '');
 };
 
 export const formatAmountNoTrailing = (value: string): string => {
