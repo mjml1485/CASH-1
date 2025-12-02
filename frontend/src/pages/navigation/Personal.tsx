@@ -757,6 +757,19 @@ export default function Personal() {
     };
   }, []);
 
+  useEffect(() => {
+    if (personalWallets.length > 0 && !selectedWalletName) {
+      setSelectedWalletName(personalWallets[0].name);
+    } else if (personalWallets.length === 0) {
+      setSelectedWalletName('');
+    }
+  }, [personalWallets, selectedWalletName]);
+
+  const selectedWallet = useMemo(
+    () => personalWallets.find(w => w.name === selectedWalletName) || null,
+    [personalWallets, selectedWalletName]
+  );
+
   // Auto-refresh for collaborators - poll every 3 seconds if viewing a shared wallet
   useEffect(() => {
     const hasSharedWallet = selectedWallet && selectedWallet.plan === 'Shared';
@@ -773,19 +786,6 @@ export default function Personal() {
       clearInterval(pollInterval);
     };
   }, [selectedWallet, reloadFinancialData]);
-
-  useEffect(() => {
-    if (personalWallets.length > 0 && !selectedWalletName) {
-      setSelectedWalletName(personalWallets[0].name);
-    } else if (personalWallets.length === 0) {
-      setSelectedWalletName('');
-    }
-  }, [personalWallets, selectedWalletName]);
-
-  const selectedWallet = useMemo(
-    () => personalWallets.find(w => w.name === selectedWalletName) || null,
-    [personalWallets, selectedWalletName]
-  );
 
   const budgetsForSelectedWallet = useMemo(() => {
     if (!selectedWallet) return [] as Budget[];
