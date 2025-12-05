@@ -1,6 +1,8 @@
 import express from 'express';
 import { verifyToken } from '../middleware/auth.js';
 import User from '../models/User.js';
+import Follow from '../models/Follow.js';
+import Notification from '../models/Notification.js';
 
 const router = express.Router();
 
@@ -21,7 +23,7 @@ router.get('/search', verifyToken, async (req, res) => {
           ]
         }
       ]
-    }).select('firebaseUid name username email').limit(10);
+    }).select('firebaseUid name username email avatar bio').limit(10);
     res.json({ success: true, users });
   } catch (err) {
     console.error('Search users error:', err?.message || err);
@@ -187,6 +189,103 @@ router.post('/me/username', verifyToken, async (req, res) => {
       return res.status(409).json({ error: 'Conflict', message: 'Username already exists' });
     }
     res.status(500).json({ error: 'Internal Server Error', message: 'Failed to change username' });
+  }
+});
+
+// Follow endpoints
+router.post('/:userId/follow', verifyToken, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const { userId } = req.params; // firebaseUid of the user to follow
+
+    if (uid === userId) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Cannot follow yourself' });
+    }
+
+    // Check if user to follow exists
+    const userToFollow = await User.findOne({ firebaseUid: userId });
+    if (!userToFollow) {
+      return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    }
+
+    // Check if already following
+    const existingFollow = await Follow.findOne({ followerId: uid, followingId: userId });
+    if (existingFollow) {
+      return res.status(409).json({ error: 'Conflict', message: 'Already following this user' });
+    }
+
+    // Create follow relationship
+    await Follow.create({ followerId: uid, followingId: userId });
+
+    // Get current user info for notification
+    const currentUser = await User.findOne({ firebaseUid: uid });
+    
+    // Create notification for the user being followed
+    await Notification.create({
+      userId: userId,
+      type: 'follow',
+      actorId: uid,
+      actorName: currentUser?.name || 'Someone',
+      actorUsername: currentUser?.username || 'user',
+      read: false
+    });
+
+    res.json({ success: true, message: 'User followed successfully' });
+  } catch (err) {
+    console.error('Follow user error:', err?.message || err);
+    if (err && err.code === 11000) {
+      return res.status(409).json({ error: 'Conflict', message: 'Already following this user' });
+    }
+    res.status(500).json({ error: 'Internal Server Error', message: 'Failed to follow user' });
+  }
+});
+
+router.delete('/:userId/follow', verifyToken, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const { userId } = req.params; // firebaseUid of the user to unfollow
+
+    const follow = await Follow.findOneAndDelete({ followerId: uid, followingId: userId });
+    if (!follow) {
+      return res.status(404).json({ error: 'Not Found', message: 'Follow relationship not found' });
+    }
+
+    res.json({ success: true, message: 'User unfollowed successfully' });
+  } catch (err) {
+    console.error('Unfollow user error:', err?.message || err);
+    res.status(500).json({ error: 'Internal Server Error', message: 'Failed to unfollow user' });
+  }
+});
+
+router.get('/me/following', verifyToken, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const follows = await Follow.find({ followerId: uid });
+    const followingIds = follows.map(f => f.followingId);
+    
+    const users = await User.find({ firebaseUid: { $in: followingIds } })
+      .select('firebaseUid name username email avatar bio');
+    
+    res.json({ success: true, users });
+  } catch (err) {
+    console.error('Get following error:', err?.message || err);
+    res.status(500).json({ error: 'Internal Server Error', message: 'Failed to get following list' });
+  }
+});
+
+router.get('/me/followers', verifyToken, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const follows = await Follow.find({ followingId: uid });
+    const followerIds = follows.map(f => f.followerId);
+    
+    const users = await User.find({ firebaseUid: { $in: followerIds } })
+      .select('firebaseUid name username email avatar bio');
+    
+    res.json({ success: true, users });
+  } catch (err) {
+    console.error('Get followers error:', err?.message || err);
+    res.status(500).json({ error: 'Internal Server Error', message: 'Failed to get followers list' });
   }
 });
 

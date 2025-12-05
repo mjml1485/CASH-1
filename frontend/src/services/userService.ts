@@ -15,6 +15,26 @@ export interface UserProfile {
   updatedAt: any;
 }
 
+export interface FollowUser {
+  firebaseUid: string;
+  name: string;
+  username: string;
+  email: string;
+  avatar?: string;
+  bio?: string;
+}
+
+export interface UserNotification {
+  _id: string;
+  userId: string;
+  type: 'follow' | 'follow_back';
+  actorId: string;
+  actorName: string;
+  actorUsername: string;
+  read: boolean;
+  createdAt: string;
+}
+
 export const createOrUpdateProfileBackend = async (profile: { name?: string; username?: string }) => {
   try {
     const { getIdToken } = await import('./authService');
@@ -43,7 +63,6 @@ export const fetchProfileBackend = async () => {
     return res.data.user;
   } catch (err: any) {
     if (err.response?.status === 404) {
-      // Profile not found, return default
       return { onboardingCompleted: false };
     }
     console.warn('fetchProfileBackend failed', err);
@@ -123,6 +142,7 @@ export const searchUsers = async (query: string) => {
     throw err;
   }
 };
+
 export const markOnboardingCompleted = async () => {
   try {
     const { getIdToken } = await import('./authService');
@@ -138,3 +158,137 @@ export const markOnboardingCompleted = async () => {
   }
 };
 
+export const followUser = async (userId: string) => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+    const res = await axios.post(`${API_URL}/api/users/${userId}/follow`, {}, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (err) {
+    console.warn('followUser failed', err);
+    throw err;
+  }
+};
+
+export const unfollowUser = async (userId: string) => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+    const res = await axios.delete(`${API_URL}/api/users/${userId}/follow`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (err) {
+    console.warn('unfollowUser failed', err);
+    throw err;
+  }
+};
+
+export const getFollowing = async (): Promise<FollowUser[]> => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+    const res = await axios.get(`${API_URL}/api/users/me/following`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.users;
+  } catch (err) {
+    console.warn('getFollowing failed', err);
+    throw err;
+  }
+};
+
+export const getFollowers = async (): Promise<FollowUser[]> => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+    const res = await axios.get(`${API_URL}/api/users/me/followers`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.users;
+  } catch (err) {
+    console.warn('getFollowers failed', err);
+    throw err;
+  }
+};
+
+export const getNotifications = async (): Promise<UserNotification[]> => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+    const res = await axios.get(`${API_URL}/api/notifications`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.notifications;
+  } catch (err) {
+    console.warn('getNotifications failed', err);
+    throw err;
+  }
+};
+
+export const getUnreadNotificationCount = async (): Promise<number> => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+    const res = await axios.get(`${API_URL}/api/notifications/unread-count`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.count;
+  } catch (err) {
+    console.warn('getUnreadNotificationCount failed', err);
+    return 0;
+  }
+};
+
+export const markNotificationAsRead = async (notificationId: string) => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+    const res = await axios.put(`${API_URL}/api/notifications/${notificationId}/read`, {}, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (err) {
+    console.warn('markNotificationAsRead failed', err);
+    throw err;
+  }
+};
+
+export const markAllNotificationsAsRead = async () => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+    const res = await axios.put(`${API_URL}/api/notifications/read-all`, {}, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (err) {
+    console.warn('markAllNotificationsAsRead failed', err);
+    throw err;
+  }
+};
+
+export const followBackFromNotification = async (notificationId: string) => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+    const res = await axios.post(`${API_URL}/api/notifications/${notificationId}/follow-back`, {}, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (err) {
+    console.warn('followBackFromNotification failed', err);
+    throw err;
+  }
+};

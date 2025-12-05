@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { FaCamera, FaSearch, FaTimes, FaArrowLeft, FaSignOutAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
-import { fetchProfileBackend, updateProfileBackend, createOrUpdateProfileBackend } from '../../services/userService';
+import { fetchProfileBackend, updateProfileBackend, createOrUpdateProfileBackend, searchUsers, followUser, unfollowUser, getFollowing, getFollowers } from '../../services/userService';
 
 interface UserProfile {
   id: string;
@@ -32,22 +32,13 @@ interface UserProfile {
 }
 
 interface Connection {
-  id: string;
+  firebaseUid: string;
   name: string;
   email: string;
+  username: string;
   avatar?: string;
   bio?: string;
 }
-
-const ALL_USERS: Connection[] = [
-  { id: '1', name: 'Alice Johnson', email: 'alice@example.com', bio: 'Budget enthusiast 💰' },
-  { id: '2', name: 'Bob Smith', email: 'bob@example.com', bio: 'Saving for the future' },
-  { id: '3', name: 'Carol White', email: 'carol@example.com', bio: 'Finance blogger' },
-  { id: '4', name: 'David Lee', email: 'david@example.com', bio: 'Investment tracker' },
-  { id: '5', name: 'Emma Davis', email: 'emma@example.com', bio: 'Money management coach' },
-  { id: '6', name: 'Frank Wilson', email: 'frank@example.com', bio: 'Crypto trader' },
-  { id: '7', name: 'Grace Taylor', email: 'grace@example.com', bio: 'Personal finance advisor' },
-];
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -93,6 +84,7 @@ export default function Profile() {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Connection[]>([]);
+  const [isLoadingFollow, setIsLoadingFollow] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -165,11 +157,34 @@ export default function Profile() {
       }
     })();
 
-    // Followers/Following can stay in sessionStorage for now (social features)
-    const storedFollowers = sessionStorage.getItem('followers');
-    const storedFollowing = sessionStorage.getItem('following');
-    if (storedFollowers) setFollowers(JSON.parse(storedFollowers));
-    if (storedFollowing) setFollowing(JSON.parse(storedFollowing));
+    // Load followers and following from API
+    const loadFollowData = async () => {
+      try {
+        const [followersData, followingData] = await Promise.all([
+          getFollowers().catch(() => []),
+          getFollowing().catch(() => [])
+        ]);
+        setFollowers(followersData.map(u => ({
+          firebaseUid: u.firebaseUid,
+          name: u.name,
+          email: u.email,
+          username: u.username,
+          avatar: u.avatar,
+          bio: u.bio
+        })));
+        setFollowing(followingData.map(u => ({
+          firebaseUid: u.firebaseUid,
+          name: u.name,
+          email: u.email,
+          username: u.username,
+          avatar: u.avatar,
+          bio: u.bio
+        })));
+      } catch (err) {
+        console.error('Failed to load follow data:', err);
+      }
+    };
+    loadFollowData();
   }, [currentUser]);
 
   const handleTabChange = (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements') => {
@@ -384,36 +399,69 @@ export default function Profile() {
     setEditMode(false);
   };
 
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    if (query.trim()) {
-      const results = ALL_USERS.filter(user => 
-        user.name.toLowerCase().includes(query.toLowerCase()) ||
-        user.email.toLowerCase().includes(query.toLowerCase())
-      ).filter(user => !following.some(f => f.id === user.id));
-      setSearchResults(results);
+    if (query.trim().length > 0) {
+      try {
+        const results = await searchUsers(query);
+        // Filter out users already being followed
+        const followingIds = new Set(following.map(f => f.firebaseUid));
+        const filteredResults = results
+          .filter((user: { firebaseUid: string }) => !followingIds.has(user.firebaseUid))
+          .map((user: { firebaseUid: string; name?: string; username: string; email: string; avatar?: string; bio?: string }) => ({
+            firebaseUid: user.firebaseUid,
+            name: user.name || user.username || 'User',
+            email: user.email,
+            username: user.username,
+            avatar: user.avatar,
+            bio: user.bio
+          }));
+        setSearchResults(filteredResults);
+      } catch (err) {
+        console.error('Search failed:', err);
+        setSearchResults([]);
+      }
     } else {
       setSearchResults([]);
     }
   };
 
-  const handleFollow = (user: Connection) => {
-    const newFollowing = [...following, user];
-    setFollowing(newFollowing);
-    sessionStorage.setItem('following', JSON.stringify(newFollowing));
-    setSearchResults(searchResults.filter(u => u.id !== user.id));
+  const handleFollow = async (user: Connection) => {
+    if (isLoadingFollow) return;
+    setIsLoadingFollow(true);
+    try {
+      await followUser(user.firebaseUid);
+      const newFollowing = [...following, user];
+      setFollowing(newFollowing);
+      setSearchResults(searchResults.filter(u => u.firebaseUid !== user.firebaseUid));
+    } catch (err: any) {
+      console.error('Follow failed:', err);
+      alert(err?.response?.data?.message || 'Failed to follow user');
+    } finally {
+      setIsLoadingFollow(false);
+    }
   };
 
-  const handleUnfollow = (userId: string) => {
-    const newFollowing = following.filter(f => f.id !== userId);
-    setFollowing(newFollowing);
-    sessionStorage.setItem('following', JSON.stringify(newFollowing));
+  const handleUnfollow = async (userId: string) => {
+    if (isLoadingFollow) return;
+    setIsLoadingFollow(true);
+    try {
+      await unfollowUser(userId);
+      const newFollowing = following.filter(f => f.firebaseUid !== userId);
+      setFollowing(newFollowing);
+    } catch (err: any) {
+      console.error('Unfollow failed:', err);
+      alert(err?.response?.data?.message || 'Failed to unfollow user');
+    } finally {
+      setIsLoadingFollow(false);
+    }
   };
 
-  const handleRemoveFollower = (userId: string) => {
-    const newFollowers = followers.filter(f => f.id !== userId);
+  const handleRemoveFollower = async (userId: string) => {
+    // Note: This is a soft remove - we just remove from the list
+    // In a real app, you might want to block the user
+    const newFollowers = followers.filter(f => f.firebaseUid !== userId);
     setFollowers(newFollowers);
-    sessionStorage.setItem('followers', JSON.stringify(newFollowers));
   };
 
   const handleLogout = async () => {
@@ -882,7 +930,7 @@ export default function Profile() {
                 </div>
               ) : (
                 followers.map((follower) => (
-                  <div key={follower.id} className="profile-user-item">
+                  <div key={follower.firebaseUid} className="profile-user-item">
                     <div className="profile-user-avatar">
                       {follower.avatar ? (
                         <img src={follower.avatar} alt={follower.name} />
@@ -894,10 +942,10 @@ export default function Profile() {
                     </div>
                     <div className="profile-user-info">
                       <p className="profile-user-name">{follower.name}</p>
-                      <p className="profile-user-email">{follower.email}</p>
+                      <p className="profile-user-email">@{follower.username}</p>
                       {follower.bio && <p className="profile-user-bio">{follower.bio}</p>}
                     </div>
-                    <button className="profile-btn-remove" onClick={() => handleRemoveFollower(follower.id)}>
+                    <button className="profile-btn-remove" onClick={() => handleRemoveFollower(follower.firebaseUid)}>
                       Remove
                     </button>
                   </div>
@@ -926,7 +974,7 @@ export default function Profile() {
                 </div>
               ) : (
                 following.map((user) => (
-                  <div key={user.id} className="profile-user-item">
+                  <div key={user.firebaseUid} className="profile-user-item">
                     <div className="profile-user-avatar">
                       {user.avatar ? (
                         <img src={user.avatar} alt={user.name} />
@@ -938,11 +986,11 @@ export default function Profile() {
                     </div>
                     <div className="profile-user-info">
                       <p className="profile-user-name">{user.name}</p>
-                      <p className="profile-user-email">{user.email}</p>
+                      <p className="profile-user-email">@{user.username}</p>
                       {user.bio && <p className="profile-user-bio">{user.bio}</p>}
                     </div>
-                    <button className="profile-btn-unfollow" onClick={() => handleUnfollow(user.id)}>
-                      Unfollow
+                    <button className="profile-btn-unfollow" onClick={() => handleUnfollow(user.firebaseUid)} disabled={isLoadingFollow}>
+                      {isLoadingFollow ? '...' : 'Unfollow'}
                     </button>
                   </div>
                 ))
@@ -986,7 +1034,7 @@ export default function Profile() {
                 </div>
               ) : (
                 searchResults.map((user) => (
-                  <div key={user.id} className="profile-user-item">
+                  <div key={user.firebaseUid} className="profile-user-item">
                     <div className="profile-user-avatar">
                       {user.avatar ? (
                         <img src={user.avatar} alt={user.name} />
@@ -998,11 +1046,11 @@ export default function Profile() {
                     </div>
                     <div className="profile-user-info">
                       <p className="profile-user-name">{user.name}</p>
-                      <p className="profile-user-email">{user.email}</p>
+                      <p className="profile-user-email">@{user.username}</p>
                       {user.bio && <p className="profile-user-bio">{user.bio}</p>}
                     </div>
-                    <button className="profile-btn-follow" onClick={() => handleFollow(user)}>
-                      Follow
+                    <button className="profile-btn-follow" onClick={() => handleFollow(user)} disabled={isLoadingFollow}>
+                      {isLoadingFollow ? '...' : 'Follow'}
                     </button>
                   </div>
                 ))

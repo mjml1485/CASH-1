@@ -10,6 +10,7 @@ import transactionsRoutes from './routes/transactions.js';
 import commentsRoutes from './routes/comments.js';
 import customCategoriesRoutes from './routes/customCategories.js';
 import settingsRoutes from './routes/settings.js';
+import notificationsRoutes from './routes/notifications.js';
 import connectDB from './config/db.js';
 
 dotenv.config();
@@ -43,6 +44,7 @@ app.use('/api/transactions', transactionsRoutes);
 app.use('/api/comments', commentsRoutes);
 app.use('/api/custom-categories', customCategoriesRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // 404 handler
 app.use((req, res) => {
