@@ -1,6 +1,6 @@
 ﻿import { WALLET_TEMPLATES } from '../components/AddWallet';
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { CURRENCY_SYMBOLS, formatAmount, formatAmountNoTrailing, CHART_COLORS, validateAndFormatAmount, canEditWallet, isOwner } from '../../utils/shared';
 import type { Collaborator } from '../../utils/shared';
@@ -421,6 +421,11 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
       <div className="tx-modal">
         <div className="tx-modal-header">
           <h3>{editTx ? 'Edit Transaction' : 'Add Transaction'}</h3>
+          {editTx && (
+            <button type="button" className="tx-btn tx-btn-danger tx-btn-header" onClick={handleDelete} title="Delete transaction" aria-label="Delete transaction">
+              <FiTrashAddTx />
+            </button>
+          )}
         </div>
         <div className="tx-modal-body">
           {isSharedWallet && editTx && (
@@ -611,11 +616,6 @@ function AddTransaction({ isOpen, onClose, defaultWallet, editTx, onDeleted, onS
         </div>
         <div className="tx-modal-footer">
           <div className="tx-footer-left">
-            {editTx && (
-              <button type="button" className="tx-btn tx-btn-danger" onClick={handleDelete} title="Delete transaction" aria-label="Delete transaction">
-                <FiTrashAddTx />
-              </button>
-            )}
             <button type="button" className="tx-btn tx-btn-ghost" onClick={onClose} aria-label="Cancel">Cancel</button>
           </div>
           <div className="tx-footer-right">
@@ -1054,6 +1054,7 @@ const mapTransactionData = (t: any): Transaction => ({
 
 export default function Shared() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activePage, setActivePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements'>('Shared Plan');
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -1174,12 +1175,48 @@ export default function Shared() {
   }, [sharedWallets.length, reloadFinancialData]);
 
   useEffect(() => {
-    if (sharedWallets.length > 0 && !selectedWalletName) {
+    // Handle navigation state (from Dashboard or other pages)
+    const state = location.state as { selectedWalletName?: string; editTransactionId?: string } | null;
+    if (state?.selectedWalletName) {
+      setSelectedWalletName(state.selectedWalletName);
+    } else if (sharedWallets.length > 0 && !selectedWalletName) {
       setSelectedWalletName(sharedWallets[0].name);
     } else if (sharedWallets.length === 0) {
       setSelectedWalletName('');
     }
-  }, [sharedWallets, selectedWalletName]);
+  }, [sharedWallets, selectedWalletName, location.state]);
+
+  // Handle opening transaction in edit mode from navigation state
+  useEffect(() => {
+    const state = location.state as { editTransactionId?: string } | null;
+    if (state?.editTransactionId && transactions.length > 0) {
+      const txToEdit = transactions.find(t => (t.id || t._id) === state.editTransactionId);
+      if (txToEdit) {
+        const editTxData: AddTransactionType = {
+          id: txToEdit.id || txToEdit._id || '',
+          type: txToEdit.type,
+          amount: txToEdit.amount,
+          dateISO: typeof txToEdit.dateISO === 'string' ? txToEdit.dateISO : new Date(txToEdit.dateISO).toISOString(),
+          category: txToEdit.category,
+          walletFrom: txToEdit.walletFrom,
+          walletTo: txToEdit.walletTo,
+          description: txToEdit.description,
+          createdById: txToEdit.createdById,
+          createdByName: txToEdit.createdByName,
+          createdByUsername: txToEdit.createdByUsername,
+          createdAtISO: typeof txToEdit.createdAtISO === 'string' ? txToEdit.createdAtISO : txToEdit.createdAtISO?.toISOString?.() || '',
+          updatedById: txToEdit.updatedById,
+          updatedByName: txToEdit.updatedByName,
+          updatedByUsername: txToEdit.updatedByUsername,
+          updatedAtISO: typeof txToEdit.updatedAtISO === 'string' ? txToEdit.updatedAtISO : txToEdit.updatedAtISO?.toISOString?.() || ''
+        };
+        setEditTx(editTxData);
+        setShowTxModal(true);
+        // Clear the state to prevent reopening on re-render
+        navigate(location.pathname, { replace: true, state: { selectedWalletName } });
+      }
+    }
+  }, [location.state, transactions, navigate, location.pathname, selectedWalletName]);
 
   const selectedWallet = useMemo(
     () => sharedWallets.find(w => w.name === selectedWalletName) || null,

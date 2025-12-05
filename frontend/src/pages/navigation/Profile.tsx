@@ -38,10 +38,7 @@ interface Connection {
   username: string;
   avatar?: string;
   bio?: string;
-}
-
-interface SearchResult extends Connection {
-  relationship: 'none' | 'following' | 'followed_by' | 'friends';
+  relationship?: 'none' | 'following' | 'followed_by' | 'friends';
 }
 
 export default function Profile() {
@@ -87,10 +84,8 @@ export default function Profile() {
   const [showFollowingModal, setShowFollowingModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<Connection[]>([]);
   const [isLoadingFollow, setIsLoadingFollow] = useState(false);
-  const [showSearchUnfollowModal, setShowSearchUnfollowModal] = useState(false);
-  const [searchUnfollowTarget, setSearchUnfollowTarget] = useState<SearchResult | null>(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -410,34 +405,17 @@ export default function Profile() {
     if (query.trim().length > 0) {
       try {
         const results = await searchUsers(query);
-        // Include relationship info for each user
-        const followingIds = new Set(following.map(f => f.firebaseUid));
-        const followerIds = new Set(followers.map(f => f.firebaseUid));
-        
-        const resultsWithRelationship: SearchResult[] = results.map((user: { firebaseUid: string; name?: string; username: string; email: string; avatar?: string; bio?: string }) => {
-          const isFollowing = followingIds.has(user.firebaseUid);
-          const isFollowedBy = followerIds.has(user.firebaseUid);
-          
-          let relationship: 'none' | 'following' | 'followed_by' | 'friends' = 'none';
-          if (isFollowing && isFollowedBy) {
-            relationship = 'friends';
-          } else if (isFollowing) {
-            relationship = 'following';
-          } else if (isFollowedBy) {
-            relationship = 'followed_by';
-          }
-          
-          return {
-            firebaseUid: user.firebaseUid,
-            name: user.name || user.username || 'User',
-            email: user.email,
-            username: user.username,
-            avatar: user.avatar,
-            bio: user.bio,
-            relationship
-          };
-        });
-        setSearchResults(resultsWithRelationship);
+        // Map results with relationship status (no filtering - show all users including friends)
+        const mappedResults = results.map((user: { firebaseUid: string; name?: string; username: string; email: string; avatar?: string; bio?: string; relationship?: 'none' | 'following' | 'followed_by' | 'friends' }) => ({
+          firebaseUid: user.firebaseUid,
+          name: user.name || user.username || 'User',
+          email: user.email,
+          username: user.username,
+          avatar: user.avatar,
+          bio: user.bio,
+          relationship: user.relationship || 'none'
+        }));
+        setSearchResults(mappedResults);
       } catch (err) {
         console.error('Search failed:', err);
         setSearchResults([]);
@@ -447,57 +425,30 @@ export default function Profile() {
     }
   };
 
-  const handleFollow = async (user: Connection | SearchResult) => {
+  const handleFollow = async (user: Connection) => {
     if (isLoadingFollow) return;
     setIsLoadingFollow(true);
     try {
       await followUser(user.firebaseUid);
-      const newFollowing = [...following, { 
-        firebaseUid: user.firebaseUid, 
-        name: user.name, 
-        email: user.email, 
-        username: user.username, 
-        avatar: user.avatar, 
-        bio: user.bio 
-      }];
-      setFollowing(newFollowing);
-      
-      // Update search results relationship
-      setSearchResults(prev => prev.map(u => {
-        if (u.firebaseUid !== user.firebaseUid) return u;
-        // Check if they follow us
-        const isFollowedBy = followers.some(f => f.firebaseUid === user.firebaseUid);
-        return { ...u, relationship: isFollowedBy ? 'friends' : 'following' };
-      }));
+      // Update relationship in search results
+      setSearchResults(searchResults.map(u => 
+        u.firebaseUid === user.firebaseUid 
+          ? { ...u, relationship: u.relationship === 'followed_by' ? 'friends' : 'following' as const }
+          : u
+      ));
+      // Reload following list to keep it in sync
+      const followingData = await getFollowing();
+      setFollowing(followingData.map(u => ({
+        firebaseUid: u.firebaseUid,
+        name: u.name,
+        email: u.email,
+        username: u.username,
+        avatar: u.avatar,
+        bio: u.bio
+      })));
     } catch (err: any) {
       console.error('Follow failed:', err);
       alert(err?.response?.data?.message || 'Failed to follow user');
-    } finally {
-      setIsLoadingFollow(false);
-    }
-  };
-
-  const handleSearchUnfollow = async () => {
-    if (!searchUnfollowTarget || isLoadingFollow) return;
-    setIsLoadingFollow(true);
-    try {
-      await unfollowUser(searchUnfollowTarget.firebaseUid);
-      const newFollowing = following.filter(f => f.firebaseUid !== searchUnfollowTarget.firebaseUid);
-      setFollowing(newFollowing);
-      
-      // Update search results relationship
-      setSearchResults(prev => prev.map(u => {
-        if (u.firebaseUid !== searchUnfollowTarget.firebaseUid) return u;
-        // Check if they still follow us
-        const isFollowedBy = followers.some(f => f.firebaseUid === searchUnfollowTarget.firebaseUid);
-        return { ...u, relationship: isFollowedBy ? 'followed_by' : 'none' };
-      }));
-      
-      setShowSearchUnfollowModal(false);
-      setSearchUnfollowTarget(null);
-    } catch (err: any) {
-      console.error('Unfollow failed:', err);
-      alert(err?.response?.data?.message || 'Failed to unfollow user');
     } finally {
       setIsLoadingFollow(false);
     }
@@ -508,6 +459,12 @@ export default function Profile() {
     setIsLoadingFollow(true);
     try {
       await unfollowUser(userId);
+      // Update relationship in search results if user is in search results
+      setSearchResults(searchResults.map(u => 
+        u.firebaseUid === userId 
+          ? { ...u, relationship: u.relationship === 'friends' ? 'followed_by' : 'none' as const }
+          : u
+      ));
       const newFollowing = following.filter(f => f.firebaseUid !== userId);
       setFollowing(newFollowing);
     } catch (err: any) {
@@ -516,6 +473,10 @@ export default function Profile() {
     } finally {
       setIsLoadingFollow(false);
     }
+  };
+
+  const handleUnfollowFromSearch = async (user: Connection) => {
+    await handleUnfollow(user.firebaseUid);
   };
 
   const handleRemoveFollower = async (userId: string) => {
@@ -1112,78 +1073,79 @@ export default function Profile() {
                   <span>Try a different search term</span>
                 </div>
               ) : (
-                searchResults.map((user) => (
-                  <div key={user.firebaseUid} className="profile-user-item profile-user-item-clickable">
-                    <div 
-                      className="profile-user-clickable-area"
-                      onClick={() => { setShowSearchModal(false); navigate(`/user/${user.firebaseUid}`); }}
-                    >
-                      <div className="profile-user-avatar">
-                        {user.avatar ? (
-                          <img src={user.avatar} alt={user.name} />
-                        ) : (
-                          <div className="profile-user-avatar-placeholder">
-                            {user.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-                      <div className="profile-user-info">
-                        <p className="profile-user-name">{user.name}</p>
-                        <p className="profile-user-email">@{user.username}</p>
-                        {user.bio && <p className="profile-user-bio">{user.bio}</p>}
-                      </div>
-                    </div>
-                    {user.relationship === 'none' && (
-                      <button className="profile-btn-follow" onClick={(e) => { e.stopPropagation(); handleFollow(user); }} disabled={isLoadingFollow}>
-                        {isLoadingFollow ? '...' : 'Follow'}
-                      </button>
-                    )}
-                    {user.relationship === 'followed_by' && (
-                      <button className="profile-btn-follow" onClick={(e) => { e.stopPropagation(); handleFollow(user); }} disabled={isLoadingFollow}>
-                        {isLoadingFollow ? '...' : 'Follow back'}
-                      </button>
-                    )}
-                    {user.relationship === 'following' && (
-                      <button className="profile-btn-following" onClick={(e) => { e.stopPropagation(); setSearchUnfollowTarget(user); setShowSearchUnfollowModal(true); }} disabled={isLoadingFollow}>
-                        Following
-                      </button>
-                    )}
-                    {user.relationship === 'friends' && (
-                      <button className="profile-btn-friends" onClick={(e) => { e.stopPropagation(); setSearchUnfollowTarget(user); setShowSearchUnfollowModal(true); }} disabled={isLoadingFollow}>
-                        ✓ Friends
-                      </button>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+                searchResults.map((user) => {
+                  const getButton = () => {
+                    const relationship = user.relationship || 'none';
+                    switch (relationship) {
+                      case 'friends':
+                        return (
+                          <button 
+                            className="profile-btn-friends" 
+                            onClick={(e) => { e.stopPropagation(); handleUnfollowFromSearch(user); }} 
+                            disabled={isLoadingFollow}
+                          >
+                            {isLoadingFollow ? '...' : '✓ Friends'}
+                          </button>
+                        );
+                      case 'following':
+                        return (
+                          <button 
+                            className="profile-btn-following" 
+                            onClick={(e) => { e.stopPropagation(); handleUnfollowFromSearch(user); }} 
+                            disabled={isLoadingFollow}
+                          >
+                            {isLoadingFollow ? '...' : 'Following'}
+                          </button>
+                        );
+                      case 'followed_by':
+                        return (
+                          <button 
+                            className="profile-btn-follow-back" 
+                            onClick={(e) => { e.stopPropagation(); handleFollow(user); }} 
+                            disabled={isLoadingFollow}
+                          >
+                            {isLoadingFollow ? '...' : 'Follow back'}
+                          </button>
+                        );
+                      default:
+                        return (
+                          <button 
+                            className="profile-btn-follow" 
+                            onClick={(e) => { e.stopPropagation(); handleFollow(user); }} 
+                            disabled={isLoadingFollow}
+                          >
+                            {isLoadingFollow ? '...' : 'Follow'}
+                          </button>
+                        );
+                    }
+                  };
 
-      {/* Search Unfollow Confirmation Modal */}
-      {showSearchUnfollowModal && searchUnfollowTarget && (
-        <div className="wallet-modal-overlay" role="dialog" aria-modal="true">
-          <div className="wallet-modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="wallet-modal-title">Unfollow @{searchUnfollowTarget.username}?</h3>
-            <p className="wallet-confirm-text">
-              Are you sure you want to unfollow <strong>{searchUnfollowTarget.name}</strong>?
-            </p>
-            <div className="wallet-confirm-actions">
-              <button 
-                className="wallet-modal-btn secondary" 
-                onClick={() => { setShowSearchUnfollowModal(false); setSearchUnfollowTarget(null); }}
-                disabled={isLoadingFollow}
-              >
-                Cancel
-              </button>
-              <button 
-                className="wallet-modal-btn" 
-                onClick={handleSearchUnfollow}
-                disabled={isLoadingFollow}
-              >
-                {isLoadingFollow ? 'Unfollowing...' : 'Unfollow'}
-              </button>
+                  return (
+                    <div key={user.firebaseUid} className="profile-user-item profile-user-item-clickable">
+                      <div 
+                        className="profile-user-clickable-area"
+                        onClick={() => { setShowSearchModal(false); navigate(`/user/${user.firebaseUid}`); }}
+                      >
+                        <div className="profile-user-avatar">
+                          {user.avatar ? (
+                            <img src={user.avatar} alt={user.name} />
+                          ) : (
+                            <div className="profile-user-avatar-placeholder">
+                              {user.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div className="profile-user-info">
+                          <p className="profile-user-name">{user.name}</p>
+                          <p className="profile-user-email">@{user.username}</p>
+                          {user.bio && <p className="profile-user-bio">{user.bio}</p>}
+                        </div>
+                      </div>
+                      {getButton()}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

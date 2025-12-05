@@ -6,6 +6,8 @@ import { formatAmountNoTrailing, CURRENCY_SYMBOLS, DEFAULT_TEXT_COLOR } from '..
 import Navbar from '../components/Navbar';
 import * as walletService from '../../services/walletService';
 import * as budgetService from '../../services/budgetService';
+import * as transactionService from '../../services/transactionService';
+import type { Transaction } from '../../services/transactionService';
 import { useCurrency } from '../../hooks/useCurrency';
 
 interface Wallet {
@@ -37,6 +39,7 @@ export default function Dashboard() {
   const [activePage, setActivePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements'>('Dashboard');
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const { currency } = useCurrency();
   const [hiddenWallets, setHiddenWallets] = useState<Set<string>>(new Set());
   const [settings, setSettings] = useState<settingsService.UserSettings | null>(null);
@@ -78,9 +81,10 @@ export default function Dashboard() {
     }
 
     try {
-      const [walletsData, budgetsData] = await Promise.all([
+      const [walletsData, budgetsData, transactionsData] = await Promise.all([
         walletService.getWallets().catch(() => []),
-        budgetService.getBudgets().catch(() => [])
+        budgetService.getBudgets().catch(() => []),
+        transactionService.getTransactions().catch(() => [])
       ]);
 
       setWallets(walletsData.map(w => ({
@@ -105,6 +109,14 @@ export default function Dashboard() {
         endDate: b.endDate ? new Date(b.endDate).toISOString() : undefined,
         left: b.left,
         plan: b.plan
+      })));
+
+      setTransactions(transactionsData.map(t => ({
+        ...t,
+        id: t.id || t._id || '',
+        dateISO: typeof t.dateISO === 'string' ? t.dateISO : new Date(t.dateISO).toISOString(),
+        createdAtISO: typeof t.createdAtISO === 'string' ? t.createdAtISO : t.createdAtISO?.toISOString?.() || '',
+        updatedAtISO: typeof t.updatedAtISO === 'string' ? t.updatedAtISO : t.updatedAtISO?.toISOString?.() || ''
       })));
     } catch (err) {
       console.error('Failed to load data:', err);
@@ -178,6 +190,58 @@ export default function Dashboard() {
     if (page === 'Shared Plan') navigate('/shared');
     if (page === 'Achievements') navigate('/achievements');
   };
+
+  // Determine if a transaction is Personal or Shared based on wallet
+  const getTransactionPlan = (tx: Transaction): 'Personal' | 'Shared' => {
+    const wallet = wallets.find(w => w.name === tx.walletFrom);
+    return wallet?.plan || 'Personal';
+  };
+
+  // Handle transaction click - navigate to appropriate page and open in edit mode
+  const handleTransactionClick = (tx: Transaction) => {
+    const plan = getTransactionPlan(tx);
+    const txId = tx.id || tx._id || '';
+    if (plan === 'Personal') {
+      navigate('/personal', { 
+        state: { 
+          selectedWalletName: tx.walletFrom,
+          editTransactionId: txId
+        } 
+      });
+    } else {
+      navigate('/shared', { 
+        state: { 
+          selectedWalletName: tx.walletFrom,
+          editTransactionId: txId
+        } 
+      });
+    }
+  };
+
+  // Format date for display
+  const formatTransactionDate = (dateISO: string | Date) => {
+    try {
+      const date = typeof dateISO === 'string' ? new Date(dateISO) : dateISO;
+      return new Intl.DateTimeFormat(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      }).format(date);
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
+  // Get recent transactions sorted by date (most recent first), limited to 10
+  const recentTransactions = transactions
+    .sort((a, b) => {
+      const dateA = typeof a.dateISO === 'string' ? new Date(a.dateISO) : a.dateISO;
+      const dateB = typeof b.dateISO === 'string' ? new Date(b.dateISO) : b.dateISO;
+      return dateB.getTime() - dateA.getTime();
+    })
+    .slice(0, 10);
 
   return (
     <div className="dashboard-container">
@@ -366,9 +430,42 @@ export default function Dashboard() {
           <div className="dashboard-bottom-grid">
             <section className="dashboard-box">
               <h3 className="dashboard-box-title">Recent Transactions</h3>
-              <div className="dashboard-box-empty">
-                <p>No transactions found</p>
-              </div>
+              {recentTransactions.length === 0 ? (
+                <div className="dashboard-box-empty">
+                  <p>No transactions found</p>
+                </div>
+              ) : (
+                <div className="dashboard-transactions-list">
+                  {recentTransactions.map(tx => {
+                    const plan = getTransactionPlan(tx);
+                    const txId = tx.id || tx._id || '';
+                    return (
+                      <div 
+                        key={txId} 
+                        className={`dashboard-transaction-item dashboard-transaction-item-${tx.type.toLowerCase()}`}
+                        onClick={() => handleTransactionClick(tx)}
+                      >
+                        <div className="dashboard-transaction-header">
+                          <div className="dashboard-transaction-left">
+                            <span className="dashboard-transaction-type">{tx.type}</span>
+                            <span className="dashboard-transaction-plan">{plan}</span>
+                          </div>
+                          <span className="dashboard-transaction-amount">
+                            {CURRENCY_SYMBOLS[currency]} {formatAmountNoTrailing(tx.amount)}
+                          </span>
+                        </div>
+                        <div className="dashboard-transaction-footer">
+                          <span className="dashboard-transaction-category">{tx.category || '—'}</span>
+                          <span className="dashboard-transaction-date">{formatTransactionDate(tx.dateISO)}</span>
+                        </div>
+                        {tx.description && (
+                          <div className="dashboard-transaction-description">{tx.description}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </section>
 
             <section className="dashboard-box">

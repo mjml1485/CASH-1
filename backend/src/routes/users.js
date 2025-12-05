@@ -9,13 +9,14 @@ const router = express.Router();
 router.get('/search', verifyToken, async (req, res) => {
   try {
     const { q } = req.query;
+    const { uid } = req.user;
     if (!q || q.trim().length < 1) {
       return res.json({ success: true, users: [] });
     }
     const query = q.trim();
     const users = await User.find({
       $and: [
-        { firebaseUid: { $ne: req.user.uid } }, // Exclude current user
+        { firebaseUid: { $ne: uid } }, // Exclude current user
         {
           $or: [
             { username: { $regex: query, $options: 'i' } },
@@ -24,7 +25,30 @@ router.get('/search', verifyToken, async (req, res) => {
         }
       ]
     }).select('firebaseUid name username email avatar bio').limit(10);
-    res.json({ success: true, users });
+
+    // Add relationship status to each user
+    const usersWithRelationship = await Promise.all(
+      users.map(async (user) => {
+        const userObj = user.toObject();
+        // Check if current user follows this user
+        const isFollowing = await Follow.findOne({ followerId: uid, followingId: user.firebaseUid });
+        // Check if this user follows current user
+        const isFollowedBy = await Follow.findOne({ followerId: user.firebaseUid, followingId: uid });
+
+        let relationship = 'none';
+        if (isFollowing && isFollowedBy) {
+          relationship = 'friends';
+        } else if (isFollowing) {
+          relationship = 'following';
+        } else if (isFollowedBy) {
+          relationship = 'followed_by';
+        }
+
+        return { ...userObj, relationship };
+      })
+    );
+
+    res.json({ success: true, users: usersWithRelationship });
   } catch (err) {
     console.error('Search users error:', err?.message || err);
     res.status(500).json({ error: 'Internal Server Error', message: 'Failed to search users' });
