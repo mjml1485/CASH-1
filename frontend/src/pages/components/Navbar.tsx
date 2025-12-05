@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { FaBell, FaUser, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { getNotifications, getUnreadNotificationCount, markNotificationAsRead, markAllNotificationsAsRead, followBackFromNotification } from '../../services/userService';
+import { getNotifications, getUnreadNotificationCount, markAllNotificationsAsRead, followBackFromNotification, unfollowUser } from '../../services/userService';
 
 interface UserNotification {
   _id: string;
@@ -12,6 +12,7 @@ interface UserNotification {
   actorUsername: string;
   read: boolean;
   createdAt: string;
+  relationship: 'none' | 'following' | 'followed_by' | 'friends';
 }
 
 interface NavbarProps {
@@ -24,6 +25,10 @@ export default function Navbar({ activePage, onPageChange }: NavbarProps) {
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
+  const [showUnfollowModal, setShowUnfollowModal] = useState(false);
+  const [unfollowTarget, setUnfollowTarget] = useState<UserNotification | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
 
   const loadNotifications = async () => {
@@ -59,40 +64,71 @@ export default function Navbar({ activePage, onPageChange }: NavbarProps) {
     }
   }, [showNotifications]);
 
-  const handleNotificationClick = async (notification: UserNotification, navigateToProfile: boolean = false) => {
-    if (!notification.read) {
-      try {
-        await markNotificationAsRead(notification._id);
-        setNotifications(prev => prev.map(n => n._id === notification._id ? { ...n, read: true } : n));
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      } catch (err) {
-        console.error('Failed to mark notification as read:', err);
+  // When opening notifications: capture unread IDs for highlighting, then mark all as read
+  const handleOpenNotifications = async () => {
+    if (!showNotifications) {
+      // Capture which notifications are currently unread for highlighting
+      const unreadIds = new Set(notifications.filter(n => !n.read).map(n => n._id));
+      setHighlightedIds(unreadIds);
+      
+      // Mark all as read in the background
+      if (unreadIds.size > 0) {
+        try {
+          await markAllNotificationsAsRead();
+          setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+          setUnreadCount(0);
+        } catch (err) {
+          console.error('Failed to mark all as read:', err);
+        }
       }
+    } else {
+      // When closing, clear highlights
+      setHighlightedIds(new Set());
     }
-    if (navigateToProfile) {
-      setShowNotifications(false);
-      navigate(`/user/${notification.actorId}`);
-    }
+    setShowNotifications(!showNotifications);
+  };
+
+  const handleNotificationClick = (notification: UserNotification) => {
+    setShowNotifications(false);
+    setHighlightedIds(new Set());
+    navigate(`/user/${notification.actorId}`);
   };
 
   const handleFollowBack = async (notification: UserNotification) => {
+    if (isLoading) return;
+    setIsLoading(true);
     try {
       await followBackFromNotification(notification._id);
-      // Reload notifications to update state
+      // Reload notifications to update relationship
       await loadNotifications();
     } catch (err: any) {
       console.error('Failed to follow back:', err);
       alert(err?.response?.data?.message || 'Failed to follow back');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleMarkAllRead = async () => {
+  const handleUnfollowClick = (e: React.MouseEvent, notification: UserNotification) => {
+    e.stopPropagation();
+    setUnfollowTarget(notification);
+    setShowUnfollowModal(true);
+  };
+
+  const handleConfirmUnfollow = async () => {
+    if (!unfollowTarget || isLoading) return;
+    setIsLoading(true);
     try {
-      await markAllNotificationsAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      setUnreadCount(0);
-    } catch (err) {
-      console.error('Failed to mark all as read:', err);
+      await unfollowUser(unfollowTarget.actorId);
+      // Reload notifications to update relationship
+      await loadNotifications();
+      setShowUnfollowModal(false);
+      setUnfollowTarget(null);
+    } catch (err: any) {
+      console.error('Failed to unfollow:', err);
+      alert(err?.response?.data?.message || 'Failed to unfollow');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -111,98 +147,147 @@ export default function Navbar({ activePage, onPageChange }: NavbarProps) {
     return date.toLocaleDateString();
   };
 
+  const renderNotificationButton = (notification: UserNotification) => {
+    // Show Follow back only if they follow you but you don't follow them
+    if (notification.relationship === 'followed_by') {
+      return (
+        <button 
+          className="navbar-notification-follow-back"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleFollowBack(notification);
+          }}
+          disabled={isLoading}
+        >
+          {isLoading ? '...' : 'Follow back'}
+        </button>
+      );
+    }
+    
+    // Show Friends/Following button with unfollow option
+    if (notification.relationship === 'friends' || notification.relationship === 'following') {
+      return (
+        <button 
+          className="navbar-notification-friends"
+          onClick={(e) => handleUnfollowClick(e, notification)}
+          disabled={isLoading}
+        >
+          {notification.relationship === 'friends' ? '✓ Friends' : 'Following'}
+        </button>
+      );
+    }
+    
+    // If relationship is 'none', they unfollowed you - no button needed
+    return null;
+  };
+
   return (
-    <nav className="navbar">
-      <div className="navbar-brand">CASH</div>
-      <div className="navbar-menu">
-        <button
-          className={`navbar-link ${activePage === 'Dashboard' ? 'active' : ''}`}
-          onClick={() => onPageChange('Dashboard')}
-        >
-          Dashboard
-        </button>
-        <button
-          className={`navbar-link ${activePage === 'Personal Plan' ? 'active' : ''}`}
-          onClick={() => onPageChange('Personal Plan')}
-        >
-          Personal Plan
-        </button>
-        <button
-          className={`navbar-link ${activePage === 'Shared Plan' ? 'active' : ''}`}
-          onClick={() => onPageChange('Shared Plan')}
-        >
-          Shared Plan
-        </button>
-        <button
-          className={`navbar-link ${activePage === 'Achievements' ? 'active' : ''}`}
-          onClick={() => onPageChange('Achievements')}
-        >
-          Achievements
-        </button>
-      </div>
-      <div className="navbar-actions">
-        <div className="navbar-notification-wrapper" ref={notificationRef}>
-          <button 
-            className={`navbar-icon ${unreadCount > 0 ? 'navbar-icon-has-notifications' : ''}`} 
-            aria-label="Notifications"
-            onClick={() => setShowNotifications(!showNotifications)}
+    <>
+      <nav className="navbar">
+        <div className="navbar-brand">CASH</div>
+        <div className="navbar-menu">
+          <button
+            className={`navbar-link ${activePage === 'Dashboard' ? 'active' : ''}`}
+            onClick={() => onPageChange('Dashboard')}
           >
-          <FaBell />
-            {unreadCount > 0 && <span className="navbar-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+            Dashboard
           </button>
-          {showNotifications && (
-            <div className="navbar-notifications-dropdown">
-              <div className="navbar-notifications-header">
-                <h3>Notifications</h3>
-                {unreadCount > 0 && (
-                  <button className="navbar-mark-all-read" onClick={handleMarkAllRead}>
-                    Mark all as read
-                  </button>
-                )}
-                <button className="navbar-notifications-close" onClick={() => setShowNotifications(false)}>
-                  <FaTimes />
-                </button>
-              </div>
-              <div className="navbar-notifications-content">
-                {notifications.length === 0 ? (
-                  <div className="navbar-notifications-empty">
-                    <p>No notifications</p>
-                  </div>
-                ) : (
-                  notifications.map((notification) => (
-                    <div 
-                      key={notification._id} 
-                      className={`navbar-notification-item ${!notification.read ? 'navbar-notification-unread' : ''}`}
-                      onClick={() => handleNotificationClick(notification, true)}
-                    >
-                      <div className="navbar-notification-item-content">
-                        <p className="navbar-notification-text">
-                          <strong>@{notification.actorUsername}</strong> followed you
-                        </p>
-                        <span className="navbar-notification-time">{formatTimeAgo(notification.createdAt)}</span>
-                      </div>
-                      {!notification.read && (
-                        <button 
-                          className="navbar-notification-follow-back"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleFollowBack(notification);
-                          }}
-                        >
-                          Follow back
-                        </button>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+          <button
+            className={`navbar-link ${activePage === 'Personal Plan' ? 'active' : ''}`}
+            onClick={() => onPageChange('Personal Plan')}
+          >
+            Personal Plan
+          </button>
+          <button
+            className={`navbar-link ${activePage === 'Shared Plan' ? 'active' : ''}`}
+            onClick={() => onPageChange('Shared Plan')}
+          >
+            Shared Plan
+          </button>
+          <button
+            className={`navbar-link ${activePage === 'Achievements' ? 'active' : ''}`}
+            onClick={() => onPageChange('Achievements')}
+          >
+            Achievements
+          </button>
         </div>
-        <button className="navbar-icon" aria-label="Profile" onClick={() => navigate('/profile')}>
-          <FaUser />
-        </button>
-      </div>
-    </nav>
+        <div className="navbar-actions">
+          <div className="navbar-notification-wrapper" ref={notificationRef}>
+            <button 
+              className={`navbar-icon ${unreadCount > 0 ? 'navbar-icon-has-notifications' : ''}`} 
+              aria-label="Notifications"
+              onClick={handleOpenNotifications}
+            >
+              <FaBell />
+              {unreadCount > 0 && <span className="navbar-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+            </button>
+            {showNotifications && (
+              <div className="navbar-notifications-dropdown">
+                <div className="navbar-notifications-header">
+                  <h3>Notifications</h3>
+                  <button className="navbar-notifications-close" onClick={() => { setShowNotifications(false); setHighlightedIds(new Set()); }}>
+                    <FaTimes />
+                  </button>
+                </div>
+                <div className="navbar-notifications-content">
+                  {notifications.length === 0 ? (
+                    <div className="navbar-notifications-empty">
+                      <p>No notifications</p>
+                    </div>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div 
+                        key={notification._id} 
+                        className={`navbar-notification-item ${highlightedIds.has(notification._id) ? 'navbar-notification-unread' : ''}`}
+                        onClick={() => handleNotificationClick(notification)}
+                      >
+                        <div className="navbar-notification-item-content">
+                          <p className="navbar-notification-text">
+                            <strong>@{notification.actorUsername}</strong> followed you
+                          </p>
+                          <span className="navbar-notification-time">{formatTimeAgo(notification.createdAt)}</span>
+                        </div>
+                        {renderNotificationButton(notification)}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          <button className="navbar-icon" aria-label="Profile" onClick={() => navigate('/profile')}>
+            <FaUser />
+          </button>
+        </div>
+      </nav>
+
+      {/* Unfollow Confirmation Modal */}
+      {showUnfollowModal && unfollowTarget && (
+        <div className="wallet-modal-overlay" role="dialog" aria-modal="true">
+          <div className="wallet-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="wallet-modal-title">Unfollow @{unfollowTarget.actorUsername}?</h3>
+            <p className="wallet-confirm-text">
+              Are you sure you want to unfollow <strong>{unfollowTarget.actorName}</strong>? You will no longer be friends.
+            </p>
+            <div className="wallet-confirm-actions">
+              <button 
+                className="wallet-modal-btn secondary" 
+                onClick={() => { setShowUnfollowModal(false); setUnfollowTarget(null); }}
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+              <button 
+                className="wallet-modal-btn" 
+                onClick={handleConfirmUnfollow}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Unfollowing...' : 'Unfollow'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

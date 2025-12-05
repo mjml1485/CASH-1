@@ -604,6 +604,25 @@
   transform: translateY(1px);
 }
 
+.navbar-notification-friends {
+  background: #f1f5f9;
+  color: #64748b;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  margin-left: 12px;
+}
+
+.navbar-notification-friends:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
 /* SIGN UP */
 .sign-up-page {
   display: flex;
@@ -5710,7 +5729,7 @@ h1, h2, h3, h4, h5, h6,
 /* User Items */
 .profile-user-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 14px;
   padding: 16px 24px;
   transition: all 0.3s;
@@ -5723,7 +5742,7 @@ h1, h2, h3, h4, h5, h6,
 
 .profile-user-clickable-area {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 14px;
   padding: 16px 0 16px 24px;
   flex: 1;
@@ -5792,7 +5811,9 @@ h1, h2, h3, h4, h5, h6,
 
 .profile-btn-follow,
 .profile-btn-unfollow,
-.profile-btn-remove {
+.profile-btn-remove,
+.profile-btn-following,
+.profile-btn-friends {
   padding: 8px 20px;
   border-radius: 10px;
   font-size: 14px;
@@ -5801,6 +5822,7 @@ h1, h2, h3, h4, h5, h6,
   transition: all 0.3s;
   border: none;
   flex-shrink: 0;
+  margin-right: 24px;
 }
 
 .profile-btn-follow {
@@ -5831,6 +5853,28 @@ h1, h2, h3, h4, h5, h6,
 
 .profile-btn-remove:hover {
   background: #fee2e2;
+}
+
+.profile-btn-following {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.profile-btn-following:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.profile-btn-friends {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.profile-btn-friends:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  box-shadow: none;
 }
 
 /* User Profile Page Styles */

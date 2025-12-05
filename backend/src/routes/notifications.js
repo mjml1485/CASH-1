@@ -14,7 +14,29 @@ router.get('/', verifyToken, async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(50);
     
-    res.json({ success: true, notifications });
+    // Add follow relationship status to each notification
+    const notificationsWithRelationship = await Promise.all(
+      notifications.map(async (notif) => {
+        const notifObj = notif.toObject();
+        // Check if current user follows the actor
+        const isFollowing = await Follow.findOne({ followerId: uid, followingId: notif.actorId });
+        // Check if actor follows current user
+        const isFollowedBy = await Follow.findOne({ followerId: notif.actorId, followingId: uid });
+        
+        let relationship = 'none';
+        if (isFollowing && isFollowedBy) {
+          relationship = 'friends';
+        } else if (isFollowing) {
+          relationship = 'following';
+        } else if (isFollowedBy) {
+          relationship = 'followed_by';
+        }
+        
+        return { ...notifObj, relationship };
+      })
+    );
+    
+    res.json({ success: true, notifications: notificationsWithRelationship });
   } catch (err) {
     console.error('Get notifications error:', err?.message || err);
     res.status(500).json({ error: 'Internal Server Error', message: 'Failed to get notifications' });
