@@ -289,4 +289,23 @@ router.get('/me/followers', verifyToken, async (req, res) => {
   }
 });
 
+// Remove a follower (someone who follows you)
+router.delete('/me/followers/:followerId', verifyToken, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const { followerId } = req.params; // firebaseUid of the follower to remove
+
+    // Delete the follow relationship where followerId is following the current user
+    const follow = await Follow.findOneAndDelete({ followerId: followerId, followingId: uid });
+    if (!follow) {
+      return res.status(404).json({ error: 'Not Found', message: 'Follower relationship not found' });
+    }
+
+    res.json({ success: true, message: 'Follower removed successfully' });
+  } catch (err) {
+    console.error('Remove follower error:', err?.message || err);
+    res.status(500).json({ error: 'Internal Server Error', message: 'Failed to remove follower' });
+  }
+});
+
 export default router;

@@ -218,6 +218,21 @@ export const getFollowers = async (): Promise<FollowUser[]> => {
   }
 };
 
+export const removeFollower = async (followerId: string) => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+    const res = await axios.delete(`${API_URL}/api/users/me/followers/${followerId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (err) {
+    console.warn('removeFollower failed', err);
+    throw err;
+  }
+};
+
 export const getNotifications = async (): Promise<UserNotification[]> => {
   try {
     const { getIdToken } = await import('./authService');

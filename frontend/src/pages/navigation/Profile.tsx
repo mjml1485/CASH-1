@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { FaCamera, FaSearch, FaTimes, FaArrowLeft, FaSignOutAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAuth } from '../../hooks/useAuth';
-import { fetchProfileBackend, updateProfileBackend, createOrUpdateProfileBackend, searchUsers, followUser, unfollowUser, getFollowing, getFollowers } from '../../services/userService';
+import { fetchProfileBackend, updateProfileBackend, createOrUpdateProfileBackend, searchUsers, followUser, unfollowUser, getFollowing, getFollowers, removeFollower } from '../../services/userService';
 
 interface UserProfile {
   id: string;
@@ -458,10 +458,18 @@ export default function Profile() {
   };
 
   const handleRemoveFollower = async (userId: string) => {
-    // Note: This is a soft remove - we just remove from the list
-    // In a real app, you might want to block the user
-    const newFollowers = followers.filter(f => f.firebaseUid !== userId);
-    setFollowers(newFollowers);
+    if (isLoadingFollow) return;
+    setIsLoadingFollow(true);
+    try {
+      await removeFollower(userId);
+      const newFollowers = followers.filter(f => f.firebaseUid !== userId);
+      setFollowers(newFollowers);
+    } catch (err: any) {
+      console.error('Remove follower failed:', err);
+      alert(err?.response?.data?.message || 'Failed to remove follower');
+    } finally {
+      setIsLoadingFollow(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -945,8 +953,8 @@ export default function Profile() {
                       <p className="profile-user-email">@{follower.username}</p>
                       {follower.bio && <p className="profile-user-bio">{follower.bio}</p>}
                     </div>
-                    <button className="profile-btn-remove" onClick={() => handleRemoveFollower(follower.firebaseUid)}>
-                      Remove
+                    <button className="profile-btn-remove" onClick={() => handleRemoveFollower(follower.firebaseUid)} disabled={isLoadingFollow}>
+                      {isLoadingFollow ? '...' : 'Remove'}
                     </button>
                   </div>
                 ))

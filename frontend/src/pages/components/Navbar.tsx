@@ -143,7 +143,7 @@ export default function Navbar({ activePage, onPageChange }: NavbarProps) {
             aria-label="Notifications"
             onClick={() => setShowNotifications(!showNotifications)}
           >
-            <FaBell />
+          <FaBell />
             {unreadCount > 0 && <span className="navbar-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
           </button>
           {showNotifications && (
@@ -186,7 +186,7 @@ export default function Navbar({ activePage, onPageChange }: NavbarProps) {
                           }}
                         >
                           Follow back
-                        </button>
+        </button>
                       )}
                     </div>
                   ))
