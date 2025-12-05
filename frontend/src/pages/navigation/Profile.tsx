@@ -938,22 +938,27 @@ export default function Profile() {
                 </div>
               ) : (
                 followers.map((follower) => (
-                  <div key={follower.firebaseUid} className="profile-user-item">
-                    <div className="profile-user-avatar">
-                      {follower.avatar ? (
-                        <img src={follower.avatar} alt={follower.name} />
-                      ) : (
-                        <div className="profile-user-avatar-placeholder">
-                          {follower.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
+                  <div key={follower.firebaseUid} className="profile-user-item profile-user-item-clickable">
+                    <div 
+                      className="profile-user-clickable-area"
+                      onClick={() => { setShowFollowersModal(false); navigate(`/user/${follower.firebaseUid}`); }}
+                    >
+                      <div className="profile-user-avatar">
+                        {follower.avatar ? (
+                          <img src={follower.avatar} alt={follower.name} />
+                        ) : (
+                          <div className="profile-user-avatar-placeholder">
+                            {follower.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="profile-user-info">
+                        <p className="profile-user-name">{follower.name}</p>
+                        <p className="profile-user-email">@{follower.username}</p>
+                        {follower.bio && <p className="profile-user-bio">{follower.bio}</p>}
+                      </div>
                     </div>
-                    <div className="profile-user-info">
-                      <p className="profile-user-name">{follower.name}</p>
-                      <p className="profile-user-email">@{follower.username}</p>
-                      {follower.bio && <p className="profile-user-bio">{follower.bio}</p>}
-                    </div>
-                    <button className="profile-btn-remove" onClick={() => handleRemoveFollower(follower.firebaseUid)} disabled={isLoadingFollow}>
+                    <button className="profile-btn-remove" onClick={(e) => { e.stopPropagation(); handleRemoveFollower(follower.firebaseUid); }} disabled={isLoadingFollow}>
                       {isLoadingFollow ? '...' : 'Remove'}
                     </button>
                   </div>
@@ -982,22 +987,27 @@ export default function Profile() {
                 </div>
               ) : (
                 following.map((user) => (
-                  <div key={user.firebaseUid} className="profile-user-item">
-                    <div className="profile-user-avatar">
-                      {user.avatar ? (
-                        <img src={user.avatar} alt={user.name} />
-                      ) : (
-                        <div className="profile-user-avatar-placeholder">
-                          {user.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
+                  <div key={user.firebaseUid} className="profile-user-item profile-user-item-clickable">
+                    <div 
+                      className="profile-user-clickable-area"
+                      onClick={() => { setShowFollowingModal(false); navigate(`/user/${user.firebaseUid}`); }}
+                    >
+                      <div className="profile-user-avatar">
+                        {user.avatar ? (
+                          <img src={user.avatar} alt={user.name} />
+                        ) : (
+                          <div className="profile-user-avatar-placeholder">
+                            {user.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="profile-user-info">
+                        <p className="profile-user-name">{user.name}</p>
+                        <p className="profile-user-email">@{user.username}</p>
+                        {user.bio && <p className="profile-user-bio">{user.bio}</p>}
+                      </div>
                     </div>
-                    <div className="profile-user-info">
-                      <p className="profile-user-name">{user.name}</p>
-                      <p className="profile-user-email">@{user.username}</p>
-                      {user.bio && <p className="profile-user-bio">{user.bio}</p>}
-                    </div>
-                    <button className="profile-btn-unfollow" onClick={() => handleUnfollow(user.firebaseUid)} disabled={isLoadingFollow}>
+                    <button className="profile-btn-unfollow" onClick={(e) => { e.stopPropagation(); handleUnfollow(user.firebaseUid); }} disabled={isLoadingFollow}>
                       {isLoadingFollow ? '...' : 'Unfollow'}
                     </button>
                   </div>
@@ -1042,22 +1052,27 @@ export default function Profile() {
                 </div>
               ) : (
                 searchResults.map((user) => (
-                  <div key={user.firebaseUid} className="profile-user-item">
-                    <div className="profile-user-avatar">
-                      {user.avatar ? (
-                        <img src={user.avatar} alt={user.name} />
-                      ) : (
-                        <div className="profile-user-avatar-placeholder">
-                          {user.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
+                  <div key={user.firebaseUid} className="profile-user-item profile-user-item-clickable">
+                    <div 
+                      className="profile-user-clickable-area"
+                      onClick={() => { setShowSearchModal(false); navigate(`/user/${user.firebaseUid}`); }}
+                    >
+                      <div className="profile-user-avatar">
+                        {user.avatar ? (
+                          <img src={user.avatar} alt={user.name} />
+                        ) : (
+                          <div className="profile-user-avatar-placeholder">
+                            {user.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="profile-user-info">
+                        <p className="profile-user-name">{user.name}</p>
+                        <p className="profile-user-email">@{user.username}</p>
+                        {user.bio && <p className="profile-user-bio">{user.bio}</p>}
+                      </div>
                     </div>
-                    <div className="profile-user-info">
-                      <p className="profile-user-name">{user.name}</p>
-                      <p className="profile-user-email">@{user.username}</p>
-                      {user.bio && <p className="profile-user-bio">{user.bio}</p>}
-                    </div>
-                    <button className="profile-btn-follow" onClick={() => handleFollow(user)} disabled={isLoadingFollow}>
+                    <button className="profile-btn-follow" onClick={(e) => { e.stopPropagation(); handleFollow(user); }} disabled={isLoadingFollow}>
                       {isLoadingFollow ? '...' : 'Follow'}
                     </button>
                   </div>

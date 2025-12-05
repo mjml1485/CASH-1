@@ -59,7 +59,7 @@ export default function Navbar({ activePage, onPageChange }: NavbarProps) {
     }
   }, [showNotifications]);
 
-  const handleNotificationClick = async (notification: UserNotification) => {
+  const handleNotificationClick = async (notification: UserNotification, navigateToProfile: boolean = false) => {
     if (!notification.read) {
       try {
         await markNotificationAsRead(notification._id);
@@ -68,6 +68,10 @@ export default function Navbar({ activePage, onPageChange }: NavbarProps) {
       } catch (err) {
         console.error('Failed to mark notification as read:', err);
       }
+    }
+    if (navigateToProfile) {
+      setShowNotifications(false);
+      navigate(`/user/${notification.actorId}`);
     }
   };
 
@@ -169,7 +173,7 @@ export default function Navbar({ activePage, onPageChange }: NavbarProps) {
                     <div 
                       key={notification._id} 
                       className={`navbar-notification-item ${!notification.read ? 'navbar-notification-unread' : ''}`}
-                      onClick={() => handleNotificationClick(notification)}
+                      onClick={() => handleNotificationClick(notification, true)}
                     >
                       <div className="navbar-notification-item-content">
                         <p className="navbar-notification-text">
@@ -186,7 +190,7 @@ export default function Navbar({ activePage, onPageChange }: NavbarProps) {
                           }}
                         >
                           Follow back
-        </button>
+                        </button>
                       )}
                     </div>
                   ))

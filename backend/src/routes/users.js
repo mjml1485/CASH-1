@@ -69,6 +69,58 @@ router.get('/me', verifyToken, async (req, res) => {
   }
 });
 
+// Get another user's public profile
+router.get('/profile/:userId', verifyToken, async (req, res) => {
+  try {
+    const { uid } = req.user;
+    const { userId } = req.params;
+
+    const user = await User.findOne({ firebaseUid: userId }).select('firebaseUid name username email bio avatar header showEmail');
+    if (!user) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+
+    // Get follower and following counts
+    const [followersCount, followingCount] = await Promise.all([
+      Follow.countDocuments({ followingId: userId }),
+      Follow.countDocuments({ followerId: userId })
+    ]);
+
+    // Check relationship with current user
+    const [isFollowing, isFollowedBy] = await Promise.all([
+      Follow.findOne({ followerId: uid, followingId: userId }), // Current user follows this user
+      Follow.findOne({ followerId: userId, followingId: uid })  // This user follows current user
+    ]);
+
+    let relationship = 'none';
+    if (isFollowing && isFollowedBy) {
+      relationship = 'friends'; // Mutual follow
+    } else if (isFollowing) {
+      relationship = 'following'; // You follow them
+    } else if (isFollowedBy) {
+      relationship = 'followed_by'; // They follow you (show "Follow back")
+    }
+
+    // Build public profile (hide email if showEmail is false)
+    const publicProfile = {
+      firebaseUid: user.firebaseUid,
+      name: user.name,
+      username: user.username,
+      email: user.showEmail ? user.email : null,
+      bio: user.bio,
+      avatar: user.avatar,
+      header: user.header,
+      followersCount,
+      followingCount,
+      relationship,
+      isOwnProfile: uid === userId
+    };
+
+    res.json({ success: true, profile: publicProfile });
+  } catch (err) {
+    console.error('Get user profile error:', err?.message || err);
+    res.status(500).json({ error: 'Internal Server Error', message: 'Failed to fetch user profile' });
+  }
+});
+
 router.put('/me', verifyToken, async (req, res) => {
   try {
     const { uid } = req.user;

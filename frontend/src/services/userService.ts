@@ -233,6 +233,35 @@ export const removeFollower = async (followerId: string) => {
   }
 };
 
+export interface PublicUserProfile {
+  firebaseUid: string;
+  name: string;
+  username: string;
+  email: string | null;
+  bio: string;
+  avatar: string;
+  header: string;
+  followersCount: number;
+  followingCount: number;
+  relationship: 'none' | 'following' | 'followed_by' | 'friends';
+  isOwnProfile: boolean;
+}
+
+export const getUserProfile = async (userId: string): Promise<PublicUserProfile> => {
+  try {
+    const { getIdToken } = await import('./authService');
+    const token = await getIdToken();
+    if (!token) throw new Error('No ID token available');
+    const res = await axios.get(`${API_URL}/api/users/profile/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.profile;
+  } catch (err) {
+    console.warn('getUserProfile failed', err);
+    throw err;
+  }
+};
+
 export const getNotifications = async (): Promise<UserNotification[]> => {
   try {
     const { getIdToken } = await import('./authService');

@@ -15,6 +15,7 @@ import Personal from './pages/navigation/Personal';
 import Shared from './pages/navigation/Shared';
 import Achievements from './pages/navigation/Achievements';
 import Profile from './pages/navigation/Profile';
+import UserProfile from './pages/navigation/UserProfile';
 import ProtectedRoute from './pages/components/ProtectedRoute';
 
 function App() {
@@ -113,6 +114,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/user/:userId" 
+              element={
+                <ProtectedRoute>
+                  <UserProfile />
                 </ProtectedRoute>
               } 
             />
