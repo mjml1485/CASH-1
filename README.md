@@ -8,8 +8,8 @@ CASH (Cloud Access Synchronized Hub) is a modern, full-stack expense tracking ap
 
 ## 🚀 Live Demo
 
-- **Frontend (Vercel)**: [https://your-app.vercel.app](https://your-app.vercel.app)
-- **Backend API (Render)**: [https://your-backend.onrender.com](https://your-backend.onrender.com)
+- **Frontend (Vercel)**: [https://cash1.vercel.app](cash1.vercel.app)
+- **Backend API (Render)**: [https://cash-backend-fp4l.onrender.com](https://cash-backend-fp4l.onrender.com)
 
 ### Demo Account Credentials
 
