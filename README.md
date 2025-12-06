@@ -14,7 +14,7 @@ CASH (Cloud Access Synchronized Hub) is a modern, full-stack expense tracking ap
 ### Demo Account Credentials
 
 ```
-Email: demo@cash.app
+Email: aicarandang088@gmail.com
 Password: Demo123!
 ```
 
