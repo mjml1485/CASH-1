@@ -646,7 +646,7 @@ interface Budget {
 export default function Personal() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [activePage, setActivePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Profile'>('Personal Plan');
+  const [activePage, setActivePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan'>('Personal Plan');
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [selectedWalletName, setSelectedWalletName] = useState<string>('');
@@ -861,12 +861,11 @@ export default function Personal() {
     return { total, entries };
   }, [transactions, selectedWalletName]);
 
-  const handleTabChange = (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements') => {
+  const handleTabChange = (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan') => {
     setActivePage(page);
     if (page === 'Dashboard') navigate('/dashboard');
     if (page === 'Personal Plan') navigate('/personal');
     if (page === 'Shared Plan') navigate('/shared');
-    if (page === 'Achievements') navigate('/achievements');
   };
 
   const filteredTxForWallet = useMemo(() => {
