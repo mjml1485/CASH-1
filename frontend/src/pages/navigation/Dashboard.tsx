@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import * as settingsService from '../../services/settingsService';
 import { useNavigate } from 'react-router-dom';
-import { FaWallet, FaMoneyBill, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { formatAmountNoTrailing, CURRENCY_SYMBOLS, DEFAULT_TEXT_COLOR } from '../../utils/shared';
+import { FaWallet, FaMoneyBill, FaEye, FaEyeSlash, FaDownload } from 'react-icons/fa';
+import { formatAmountNoTrailing, CURRENCY_SYMBOLS, DEFAULT_TEXT_COLOR, CHART_COLORS } from '../../utils/shared';
 import Navbar from '../components/Navbar';
 import * as walletService from '../../services/walletService';
 import * as budgetService from '../../services/budgetService';
@@ -234,14 +234,280 @@ export default function Dashboard() {
     }
   };
 
-  // Get recent transactions sorted by date (most recent first), limited to 10
+  // Get recent transactions sorted by date (most recent first) - no limit, scrollable
   const recentTransactions = transactions
     .sort((a, b) => {
       const dateA = typeof a.dateISO === 'string' ? new Date(a.dateISO) : a.dateISO;
       const dateB = typeof b.dateISO === 'string' ? new Date(b.dateISO) : b.dateISO;
       return dateB.getTime() - dateA.getTime();
-    })
-    .slice(0, 10);
+    });
+
+  // Find wallet with most recent transaction
+  const mostRecentWallet = useMemo(() => {
+    if (transactions.length === 0) return null;
+    const sorted = [...transactions].sort((a, b) => {
+      const dateA = typeof a.dateISO === 'string' ? new Date(a.dateISO) : a.dateISO;
+      const dateB = typeof b.dateISO === 'string' ? new Date(b.dateISO) : b.dateISO;
+      return dateB.getTime() - dateA.getTime();
+    });
+    const mostRecentTx = sorted[0];
+    return wallets.find(w => w.name === mostRecentTx.walletFrom) || null;
+  }, [transactions, wallets]);
+
+  // Calculate spending breakdown with analytics
+  // For Personal: combine ALL personal wallets
+  // For Shared: show per shared wallet
+  const spendingBreakdown = useMemo(() => {
+    if (!mostRecentWallet) return { 
+      total: 0, 
+      entries: [] as Array<{ cat: string; val: number; pct: number }>,
+      transactionCount: 0,
+      averageAmount: 0,
+      topCategory: null as { cat: string; val: number; pct: number } | null,
+      walletNames: [] as string[],
+      breakdownType: 'none' as 'personal' | 'shared' | 'none',
+      expenseTransactions: [] as Transaction[]
+    };
+    
+    let expenseTx: Transaction[] = [];
+    let walletNames: string[] = [];
+    let breakdownType: 'personal' | 'shared' | 'none' = 'none';
+    
+    if (mostRecentWallet.plan === 'Personal') {
+      // Combine ALL personal wallets
+      const personalWallets = wallets.filter(w => w.plan === 'Personal');
+      walletNames = personalWallets.map(w => w.name);
+      expenseTx = transactions.filter(tx => 
+        tx.type === 'Expense' && personalWallets.some(w => w.name === tx.walletFrom)
+      );
+      breakdownType = 'personal';
+    } else {
+      // Show per shared wallet
+      walletNames = [mostRecentWallet.name];
+      expenseTx = transactions.filter(tx => 
+        tx.type === 'Expense' && tx.walletFrom === mostRecentWallet.name
+      );
+      breakdownType = 'shared';
+    }
+    
+    const totals: Record<string, number> = {};
+    expenseTx.forEach(tx => {
+      const cat = tx.category || 'Uncategorized';
+      const amt = parseFloat(tx.amount || '0') || 0;
+      totals[cat] = (totals[cat] || 0) + amt;
+    });
+    
+    const total = Object.values(totals).reduce((a, b) => a + b, 0);
+    const entries = Object.entries(totals).map(([cat, val]) => ({ 
+      cat, 
+      val, 
+      pct: total > 0 ? (val / total) * 100 : 0 
+    }));
+    
+    entries.sort((a, b) => b.val - a.val);
+    const transactionCount = expenseTx.length;
+    const averageAmount = transactionCount > 0 ? total / transactionCount : 0;
+    const topCategory = entries.length > 0 ? entries[0] : null;
+    
+    return { total, entries, transactionCount, averageAmount, topCategory, walletNames, breakdownType, expenseTransactions: expenseTx };
+  }, [transactions, mostRecentWallet, wallets]);
+
+  // Generate and download receipt-style image report
+  const handleDownloadReport = async () => {
+    if (!mostRecentWallet || spendingBreakdown.entries.length === 0) return;
+    
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      
+      const reportDate = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const reportTitle = spendingBreakdown.breakdownType === 'personal' 
+        ? 'All Personal Wallets' 
+        : spendingBreakdown.walletNames.join(', ');
+      
+      // Sort transactions by date (most recent first)
+      const sortedTxs = [...spendingBreakdown.expenseTransactions].sort((a, b) => {
+        const dateA = typeof a.dateISO === 'string' ? new Date(a.dateISO) : a.dateISO;
+        const dateB = typeof b.dateISO === 'string' ? new Date(b.dateISO) : b.dateISO;
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      // Create receipt HTML - thermal receipt style
+      const receiptHTML = `
+        <div style="
+          width: 280px;
+          background: white;
+          padding: 15px;
+          font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+          font-size: 10px;
+          line-height: 1.3;
+          color: #000;
+          box-sizing: border-box;
+          letter-spacing: 0.3px;
+        ">
+          <!-- Header -->
+          <div style="text-align: center; margin-bottom: 12px;">
+            <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px; letter-spacing: 0.5px;">
+              SPENDING ANALYTICS REPORT
+            </div>
+            <div style="font-size: 9px; color: #555; margin-bottom: 8px;">
+              ${spendingBreakdown.breakdownType === 'personal' ? 'All Personal Wallets' : 'Shared Wallet Analysis'}
+            </div>
+            <div style="border-top: 1px dashed #999; border-bottom: 1px dashed #999; padding: 6px 0;">
+              <div style="font-size: 8px; color: #555;">${reportDate}</div>
+            </div>
+          </div>
+          
+          <!-- Info -->
+          <div style="margin-bottom: 12px; font-size: 9px; line-height: 1.6;">
+            <div style="margin-bottom: 3px;">
+              <span style="color: #555;">Wallet${spendingBreakdown.walletNames.length > 1 ? 's' : ''}:</span>
+              <span style="font-weight: bold; margin-left: 5px;">${spendingBreakdown.walletNames.join(', ')}</span>
+            </div>
+            <div>
+              <span style="color: #555;">Type:</span>
+              <span style="font-weight: bold; margin-left: 5px;">${spendingBreakdown.breakdownType === 'personal' ? 'Personal' : 'Shared'}</span>
+            </div>
+          </div>
+          
+          <!-- Summary -->
+          <div style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 8px 0; margin: 12px 0;">
+            <div style="font-size: 11px; font-weight: bold; margin-bottom: 8px; text-align: center;">SUMMARY</div>
+            <div style="font-size: 9px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span style="color: #555;">TOTAL SPENDING:</span>
+                <span style="font-weight: bold; font-size: 11px;">${CURRENCY_SYMBOLS[currency]} ${formatAmountNoTrailing(String(spendingBreakdown.total))}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span style="color: #555;">TRANSACTIONS:</span>
+                <span style="font-weight: bold; font-size: 11px;">${spendingBreakdown.transactionCount}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span style="color: #555;">AVERAGE:</span>
+                <span style="font-weight: bold; font-size: 11px;">${CURRENCY_SYMBOLS[currency]} ${formatAmountNoTrailing(String(spendingBreakdown.averageAmount))}</span>
+              </div>
+              ${spendingBreakdown.topCategory ? `
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #555;">TOP CATEGORY:</span>
+                <span style="font-weight: bold; font-size: 11px;">${spendingBreakdown.topCategory.cat} (${spendingBreakdown.topCategory.pct.toFixed(0)}%)</span>
+              </div>
+              ` : ''}
+            </div>
+          </div>
+          
+          <!-- Category Breakdown -->
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 2px;">
+              CATEGORY BREAKDOWN
+            </div>
+            ${spendingBreakdown.entries.map((entry, idx) => {
+              const color = CHART_COLORS[idx % CHART_COLORS.length];
+              return `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px dotted #999;">
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <span style="display: inline-block; width: 10px; height: 10px; background: ${color}; border: 1px solid #000;"></span>
+                    <span style="font-weight: bold; font-size: 9px;">${entry.cat}</span>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-weight: bold; font-size: 9px;">${CURRENCY_SYMBOLS[currency]} ${formatAmountNoTrailing(String(entry.val))}</div>
+                    <div style="font-size: 8px; color: #555;">${entry.pct.toFixed(1)}%</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+          
+          <!-- Transaction Details -->
+          ${sortedTxs.length > 0 ? `
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 2px;">
+              TRANSACTION DETAILS
+            </div>
+            ${sortedTxs.map((tx, idx) => {
+              const txDate = typeof tx.dateISO === 'string' ? new Date(tx.dateISO) : tx.dateISO;
+              const formattedDate = new Intl.DateTimeFormat('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+              }).format(txDate);
+              const categoryText = tx.category || 'Uncategorized';
+              return `
+                <div style="padding: 6px 0; border-bottom: ${idx < sortedTxs.length - 1 ? '1px dotted #999' : 'none'};">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                    <div style="font-size: 9px;">
+                      <span style="font-weight: bold;">${tx.type}</span>
+                      <span style="color: #555; margin-left: 4px;">${categoryText}</span>
+                    </div>
+                    <div style="font-weight: bold; color: #dc2626; font-size: 9px;">${CURRENCY_SYMBOLS[currency]} ${formatAmountNoTrailing(tx.amount)}</div>
+                  </div>
+                  <div style="font-size: 8px; color: #555;">${formattedDate}</div>
+                  ${tx.description ? `<div style="font-size: 8px; color: #555; font-style: italic; margin-top: 2px;">${tx.description}</div>` : ''}
+                </div>
+              `;
+            }).join('')}
+          </div>
+          ` : ''}
+          
+          <!-- Footer -->
+          <div style="border-top: 1px dashed #999; padding-top: 8px; margin-top: 12px; text-align: center; font-size: 8px; color: #555; font-style: italic;">
+            <div>Generated by CASH</div>
+            <div style="margin-top: 2px;">Financial Management System</div>
+          </div>
+        </div>
+      `;
+      
+      // Create temporary element
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = receiptHTML;
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '0';
+      document.body.appendChild(tempDiv);
+      
+      // Convert to canvas
+      const canvas = await html2canvas(tempDiv.firstElementChild as HTMLElement, {
+        width: 280,
+        backgroundColor: '#ffffff',
+        scale: 3,
+        logging: false,
+        useCORS: true
+      });
+      
+      // Remove temporary element
+      document.body.removeChild(tempDiv);
+      
+      // Convert to image and download
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          // Format wallet name for filename
+          const walletName = spendingBreakdown.breakdownType === 'personal' 
+            ? 'All Personal Wallets' 
+            : spendingBreakdown.walletNames.join(' ');
+          // Sanitize filename by removing invalid characters
+          const sanitizedName = walletName.replace(/[<>:"/\\|?*]/g, '');
+          link.download = `${sanitizedName} receipt.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }
+      }, 'image/png');
+    } catch (err) {
+      console.error('Failed to generate receipt:', err);
+      alert('Failed to generate receipt. Please try again.');
+    }
+  };
 
   return (
     <div className="dashboard-container">
@@ -469,8 +735,116 @@ export default function Dashboard() {
             </section>
 
             <section className="dashboard-box">
-              <h3 className="dashboard-box-title">Spending Breakdown</h3>
-              <div className="dashboard-box-empty"></div>
+              <div className="dashboard-box-header">
+                <h3 className="dashboard-box-title">Spending Breakdown</h3>
+                <div className="dashboard-box-header-right">
+                  {mostRecentWallet && (
+                    <div className="dashboard-spending-wallet-label">
+                      <span className="dashboard-wallet-badge">
+                        {spendingBreakdown.breakdownType === 'personal' 
+                          ? 'All Personal Wallets' 
+                          : `Shared Wallet ${spendingBreakdown.walletNames.join(', ')}`}
+                      </span>
+                    </div>
+                  )}
+                  {spendingBreakdown.entries.length > 0 && (
+                    <button 
+                      className="dashboard-download-btn"
+                      onClick={handleDownloadReport}
+                      title="Download Analytics Report"
+                      aria-label="Download Analytics Report"
+                    >
+                      <FaDownload />
+                    </button>
+                  )}
+                </div>
+              </div>
+              {spendingBreakdown.entries.length === 0 ? (
+                <div className="dashboard-box-empty">
+                  <p>No expense data yet</p>
+                </div>
+              ) : (
+                <>
+                  {/* Content Wrapper for Chart and Analytics */}
+                  <div className="dashboard-spending-content">
+                    {/* Chart and Legend - Show First */}
+                    <div className="dashboard-chart-wrapper">
+                    {(() => {
+                      const radius = 60;
+                      const circumference = 2 * Math.PI * radius;
+                      let offset = 0;
+                      return (
+                        <svg width="140" height="140" viewBox="0 0 140 140" className="dashboard-donut">
+                          <g transform="translate(70,70) rotate(-90)">
+                            {spendingBreakdown.entries.map((entry, idx) => {
+                              const dash = (entry.pct / 100) * circumference;
+                              const gap = circumference - dash;
+                              const circle = (
+                                <circle
+                                  key={entry.cat}
+                                  r={radius}
+                                  cx={0}
+                                  cy={0}
+                                  fill="transparent"
+                                  stroke={CHART_COLORS[idx % CHART_COLORS.length]}
+                                  strokeWidth={20}
+                                  strokeDasharray={`${dash} ${gap}`}
+                                  strokeDashoffset={offset}
+                                />
+                              );
+                              offset -= dash;
+                              return circle;
+                            })}
+                          </g>
+                        </svg>
+                      );
+                    })()}
+                    <ul className="dashboard-legend">
+                      {spendingBreakdown.entries.map((e, idx) => (
+                        <li key={e.cat} className="dashboard-legend-item">
+                          <span 
+                            className="dashboard-legend-swatch" 
+                            style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}
+                          ></span>
+                          <span className="dashboard-legend-label">{e.cat} {e.pct.toFixed(0)}%</span>
+                        </li>
+                      ))}
+                    </ul>
+                    </div>
+
+                    {/* Analytics Summary - Show After Chart */}
+                    <div className="dashboard-analytics-summary">
+                    <div className="dashboard-analytics-item">
+                      <div className="dashboard-analytics-label">Total Spending</div>
+                      <div className="dashboard-analytics-value">
+                        {CURRENCY_SYMBOLS[currency]} {formatAmountNoTrailing(String(spendingBreakdown.total))}
+                      </div>
+                    </div>
+                    <div className="dashboard-analytics-item">
+                      <div className="dashboard-analytics-label">Transactions</div>
+                      <div className="dashboard-analytics-value">{spendingBreakdown.transactionCount}</div>
+                    </div>
+                    <div className="dashboard-analytics-item">
+                      <div className="dashboard-analytics-label">Average</div>
+                      <div className="dashboard-analytics-value">
+                        {CURRENCY_SYMBOLS[currency]} {formatAmountNoTrailing(String(spendingBreakdown.averageAmount))}
+                      </div>
+                    </div>
+                    {spendingBreakdown.topCategory && (
+                      <div className="dashboard-analytics-item dashboard-analytics-item-highlight">
+                        <div className="dashboard-analytics-label">Top Category</div>
+                        <div className="dashboard-analytics-value">
+                          {spendingBreakdown.topCategory.cat}
+                          <span className="dashboard-analytics-percentage">
+                            {spendingBreakdown.topCategory.pct.toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    </div>
+                  </div>
+                </>
+              )}
             </section>
 
             <section className="dashboard-box">
