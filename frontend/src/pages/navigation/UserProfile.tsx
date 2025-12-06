@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { FaArrowLeft } from 'react-icons/fa';
 import { getUserProfile, followUser, unfollowUser } from '../../services/userService';
 
 interface PublicUserProfile {
@@ -169,9 +168,6 @@ export default function UserProfile() {
         <Navbar activePage="Profile" onPageChange={handleTabChange} />
         <div className="user-profile-error">
           <p>{error || 'User not found'}</p>
-          <button className="user-profile-back-btn" onClick={() => navigate(-1)}>
-            <FaArrowLeft /> Go back
-          </button>
         </div>
       </div>
     );
@@ -182,10 +178,6 @@ export default function UserProfile() {
       <Navbar activePage="Profile" onPageChange={handleTabChange} />
 
       <div className="profile-content">
-        <button className="user-profile-back-link" onClick={() => navigate(-1)}>
-          <FaArrowLeft /> Back
-        </button>
-
         <div className="profile-card-main">
           {/* Cover Photo */}
           <div className="profile-cover profile-cover-relative">
