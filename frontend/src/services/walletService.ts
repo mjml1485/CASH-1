@@ -35,10 +35,18 @@ export const getWallets = async (): Promise<Wallet[]> => {
   try {
     const headers = await getAuthHeaders();
     const res = await axios.get(`${API_URL}/api/wallets`, { headers });
-    return res.data.wallets.map((w: any) => ({
-      ...w,
-      id: w._id || w.id
-    }));
+    // Deduplicate wallets by id to prevent duplicates (backend should already do this, but extra safety)
+    const walletMap = new Map<string, any>();
+    res.data.wallets.forEach((w: any) => {
+      const walletId = w._id || w.id;
+      if (walletId && !walletMap.has(String(walletId))) {
+        walletMap.set(String(walletId), {
+          ...w,
+          id: walletId
+        });
+      }
+    });
+    return Array.from(walletMap.values());
   } catch (err) {
     console.error('getWallets failed', err);
     throw err;

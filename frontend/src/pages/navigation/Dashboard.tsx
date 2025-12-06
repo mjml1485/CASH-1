@@ -87,7 +87,16 @@ export default function Dashboard() {
         transactionService.getTransactions().catch(() => [])
       ]);
 
-      setWallets(walletsData.map(w => ({
+      // Deduplicate wallets by id to prevent duplicate displays
+      const walletMap = new Map<string, typeof walletsData[0]>();
+      walletsData.forEach(w => {
+        const walletId = w.id || w._id || '';
+        if (walletId && !walletMap.has(walletId)) {
+          walletMap.set(walletId, w);
+        }
+      });
+      
+      setWallets(Array.from(walletMap.values()).map(w => ({
         id: w.id || w._id || '',
         name: w.name,
         balance: w.balance,

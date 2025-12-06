@@ -16,7 +16,19 @@ router.get('/', verifyToken, async (req, res) => {
         { 'collaborators.email': req.user.email }
       ]
     }).sort({ createdAt: -1 });
-    res.json({ success: true, wallets });
+    
+    // Deduplicate wallets by _id to prevent duplicates (e.g., if user is both owner and collaborator)
+    const uniqueWallets = [];
+    const seenIds = new Set();
+    for (const wallet of wallets) {
+      const walletId = wallet._id.toString();
+      if (!seenIds.has(walletId)) {
+        seenIds.add(walletId);
+        uniqueWallets.push(wallet);
+      }
+    }
+    
+    res.json({ success: true, wallets: uniqueWallets });
   } catch (err) {
     console.error('Get wallets error:', err?.message || err);
     res.status(500).json({ error: 'Internal Server Error', message: 'Failed to fetch wallets' });
