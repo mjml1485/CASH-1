@@ -1,4 +1,6 @@
-import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '../../config/cloudinary.private';
+// Cloudinary configuration - use environment variables or fallback values
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dpnackpbz';
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'cashhh';
 
 async function uploadToCloudinary(file: File): Promise<string> {
   const formData = new FormData();

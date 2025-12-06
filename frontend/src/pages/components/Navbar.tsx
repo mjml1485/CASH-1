@@ -37,7 +37,12 @@ export default function Navbar({ activePage, onPageChange }: NavbarProps) {
         getNotifications(),
         getUnreadNotificationCount()
       ]);
-      setNotifications(notifs);
+      // Map notifications to include relationship property
+      const mappedNotifs: UserNotification[] = notifs.map(n => ({
+        ...n,
+        relationship: 'none' as const
+      }));
+      setNotifications(mappedNotifs);
       setUnreadCount(count);
     } catch (err) {
       console.error('Failed to load notifications:', err);

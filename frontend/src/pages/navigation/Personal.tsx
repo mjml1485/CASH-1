@@ -646,7 +646,7 @@ interface Budget {
 export default function Personal() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [activePage, setActivePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements'>('Personal Plan');
+  const [activePage, setActivePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Profile'>('Personal Plan');
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [selectedWalletName, setSelectedWalletName] = useState<string>('');
