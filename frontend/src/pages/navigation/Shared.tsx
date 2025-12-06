@@ -1055,7 +1055,7 @@ const mapTransactionData = (t: any): Transaction => ({
 export default function Shared() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [activePage, setActivePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements'>('Shared Plan');
+  const [activePage, setActivePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan'>('Shared Plan');
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -1299,12 +1299,11 @@ export default function Shared() {
     reloadFinancialData();
   };
 
-  const handleTabChange = (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements') => {
+  const handleTabChange = (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan') => {
     setActivePage(page);
     if (page === 'Dashboard') navigate('/dashboard');
     if (page === 'Personal Plan') navigate('/personal');
     if (page === 'Shared Plan') navigate('/shared');
-    if (page === 'Achievements') navigate('/achievements');
   };
 
   const filteredTxForWallet = useMemo(() => {
@@ -1733,9 +1732,6 @@ export default function Shared() {
               )}
             </section>
 
-            <section className="shared-box">
-              <h3 className="shared-box-title">Achievements</h3>
-            </section>
           </div>
         </div>
       </div>

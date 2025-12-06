@@ -36,7 +36,7 @@ interface Budget {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [activePage, setActivePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements'>('Dashboard');
+  const [activePage, setActivePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan'>('Dashboard');
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -183,12 +183,11 @@ export default function Dashboard() {
     navigate('/add-budget', { state: { returnTo: '/dashboard' } });
   };
 
-  const handleNavbarChange = (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements') => {
+  const handleNavbarChange = (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan') => {
     setActivePage(page);
     if (page === 'Dashboard') navigate('/dashboard');
     if (page === 'Personal Plan') navigate('/personal');
     if (page === 'Shared Plan') navigate('/shared');
-    if (page === 'Achievements') navigate('/achievements');
   };
 
   // Determine if a transaction is Personal or Shared based on wallet
@@ -312,6 +311,37 @@ export default function Dashboard() {
     return { total, entries, transactionCount, averageAmount, topCategory, walletNames, breakdownType, expenseTransactions: expenseTx };
   }, [transactions, mostRecentWallet, wallets]);
 
+  // Calculate monthly income and expenses
+  const monthlySummary = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    let totalIncome = 0;
+    let totalExpenses = 0;
+    
+    transactions.forEach(tx => {
+      const txDate = typeof tx.dateISO === 'string' ? new Date(tx.dateISO) : tx.dateISO;
+      if (txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear) {
+        const amount = parseFloat(tx.amount || '0') || 0;
+        if (tx.type === 'Income') {
+          totalIncome += amount;
+        } else if (tx.type === 'Expense') {
+          totalExpenses += amount;
+        }
+        // Transfer transactions don't count toward income/expenses
+      }
+    });
+    
+    const netBalance = totalIncome - totalExpenses;
+    
+    return {
+      totalIncome,
+      totalExpenses,
+      netBalance
+    };
+  }, [transactions]);
+
   // Generate and download receipt-style image report
   const handleDownloadReport = async () => {
     if (!mostRecentWallet || spendingBreakdown.entries.length === 0) return;
@@ -326,10 +356,6 @@ export default function Dashboard() {
         hour: '2-digit',
         minute: '2-digit'
       });
-      
-      const reportTitle = spendingBreakdown.breakdownType === 'personal' 
-        ? 'All Personal Wallets' 
-        : spendingBreakdown.walletNames.join(', ');
       
       // Sort transactions by date (most recent first)
       const sortedTxs = [...spendingBreakdown.expenseTransactions].sort((a, b) => {
@@ -549,6 +575,10 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="dashboard-content">
+          {/* Main Dashboard Grid */}
+          <div className="dashboard-main-grid">
+            {/* Left Column: Wallets and Budgets */}
+            <div className="dashboard-left-column">
           {/* Wallets Section */}
           <section className="dashboard-section">
             <h2 className="dashboard-section-title">Wallets</h2>
@@ -692,14 +722,39 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* Bottom Sections Grid */}
-          <div className="dashboard-bottom-grid">
+          {/* Monthly Summary Section */}
+          <section className="dashboard-section dashboard-section-summary">
+            <div className="dashboard-monthly-summary">
+              <div className="dashboard-summary-item">
+                <div className="dashboard-summary-label">Total Income</div>
+                <div className="dashboard-summary-value dashboard-summary-income">
+                  {CURRENCY_SYMBOLS[currency]} {formatAmountNoTrailing(String(monthlySummary.totalIncome))}
+                </div>
+              </div>
+              <div className="dashboard-summary-item">
+                <div className="dashboard-summary-label">Total Expenses</div>
+                <div className="dashboard-summary-value dashboard-summary-expense">
+                  {CURRENCY_SYMBOLS[currency]} {formatAmountNoTrailing(String(monthlySummary.totalExpenses))}
+                </div>
+              </div>
+              <div className="dashboard-summary-item dashboard-summary-item-net">
+                <div className="dashboard-summary-label">Net Balance</div>
+                <div className={`dashboard-summary-value ${monthlySummary.netBalance >= 0 ? 'dashboard-summary-positive' : 'dashboard-summary-negative'}`}>
+                  {CURRENCY_SYMBOLS[currency]} {formatAmountNoTrailing(String(Math.abs(monthlySummary.netBalance)))}
+                </div>
+              </div>
+            </div>
+          </section>
+            </div>
+
+            {/* Right Column: Recent Transactions and Spending Breakdown */}
+            <div className="dashboard-right-column">
             <section className="dashboard-box">
               <h3 className="dashboard-box-title">Recent Transactions</h3>
               {recentTransactions.length === 0 ? (
-                <div className="dashboard-box-empty">
-                  <p>No transactions found</p>
-                </div>
+              <div className="dashboard-box-empty">
+                <p>No transactions found</p>
+              </div>
               ) : (
                 <div className="dashboard-transactions-list">
                   {recentTransactions.map(tx => {
@@ -735,8 +790,8 @@ export default function Dashboard() {
             </section>
 
             <section className="dashboard-box">
-              <div className="dashboard-box-header">
-                <h3 className="dashboard-box-title">Spending Breakdown</h3>
+                <div className="dashboard-box-header">
+              <h3 className="dashboard-box-title">Spending Breakdown</h3>
                 <div className="dashboard-box-header-right">
                   {mostRecentWallet && (
                     <div className="dashboard-spending-wallet-label">
@@ -846,11 +901,7 @@ export default function Dashboard() {
                 </>
               )}
             </section>
-
-            <section className="dashboard-box">
-              <h3 className="dashboard-box-title">Achievements</h3>
-              <div className="dashboard-box-empty"></div>
-            </section>
+            </div>
           </div>
         </div>
 

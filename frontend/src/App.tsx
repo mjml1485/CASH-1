@@ -13,7 +13,6 @@ import AddBudget from './pages/components/AddBudget';
 import Dashboard from './pages/navigation/Dashboard';
 import Personal from './pages/navigation/Personal';
 import Shared from './pages/navigation/Shared';
-import Achievements from './pages/navigation/Achievements';
 import Profile from './pages/navigation/Profile';
 import UserProfile from './pages/navigation/UserProfile';
 import ProtectedRoute from './pages/components/ProtectedRoute';
@@ -98,14 +97,6 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Shared />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/achievements" 
-              element={
-                <ProtectedRoute>
-                  <Achievements />
                 </ProtectedRoute>
               } 
             />

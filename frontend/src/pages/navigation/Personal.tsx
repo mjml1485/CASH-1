@@ -1091,11 +1091,6 @@ export default function Personal() {
               </div>
             )}
           </section>
-
-          <section className="personal-box">
-            <h3 className="personal-box-title">Achievements</h3>
-            <div className="personal-list-empty"></div>
-          </section>
         </div>
       </div>
     </div>

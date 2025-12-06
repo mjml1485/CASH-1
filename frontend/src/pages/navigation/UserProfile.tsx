@@ -54,8 +54,8 @@ export default function UserProfile() {
     loadProfile();
   }, [userId, navigate]);
 
-  const handleTabChange = (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements') => {
-    const target = page === 'Dashboard' ? '/dashboard' : page === 'Personal Plan' ? '/personal' : page === 'Shared Plan' ? '/shared' : '/achievements';
+  const handleTabChange = (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan') => {
+    const target = page === 'Dashboard' ? '/dashboard' : page === 'Personal Plan' ? '/personal' : '/shared';
     navigate(target);
   };
 

@@ -16,8 +16,8 @@ interface UserNotification {
 }
 
 interface NavbarProps {
-  activePage: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements' | 'Profile';
-  onPageChange: (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements') => void;
+  activePage: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Profile';
+  onPageChange: (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan') => void;
 }
 
 export default function Navbar({ activePage, onPageChange }: NavbarProps) {
@@ -203,12 +203,6 @@ export default function Navbar({ activePage, onPageChange }: NavbarProps) {
             onClick={() => onPageChange('Shared Plan')}
           >
             Shared Plan
-          </button>
-          <button
-            className={`navbar-link ${activePage === 'Achievements' ? 'active' : ''}`}
-            onClick={() => onPageChange('Achievements')}
-          >
-            Achievements
           </button>
         </div>
         <div className="navbar-actions">

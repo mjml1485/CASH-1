@@ -264,13 +264,17 @@
   display: flex;
   align-items: center;
   height: auto;
-  margin-left: 20px;
+  margin-left: auto;
+  padding-left: 12px;
 }
 .dashboard-wallet-info-icon-inner {
   display: flex;
   align-items: center;
+  justify-content: center;
   height: 100%;
-  font-size: 2.1rem;
+  font-size: 1.8rem;
+  opacity: 0.85;
+  transition: all 0.3s ease;
 }
 
 .dashboard-wallet-eye {
@@ -308,7 +312,6 @@
 }
 
 /* Make main app pages inherit unified background */
-.achievements-page,
 .dashboard-page,
 .personal-page,
 .shared-page,
@@ -3956,106 +3959,197 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .dashboard-content {
-  padding: 32px 48px;
+  padding: 10px 48px 12px 48px;
   width: 100%;
   max-width: none;
   margin: 0;
 }
 
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  width: 100%;
+}
+
+.dashboard-left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: stretch;
+  align-self: flex-start;
+}
+
+.dashboard-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: stretch;
+}
+
 .dashboard-section {
-  margin-bottom: 32px;
+  margin-bottom: 0;
+}
+
+.dashboard-section:first-child {
+  margin-top: 12px;
+}
+
+.dashboard-section:last-child {
+  margin-bottom: 0;
+}
+
+.dashboard-section-summary {
+  margin-top: -12px;
+}
+
+.dashboard-monthly-summary {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
+}
+
+.dashboard-summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+  min-height: 20px;
+}
+
+.dashboard-summary-item-net {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 5px;
+  margin-top: 3px;
+}
+
+.dashboard-summary-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  letter-spacing: -0.1px;
+}
+
+.dashboard-summary-value {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.dashboard-summary-income {
+  color: #10b981;
+}
+
+.dashboard-summary-expense {
+  color: #ef4444;
+}
+
+.dashboard-summary-positive {
+  color: #10b981;
+}
+
+.dashboard-summary-negative {
+  color: #ef4444;
 }
 
 .dashboard-section-title {
   font-size: 20px;
   font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 16px 0;
-  letter-spacing: 0.3px;
+  color: #0f172a;
+  margin: 0 0 5px 0;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dashboard-cards-wrapper {
   display: flex;
-  gap: 16px;
+  gap: 18px;
   overflow-x: auto;
-  padding-bottom: 12px;
+  padding-bottom: 0;
+  padding-right: 0;
   scroll-behavior: smooth;
+  max-width: calc(3 * 260px + 2 * 18px); /* 3 cards + 2 gaps */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
 .dashboard-cards-wrapper::-webkit-scrollbar {
-  height: 8px;
-}
-
-.dashboard-cards-wrapper::-webkit-scrollbar-track {
-  background: #e2e8f0;
-  border-radius: 4px;
-}
-
-.dashboard-cards-wrapper::-webkit-scrollbar-thumb {
-  background: #cbd5e0;
-  border-radius: 4px;
-  transition: background 0.2s ease;
-}
-
-.dashboard-cards-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #a0aec0;
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .dashboard-empty-state {
   width: 100%;
-  background: #d4e9f5;
-  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(212, 233, 245, 0.6) 0%, rgba(241, 245, 249, 0.6) 100%);
+  border-radius: 18px;
   padding: 48px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 18px;
   min-height: 200px;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .dashboard-empty-icon {
-  font-size: 48px;
-  color: #4a5568;
-  opacity: 0.6;
+  font-size: 52px;
+  color: #64748b;
+  opacity: 0.5;
+  transition: all 0.3s ease;
 }
 
 .dashboard-empty-text {
-  font-size: 16px;
-  font-weight: 500;
-  color: #2d3748;
+  font-size: 15px;
+  font-weight: 600;
+  color: #475569;
   margin: 0;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.1px;
 }
 
 .dashboard-add-link {
-  background: transparent;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
-  color: #3182ce;
-  font-size: 16px;
+  color: white;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  text-decoration: underline;
-  transition: color 0.2s ease;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-  padding: 0;
+  padding: 10px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  letter-spacing: 0.2px;
 }
 
 .dashboard-add-link:hover {
-  color: #2c5aa0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  color: white;
 }
 
 .dashboard-wallet-card {
   min-width: 260px;
   width: 260px;
   height: 200px;
-  border-radius: 14px;
-  padding: 22px;
+  border-radius: 16px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   position: relative;
-  box-shadow: 0 8px 18px rgba(14,30,37,0.06);
-  transition: all 0.28s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
 }
 
 .dashboard-wallet-eye {
@@ -4075,8 +4169,8 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .dashboard-wallet-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 28px rgba(14,30,37,0.12);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
 .dashboard-wallet-header {
@@ -4087,11 +4181,12 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .dashboard-wallet-label {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  opacity: 0.85;
+  letter-spacing: 0.8px;
+  opacity: 0.9;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dashboard-wallet-eye {
@@ -4111,95 +4206,114 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .dashboard-wallet-balance {
-  font-size: 34px;
+  font-size: 36px;
   font-weight: 800;
-  margin-bottom: 12px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  letter-spacing: -0.5px;
+  margin-bottom: 16px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  letter-spacing: -0.8px;
+  line-height: 1.1;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dashboard-wallet-name {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  letter-spacing: -0.2px;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dashboard-wallet-type {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  opacity: 0.75;
+  opacity: 0.8;
   text-transform: capitalize;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0.2px;
 }
 
 .dashboard-budget-card {
   min-width: 260px;
   width: 260px;
   height: 200px;
-  background: rgba(235, 249, 255, 0.75);
-  border-radius: 14px;
-  padding: 22px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+  border-radius: 16px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 6px 16px rgba(14,30,37,0.06);
-  transition: all 0.28s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  border: 1px solid rgba(15,23,42,0.03);
+  border: 1px solid rgba(226, 232, 240, 0.8);
   flex-shrink: 0;
+  backdrop-filter: blur(10px);
 }
 
 .dashboard-budget-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
-  border-color: #87ceeb;
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08);
+  border-color: rgba(148, 163, 184, 0.3);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(248, 250, 252, 1) 100%);
 }
 
 .dashboard-budget-category {
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 8px;
+  color: #0f172a;
+  margin-bottom: 10px;
+  letter-spacing: -0.2px;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dashboard-budget-amount {
-  font-size: 24px;
+  font-size: 30px;
   font-weight: 800;
-  color: #1a1a1a;
-  margin-bottom: 4px;
-  letter-spacing: -0.5px;
+  color: #0f172a;
+  margin-bottom: 6px;
+  letter-spacing: -0.8px;
+  line-height: 1.1;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dashboard-budget-left {
   font-size: 12px;
   font-weight: 500;
-  color: #4a5568;
-  margin-bottom: 12px;
+  color: #64748b;
+  margin-bottom: 14px;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0.1px;
 }
 
 .dashboard-progress-pill {
   position: relative;
   width: 100%;
-  height: 32px;
-  background: #f3f6f9; /* subtle track color */
-  border-radius: 16px;
+  height: 36px;
+  background: linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%);
+  border-radius: 18px;
   overflow: hidden;
   display: flex;
   align-items: center;
-  padding: 0; /* label will add its own padding */
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  padding: 0;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .dashboard-progress-label {
   position: relative;
   margin-left: auto;
-  font-size: 16px;
+  font-size: 11px;
   font-weight: 700;
-  color: #053247;
-  padding: 0 14px;
-  z-index: 2; /* ensure label is readable above the fill */
+  color: #0f172a;
+  padding: 0 12px;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   height: 100%;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
 /* Progress remaining bar (fill) */
@@ -4210,9 +4324,10 @@ h1, h2, h3, h4, h5, h6,
   bottom: 0;
   height: 100%;
   width: 0%;
-  border-radius: 16px; /* always round ends for a capsule look */
-  background: linear-gradient(90deg, #87ceeb 0%, #6b46c1 100%);
-  transition: width 0.36s ease, transform 0.36s ease;
+  border-radius: 18px;
+  background: linear-gradient(90deg, #60a5fa 0%, #8b5cf6 100%);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.3);
 }
 
 /* Utility width classes (steps of 5%) used by budget rows */
@@ -4447,7 +4562,7 @@ h1, h2, h3, h4, h5, h6,
 .personal-bottom-grid,
 .shared-bottom-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
+  grid-template-columns: 1.2fr 1fr;
   gap: 22px;
 }
 
@@ -5024,125 +5139,6 @@ h1, h2, h3, h4, h5, h6,
   border: 0;
 }
 
-/* ========== Achievements Page ========== */
-.achievements-page {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  opacity: 1;
-  transition: opacity 0.15s ease-in-out;
-}
-
-.achievements-content {
-  width: 100%;
-  padding: 32px 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.achievements-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 24px;
-}
-
-.achievement-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  background: rgba(148, 163, 184, 0.12);
-  color: #475569;
-}
-
-.achievement-title {
-  font-size: 16px;
-  font-weight: 800;
-  margin: 12px 0 4px 0;
-  letter-spacing: 0.2px;
-  color: #0f172a;
-  text-align: center;
-}
-
-.achievement-desc {
-  font-size: 13px;
-  line-height: 1.4;
-  color: #64748b;
-  margin: 0 0 8px 0;
-  text-align: center;
-}
-
-.achievement-earned {
-  font-size: 12px;
-  margin: 0;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: 0.2px;
-  text-align: center;
-}
-
-/* Achievement card base styles */
-.achievement-card {
-  background: rgba(235, 249, 255, 0.7);
-  border-radius: 14px;
-  padding: 20px 18px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 8px 20px rgba(14,30,37,0.06);
-  border: 1px solid rgba(15,23,42,0.03);
-  min-height: 140px;
-  text-align: center;
-}
-
-.achievement-card .achievement-icon {
-  flex: 0 0 auto;
-  width: 56px;
-  height: 56px;
-}
-
-.achievement-card.achieved {
-  background: linear-gradient(180deg, rgba(135,206,235,0.18), rgba(135,206,235,0.08));
-  border: 1px solid rgba(135,206,235,0.35);
-  box-shadow: 0 10px 28px rgba(103,179,212,0.12);
-}
-
-.achievement-card.achieved .achievement-icon {
-  background: #dff6ff;
-  color: #06283d;
-}
-
-.achievement-card:not(.achieved) .achievement-icon {
-  background: rgba(148,163,184,0.08);
-  color: #64748b;
-}
-
-@media (max-width: 800px) {
-  .achievements-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 16px;
-  }
-}
-
-@media (max-width: 768px) {
-  .achievements-content {
-    padding: 24px 24px;
-  }
-
-  .achievements-grid {
-    gap: 16px;
-  }
-
-  .achievement-card {
-    padding: 16px 16px 18px;
-    min-height: 160px;
-  }
-}
 
 /* ========== Profile Page ========== */
 .profile-page {
@@ -6678,69 +6674,74 @@ h1, h2, h3, h4, h5, h6,
 .dashboard-add-card {
   min-width: 250px;
   width: 250px;
-  height: 180px;
-  background: #f1f5f9;
-  border: 2px dashed #cbd5e0;
+  height: 200px;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.8) 100%);
+  border: 2px dashed rgba(148, 163, 184, 0.4);
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 0;
   flex-shrink: 0;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .dashboard-add-card:hover {
-  background: #e2e8f0;
-  border-color: #a0aec0;
-  transform: scale(1.02);
+  background: linear-gradient(135deg, rgba(226, 232, 240, 0.9) 0%, rgba(203, 213, 224, 0.9) 100%);
+  border-color: rgba(148, 163, 184, 0.6);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .dashboard-add-plus {
-  font-size: 64px;
+  font-size: 56px;
   font-weight: 300;
-  color: #4a5568;
+  color: #64748b;
   line-height: 1;
+  transition: all 0.3s ease;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dashboard-add-card:hover .dashboard-add-plus {
-  color: #2d3748;
+  color: #475569;
+  transform: scale(1.1);
 }
 
-.dashboard-bottom-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-top: 32px;
-  align-items: stretch;
-}
 
 .dashboard-box {
-  background: #d4e9f5;
-  border-radius: 16px;
-  padding: 24px;
-  min-height: 300px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+  border-radius: 20px;
+  padding: 20px;
+  min-height: auto;
   display: flex;
   flex-direction: column;
   height: 100%;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  backdrop-filter: blur(10px);
 }
 
 .dashboard-box-title {
   font-size: 16px;
   font-weight: 700;
-  color: #1a1a1a;
-  margin: 0;
-  letter-spacing: 0.3px;
+  color: #0f172a;
+  margin: 0 0 7px 0;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dashboard-box-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   gap: 12px;
   flex-wrap: wrap;
+  padding-bottom: 2px;
 }
 
 .dashboard-box-header-right {
@@ -6789,12 +6790,13 @@ h1, h2, h3, h4, h5, h6,
 .dashboard-transactions-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   flex: 1;
   overflow-y: auto;
   padding-right: 8px;
-  margin-top: 4px;
+  margin-top: 2px;
   min-height: 0;
+  max-height: calc(2 * 90px + 10px); /* 2 transactions (approx 90px each) + gap between */
 }
 
 .dashboard-transactions-list::-webkit-scrollbar {
@@ -6815,18 +6817,19 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .dashboard-transaction-item {
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(255, 255, 255, 1);
+  border: 1px solid rgba(226, 232, 240, 0.8);
   border-radius: 14px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(10px);
 }
 
 .dashboard-transaction-item::before {
@@ -6834,10 +6837,11 @@ h1, h2, h3, h4, h5, h6,
   position: absolute;
   top: 0;
   left: 0;
-  width: 3px;
+  width: 4px;
   height: 100%;
   background: transparent;
-  transition: all 0.25s ease;
+  transition: all 0.3s ease;
+  border-radius: 0 2px 2px 0;
 }
 
 .dashboard-transaction-item-expense::before {
@@ -6849,9 +6853,9 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .dashboard-transaction-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
-  border-color: rgba(148, 163, 184, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: rgba(148, 163, 184, 0.3);
   background: rgba(255, 255, 255, 1);
 }
 
@@ -6876,34 +6880,37 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .dashboard-transaction-type {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #0f172a;
-  letter-spacing: 0.2px;
+  letter-spacing: -0.1px;
   white-space: nowrap;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dashboard-transaction-plan {
   font-size: 10px;
   font-weight: 700;
   color: #475569;
-  background: linear-gradient(135deg, rgba(100, 116, 139, 0.12) 0%, rgba(100, 116, 139, 0.08) 100%);
-  padding: 4px 10px;
-  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(100, 116, 139, 0.1) 0%, rgba(100, 116, 139, 0.06) 100%);
+  padding: 5px 11px;
+  border-radius: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border: 1px solid rgba(100, 116, 139, 0.15);
+  letter-spacing: 0.6px;
+  border: 1px solid rgba(100, 116, 139, 0.2);
   white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dashboard-transaction-amount {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
   color: #0f172a;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.5px;
   white-space: nowrap;
   text-align: right;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dashboard-transaction-item-expense .dashboard-transaction-amount {
@@ -6918,35 +6925,37 @@ h1, h2, h3, h4, h5, h6,
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding-top: 2px;
+  gap: 10px;
+  padding-top: 0;
 }
 
 .dashboard-transaction-category {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: #475569;
-  letter-spacing: 0.1px;
+  color: #334155;
+  letter-spacing: -0.1px;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dashboard-transaction-date {
-  font-size: 12px;
+  font-size: 11px;
   color: #64748b;
   font-weight: 500;
   white-space: nowrap;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dashboard-transaction-description {
-  font-size: 12px;
+  font-size: 11px;
   color: #64748b;
   font-style: italic;
-  line-height: 1.5;
-  padding-top: 2px;
+  line-height: 1.4;
+  padding-top: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
 }
 
@@ -6962,14 +6971,16 @@ h1, h2, h3, h4, h5, h6,
   font-size: 10px;
   font-weight: 700;
   color: #475569;
-  background: linear-gradient(135deg, rgba(100, 116, 139, 0.12) 0%, rgba(100, 116, 139, 0.08) 100%);
-  padding: 4px 10px;
-  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
+  padding: 6px 12px;
+  border-radius: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border: 1px solid rgba(100, 116, 139, 0.15);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  letter-spacing: 0.6px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   white-space: nowrap;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  backdrop-filter: blur(10px);
 }
 
 .dashboard-wallet-name-label {
@@ -6983,20 +6994,21 @@ h1, h2, h3, h4, h5, h6,
   display: flex;
   flex-direction: column;
   flex: 1;
-  justify-content: space-between;
+  justify-content: flex-start;
   min-height: 0;
+  gap: 0;
 }
 
 .dashboard-chart-wrapper {
   display: flex;
-  gap: 24px;
+  gap: 16px;
   align-items: center;
   justify-content: center;
   width: fit-content;
   max-width: 100%;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
-  flex: 1;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+  flex: 0 0 auto;
   margin: auto;
 }
 
@@ -7023,24 +7035,28 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .dashboard-legend-swatch {
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
   display: inline-block;
   flex-shrink: 0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-legend-label {
   font-weight: 600;
   color: #2d3748;
+  font-size: 11px;
+  letter-spacing: -0.1px;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* Dashboard Analytics Summary */
 .dashboard-analytics-summary {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 8px;
   margin-top: 0;
   flex-shrink: 0;
 }
@@ -7048,44 +7064,54 @@ h1, h2, h3, h4, h5, h6,
 .dashboard-analytics-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  gap: 3px;
+  padding: 10px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.25s ease;
+  backdrop-filter: blur(10px);
 }
 
 .dashboard-analytics-item-highlight {
-  background: linear-gradient(135deg, rgba(79, 102, 255, 0.08) 0%, rgba(79, 102, 255, 0.04) 100%);
-  border-color: rgba(79, 102, 255, 0.2);
+  background: linear-gradient(135deg, rgba(79, 102, 255, 0.12) 0%, rgba(79, 102, 255, 0.06) 100%);
+  border-color: rgba(79, 102, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(79, 102, 255, 0.15);
 }
 
 .dashboard-analytics-label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .dashboard-analytics-value {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
   color: #0f172a;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.5px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.2;
 }
 
 .dashboard-analytics-percentage {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   color: #475569;
-  background: rgba(100, 116, 139, 0.1);
-  padding: 2px 8px;
-  border-radius: 6px;
-  margin-left: 4px;
+  background: linear-gradient(135deg, rgba(100, 116, 139, 0.12) 0%, rgba(100, 116, 139, 0.08) 100%);
+  padding: 3px 9px;
+  border-radius: 8px;
+  margin-left: 6px;
+  border: 1px solid rgba(100, 116, 139, 0.15);
+  font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0.3px;
 }
 
 /* MEDIA QUERIES */
@@ -7099,12 +7125,12 @@ h1, h2, h3, h4, h5, h6,
   }
 
   .dashboard-content {
-    padding: 24px 24px;
+    padding: 24px 24px 12px 24px;
   }
 
-  .dashboard-bottom-grid {
+  .dashboard-main-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 20px;
   }
 
   .wallet-content {
@@ -7147,7 +7173,7 @@ h1, h2, h3, h4, h5, h6,
   }
 
   .dashboard-content {
-    padding: 20px 16px;
+    padding: 20px 16px 12px 16px;
   }
 
   .dashboard-wallet-card,
@@ -7373,11 +7399,11 @@ h1, h2, h3, h4, h5, h6,
   }
 
   .dashboard-content {
-    padding: 16px 12px;
+    padding: 16px 12px 12px 12px;
   }
 
   .dashboard-section-title {
-    font-size: 18px;
+    font-size: 22px;
   }
 
   .dashboard-wallet-card,
@@ -7387,7 +7413,7 @@ h1, h2, h3, h4, h5, h6,
     min-width: 200px;
   }
 
-  .dashboard-bottom-grid {
+  .dashboard-main-grid {
     grid-template-columns: 1fr;
   }
 

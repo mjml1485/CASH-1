@@ -44,7 +44,7 @@ interface Connection {
 export default function Profile() {
   const navigate = useNavigate();
   const { signOut, currentUser } = useAuth();
-  const [activePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements' | 'Profile'>('Profile');
+  const [activePage] = useState<'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Profile'>('Profile');
   const [profile, setProfile] = useState<UserProfile>({
     id: 'current-user',
     name: '',
@@ -188,8 +188,8 @@ export default function Profile() {
     loadFollowData();
   }, [currentUser]);
 
-  const handleTabChange = (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan' | 'Achievements') => {
-    const target = page === 'Dashboard' ? '/dashboard' : page === 'Personal Plan' ? '/personal' : page === 'Shared Plan' ? '/shared' : '/achievements';
+  const handleTabChange = (page: 'Dashboard' | 'Personal Plan' | 'Shared Plan') => {
+    const target = page === 'Dashboard' ? '/dashboard' : page === 'Personal Plan' ? '/personal' : '/shared';
     navigate(target);
   };
 
